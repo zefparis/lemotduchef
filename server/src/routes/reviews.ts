@@ -23,6 +23,13 @@ const REVIEW_SELECT = `
          (SELECT count(*) FROM generations g WHERE g.review_id=r.id)::int AS generation_count
   FROM reviews r`;
 
+// Les comptes dont l'email figure dans ADMIN_EMAILS génèrent sans quota :
+// la limite de l'offre Gratuit ne leur est pas appliquée.
+async function isAdminAccount(userId: string): Promise<boolean> {
+  const { rows } = await pool.query<{ email: string }>('SELECT email FROM "user" WHERE id=$1', [userId]);
+  return !!rows[0] && config.adminEmails.has(rows[0].email.toLowerCase());
+}
+
 async function variantsOf(reviewId: string, companyId: string) {
   const { rows } = await pool.query(
     `SELECT v.id, v.generation_id, v.idx, v.text, v.warnings, v.created_at
@@ -116,11 +123,12 @@ export default async function reviewRoutes(app: FastifyInstance) {
       if (review.body_purged_at) return reply.code(409).send({ error: 'Le texte de cet avis a été effacé (durée de conservation atteinte) : ressaisissez-le pour générer une réponse.' });
       const profile = await loadProfile(req.companyId!);
       if (!profile) return reply.code(409).send({ error: 'Complétez le profil de votre restaurant avant de générer une réponse.', code: 'NO_PROFILE' });
-      const remaining = await remainingGenerations(req.companyId!);
+      const admin = await isAdminAccount(req.userId!);
+      const remaining = admin ? Number.POSITIVE_INFINITY : await remainingGenerations(req.companyId!);
       if (remaining < 1) return reply.code(403).send(LIMIT_ERROR);
       try {
         const out = await generateReplies(req.companyId!, review.id, profile, review, req.log);
-        const left = await remainingGenerations(req.companyId!);
+        const left = admin ? Number.POSITIVE_INFINITY : await remainingGenerations(req.companyId!);
         return {
           generationId: out.generationId,
           variants: out.variants,
@@ -166,6 +174,8 @@ export default async function reviewRoutes(app: FastifyInstance) {
   app.get('/api/usage', async (req) => {
     const left = await remainingGenerations(req.companyId!);
     const pro = !Number.isFinite(left);
-    return { plan: pro ? 'pro' : 'free', remaining: pro ? null : left, limit: pro ? null : FREE_MONTHLY_LIMIT, llmReady: llmConfigured() };
+    const admin = !pro && await isAdminAccount(req.userId!);
+    const unlimited = pro || admin;
+    return { plan: pro ? 'pro' : 'free', remaining: unlimited ? null : left, limit: unlimited ? null : FREE_MONTHLY_LIMIT, admin, llmReady: llmConfigured() };
   });
 }

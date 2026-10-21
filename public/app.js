@@ -363,13 +363,14 @@ function renderQuota() {
   const pill = $('#quota-pill');
   if (!usage) { pill.hidden = true; return; }
   pill.hidden = false;
-  if (usage.plan === 'pro') { pill.textContent = 'Pro · réponses illimitées'; pill.className = 'quota-pill pro'; }
+  if (usage.admin) { pill.textContent = 'Réponses illimitées (admin)'; pill.className = 'quota-pill pro'; }
+  else if (usage.plan === 'pro') { pill.textContent = 'Pro · réponses illimitées'; pill.className = 'quota-pill pro'; }
   else {
     pill.textContent = `${usage.remaining} / ${usage.limit} réponses restantes ce mois`;
     pill.className = 'quota-pill' + (usage.remaining === 0 ? ' empty' : '');
   }
   $('#generate-hint').textContent = !usage.llmReady ? 'Le rédacteur n’est pas configuré sur ce serveur.'
-    : usage.plan === 'pro' ? '' : `${usage.remaining} génération(s) restante(s) ce mois-ci.`;
+    : usage.plan === 'pro' || usage.admin ? '' : `${usage.remaining} génération(s) restante(s) ce mois-ci.`;
 }
 
 /* ---------- Écran Répondre ---------- */
@@ -476,8 +477,9 @@ function renderVariants(g) {
     <article class="variant" data-idx="${i}">
       <div class="variant-head">
         <strong>Proposition ${i + 1}</strong>
-        <small><span data-words>${words(v.text)}</span> mots${v.needsReview ? ' · <span class="warn">à revoir — écartée par les règles, rédigez ou régénérez</span>' : v.warnings?.length ? ` · <span class="warn" title="${esc(v.warnings.join(' · '))}">à vérifier</span>` : ''}</small>
+        <small data-meta${v.text ? '' : ' hidden'}><span data-words>${words(v.text)}</span> mots${v.warnings?.length ? ` · <span class="warn" title="${esc(v.warnings.join(' · '))}">à vérifier</span>` : ''}</small>
       </div>
+      ${v.needsReview ? '<p class="variant-flag warn">à revoir — écartée par les règles, rédigez ou régénérez</p>' : ''}
       <textarea rows="8" data-variant${v.needsReview ? ' placeholder="Variante non conforme — écrivez votre réponse ou régénérez."' : ''}>${esc(v.text)}</textarea>
       <div class="variant-actions">
         <button class="btn btn-primary btn-sm" data-copy="${i}">${icon('i-copy')}Copier</button>
@@ -488,7 +490,10 @@ function renderVariants(g) {
 }
 $('#variants').addEventListener('input', e => {
   if (!e.target.matches('[data-variant]')) return;
-  e.target.closest('.variant').querySelector('[data-words]').textContent = words(e.target.value);
+  const w = e.target.closest('.variant').querySelector('[data-words]');
+  if (!w) return;
+  w.closest('[data-meta]').hidden = false;
+  w.textContent = words(e.target.value);
 });
 
 async function copyVariant(i) {

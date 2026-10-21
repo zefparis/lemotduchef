@@ -11,7 +11,7 @@ process.env.BETTER_AUTH_SECRET = 'test-secret-0123456789abcdef0123456789abcdef';
 process.env.NODE_ENV = 'test';
 process.env.RATE_LIMIT_AUTH_MAX = '1000';
 process.env.RATE_LIMIT_GENERATE_MAX = '1000';
-process.env.ADMIN_EMAILS = 'admin@lemotduchef.test';
+process.env.ADMIN_EMAILS = 'admin@lemotduchef.test, quota-admin@x.fr';
 // Une origine autorisée pour vérifier que les erreurs n'écrasent jamais le CORS.
 process.env.CORS_ORIGINS = 'https://lemotduchef.test';
 // Driver email de test : capture en mémoire, aucun réseau.
@@ -504,6 +504,22 @@ test('quota : le mois précédent ne compte pas', async () => {
   assert.equal((await generate(cookie, id)).statusCode, 403);
   await pool.query(`UPDATE generations SET created_at = created_at - interval '40 days' WHERE company_id=$1`, [cid]);
   assert.equal((await generate(cookie, id)).statusCode, 200, 'nouveau mois : quota réinitialisé');
+});
+
+test('quota : compte ADMIN_EMAILS en offre Gratuit → générations illimitées', async () => {
+  const cookie = await signup('quota-admin@x.fr'); await createRestaurant(cookie);
+  const { id } = await addReview(cookie);
+  const u = await app.inject({ method: 'GET', url: '/api/usage', headers: { cookie } });
+  assert.equal(u.json().plan, 'free');
+  assert.equal(u.json().admin, true);
+  assert.equal(u.json().remaining, null);
+  for (let i = 0; i < 5; i++) { // au-delà de la limite Gratuit (3)
+    const r = await generate(cookie, id);
+    assert.equal(r.statusCode, 200, `génération admin ${i + 1} : ${r.body}`);
+    assert.equal(r.json().quota.remaining, null);
+  }
+  const after = await app.inject({ method: 'GET', url: '/api/usage', headers: { cookie } });
+  assert.equal(after.json().remaining, null);
 });
 
 /* ====================== Isolation ====================== */
