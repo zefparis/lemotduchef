@@ -267,7 +267,7 @@ test('avis suspect : indicateurs et guide de signalement honnête', async () => 
 /* ====================== Règles du rédacteur (LLM mocké) ====================== */
 const RULE_PROFILE = { ...PROFILE, tone: 'chaleureux' as const };
 const POSITIVE = { author_name: 'Julie', rating: 5, body: 'Risotto divin, serveur adorable.', visited_on: null, context_tags: [], context_note: '' };
-const NEGATIVE = { author_name: 'Paul', rating: 1, body: 'Attente d’une heure, plat froid, personnel désagréable.', visited_on: null, context_tags: ['full_house'], context_note: '' };
+const NEGATIVE = { author_name: 'Paul', rating: 1, body: 'Attente d’une heure, plat froid à plusieurs reprises, personnel désagréable, service lent et aucune excuse présentée.', visited_on: null, context_tags: ['full_house'], context_note: '' };
 const HEALTH = { ...NEGATIVE, body: 'J’ai été malade toute la nuit après votre plat, intoxication alimentaire évidente.', context_tags: ['health'] };
 const sig = signatureOf(RULE_PROFILE);
 const words = (n: number) => Array.from({ length: n }, (_, i) => `mot${i}`).join(' ');
@@ -299,16 +299,19 @@ test('règles : longueur, signature, nom/ville, interdits, données personnelles
   // Interdits : accusation de mensonge, menace judiciaire, tutoiement, emoji.
   for (const [frag, re] of [['vous mentez', /juridique|mensonge/], ['notre avocat', /juridique/], ['tu exagères', /tutoiement/], ['merci 😀', /emoji/]] as const)
     assert.match(checkReply(`Bonjour Paul, ${frag}. ${words(55)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).errors.join(), re);
-  // Données personnelles : contact du profil autorisé, autre email/téléphone refusé.
-  assert.equal(checkReply(`Bonjour Paul, écrivez-nous à contact@tabledaurore.fr ou au 04 78 00 00 00. ${words(50)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).ok, true);
+  // Coordonnées : email du profil autorisé ; téléphone seulement si l'option est
+  // activée ; tout autre email/téléphone refusé.
+  assert.equal(checkReply(`Bonjour Paul, écrivez-nous à contact@tabledaurore.fr. ${words(50)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).ok, true);
+  assert.match(checkReply(`Bonjour Paul, écrivez-nous ou appelez le 04 78 00 00 00. ${words(50)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).errors.join(), /téléphone/);
+  assert.equal(checkReply(`Bonjour Paul, écrivez-nous ou appelez le 04 78 00 00 00. ${words(50)}\n${sig}`, { ...RULE_PROFILE, show_phone: true } as any, NEGATIVE as any).ok, true);
   assert.match(checkReply(`Bonjour Paul, écrivez à paul.durand@gmail.com. ${words(50)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).errors.join(), /email étranger/);
-  assert.match(checkReply(`Bonjour Paul, rappelez-nous au 06 12 34 56 78. ${words(50)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).errors.join(), /téléphone étranger/);
+  assert.match(checkReply(`Bonjour Paul, rappelez-nous au 06 12 34 56 78. ${words(50)}\n${sig}`, { ...RULE_PROFILE, show_phone: true } as any, NEGATIVE as any).errors.join(), /téléphone étranger/);
   // Santé : aucune reconnaissance de responsabilité, invitation au contact obligatoire.
   assert.match(checkReply(`Bonjour Paul, c’est de notre faute, nous reconnaissons le problème, contactez-nous. ${words(50)}\n${sig}`, RULE_PROFILE as any, HEALTH as any).errors.join(), /responsabilité/);
-  assert.match(checkReply(`Bonjour Paul, nous sommes désolés. ${words(55)}\n${sig}`, RULE_PROFILE as any, HEALTH as any).errors.join(), /contact privé/);
-  assert.equal(checkReply(`Bonjour Paul, nous sommes sincèrement désolés et prenons votre message au sérieux ; n’hésitez pas à nous contacter directement. ${words(45)}\n${sig}`, RULE_PROFILE as any, HEALTH as any).ok, true);
+  assert.match(checkReply(`Bonjour Paul, cela nous touche. ${words(55)}\n${sig}`, RULE_PROFILE as any, HEALTH as any).errors.join(), /contact privé/);
+  assert.equal(checkReply(`Bonjour Paul, nous comprenons votre inquiétude et vous invitons à nous contacter directement. ${words(35)}\n${sig}`, RULE_PROFILE as any, HEALTH as any).ok, true);
   // Avertissement (non bloquant) : geste commercial sur un avis négatif.
-  const w = checkReply(`Bonjour Paul, nous vous offrons un dessert. ${words(55)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any);
+  const w = checkReply(`Bonjour Paul, nous vous offrons un verre. ${words(55)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any);
   assert.equal(w.ok, true); assert.match(w.warnings.join(), /geste commercial/);
   assert.equal(wordCount('Bonjour, l’équipe vous remercie !'), 4);
   assert.deepEqual(parseVariants('```json\n{"variants":["a","b"]}\n```'), ['a', 'b']);

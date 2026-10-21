@@ -67,10 +67,10 @@ export default async function miscRoutes(app: FastifyInstance) {
         `INSERT INTO memberships (company_id, user_id, role) VALUES ($1,$2,'owner')`, [id, req.userId]);
       await client.query(
         `INSERT INTO restaurant_profiles (company_id, city, cuisine, signature_name, signature_role, tone, strengths,
-           practical_info, google_maps_url, google_review_url, contact_email, contact_phone)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+           practical_info, google_maps_url, google_review_url, contact_email, contact_phone, show_phone)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
         [id, p.city, p.cuisine, p.signature_name, p.signature_role, p.tone, p.strengths,
-         p.practical_info, p.google_maps_url, p.google_review_url, p.contact_email, p.contact_phone]);
+         p.practical_info, p.google_maps_url, p.google_review_url, p.contact_email, p.contact_phone, p.show_phone]);
       await client.query('INSERT INTO collect_settings (company_id) VALUES ($1)', [id]);
       await client.query('COMMIT');
       return reply.code(201).send({ id, name: p.name, city: p.city, onboarded: true });

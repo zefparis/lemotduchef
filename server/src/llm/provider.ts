@@ -89,35 +89,40 @@ function field(user: string, key: string): string {
   const m = new RegExp(`^${key}\\s*:\\s*(.*)$`, 'm').exec(user);
   return m?.[1]?.trim() ?? '';
 }
+// Variant ~50-58 mots (négatif) / ~40-52 mots (positif) : dans le recouvrement
+// des fourchettes court/long, donc conformes quel que soit l'avis. Trois angles
+// distincts (factuel / chaleureux / point fort), vocabulaire volontairement
+// disjoint pour passer le contrôle de similarité.
 export function mockVariants(user: string): string {
   const restaurant = field(user, 'Restaurant') || 'notre restaurant';
-  const city = field(user, 'Ville');
   const sig = field(user, 'Signature') || 'L’équipe';
   const author = field(user, 'Prénom affiché') || '';
   const rating = parseInt(field(user, 'Note') || '5', 10);
   const strength = (field(user, 'Points forts').split(',')[0] || 'notre cuisine faite maison').trim();
-  const contact = field(user, 'Contact réclamations');
+  const rawContact = field(user, 'Contact réclamations');
+  const contact = rawContact.startsWith('—') ? '' : rawContact;
   const health = /oui/i.test(field(user, 'Sujet santé'));
   const hello = author ? `Bonjour ${author},` : 'Bonjour,';
-  const place = city ? `${restaurant} à ${city}` : restaurant;
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const reach = contact ? ` à ${contact}` : ' au restaurant';
   const variants: string[] = [];
   if (rating >= 4) {
     variants.push(
-      `${hello} merci infiniment pour ce retour chaleureux. Nous sommes ravis que votre moment chez ${place} vous ait plu, et nous transmettrons vos compliments à toute l’équipe. ${strength.charAt(0).toUpperCase() + strength.slice(1)} reste au cœur de ce que nous aimons partager. Au plaisir de vous accueillir à nouveau très bientôt.\n${sig}`,
-      `${hello} quel plaisir de lire ces mots. Toute l’équipe de ${restaurant} vous remercie pour votre confiance et votre gentillesse. Nous espérons vous retrouver prochainement pour un nouveau moment gourmand autour de ${strength}. À très vite !\n${sig}`,
-      `${hello} un grand merci pour votre visite et pour ce commentaire qui nous touche. Savoir que vous avez apprécié votre expérience chez ${restaurant} est notre plus belle récompense. Nous vous attendons avec plaisir pour une prochaine occasion.\n${sig}`,
+      `${hello} merci pour ce retour précis et généreux : ravis que votre moment chez ${restaurant} vous ait plu. C’est exactement l’expérience que toute l’équipe s’attache à offrir, chaque jour, à chaque table.\n${sig}`,
+      `${hello} quel plaisir de vous lire ce matin. Vos mots ont fait sourire toute la maison, et nous vous remercions d’avoir pris le temps de les partager. On espère vous retrouver très vite autour d’une table.\n${sig}`,
+      `${hello} votre message illumine notre journée entière. ${cap(strength)} est au cœur de ce que nous aimons partager chez ${restaurant} ; savoir que cela vous a touché est la plus belle des récompenses. À très bientôt.\n${sig}`,
+    );
+  } else if (health) {
+    variants.push(
+      `${hello} votre message nous touche : le bien-être de nos clients passe avant tout, et nous lisons le vôtre avec attention. Nos procédures d’hygiène et de traçabilité sont documentées et rigoureusement appliquées chaque jour, sans exception. Contactez-nous${reach} pour que nous comprenions ce qui s’est passé.\n${sig}`,
+      `${hello} nous entendons votre inquiétude et elle nous tient à cœur. Chez nous, l’hygiène n’est pas un argument mais une discipline quotidienne, suivie par toute l’équipe sans relâche. Joignez-nous directement${reach} : nous prendrons le temps de comprendre ensemble ce qui s’est passé.\n${sig}`,
+      `${hello} la confiance de nos clients est ce que nous défendons le plus, avec ${strength} et une exigence d’hygiène de tous les instants, à chaque service. Pour comprendre votre expérience, contactez-nous${reach} : vous aurez une réponse personnelle et attentionnée.\n${sig}`,
     );
   } else {
-    const invite = contact
-      ? `Nous vous invitons à nous contacter directement (${contact}) afin d’échanger sereinement.`
-      : 'Nous vous invitons à nous contacter directement afin d’échanger sereinement.';
-    const facts = health
-      ? 'Nous prenons votre message très au sérieux et sommes sincèrement désolés que vous vous soyez senti mal après votre visite. Nos procédures d’hygiène et de traçabilité sont rigoureuses et nous souhaitons comprendre précisément ce qui s’est passé.'
-      : 'Nous sommes surpris par votre description, qui ne correspond pas à l’attention que nous portons chaque jour à nos clients, et nous souhaitons comprendre ce qui a pu vous décevoir.';
     variants.push(
-      `${hello} merci d’avoir pris le temps de partager votre ressenti. ${facts} ${invite} Chez ${place}, ${strength} et l’accueil de chacun nous tiennent à cœur, et nous serions heureux de vous le prouver lors d’une prochaine visite.\n${sig}`,
-      `${hello} nous vous remercions pour votre message, même s’il nous attriste. ${facts} ${invite} Nous espérons avoir l’occasion de vous faire découvrir ce qui fait la réputation de ${restaurant} : ${strength} et une équipe attentive à chaque table.\n${sig}`,
-      `${hello} nous avons lu votre commentaire avec attention et regrettons que votre expérience n’ait pas été à la hauteur. ${facts} ${invite} Nous tenons à ce que chaque client reparte satisfait de ${restaurant}, et nous serions ravis de vous accueillir de nouveau pour vous faire goûter ${strength}.\n${sig}`,
+      `${hello} votre retour appelle une réponse claire : ce que vous décrivez n’est pas le niveau de service que nous voulons proposer. Nous revoyons dès aujourd’hui l’organisation en salle et en cuisine pour tenir nos délais, comme nous le faisons déjà sur l’accueil de chacun de nos clients.\n${sig}`,
+      `${hello} lire votre avis n’est pas un moment agréable, et nous le regardons en face. Votre soirée aurait dû être belle ; qu’elle ne l’ait pas été nous importe vraiment. Écrivez-nous${reach} si vous souhaitez en parler de vive voix : nous vous écouterons avec attention.\n${sig}`,
+      `${hello} ce que vous décrivez est l’inverse de ce que nous défendons chaque jour : ${strength} et une attention sincère portée à chaque table qui passe notre porte. Nous serions heureux de vous le prouver lors d’une prochaine visite, en toute simplicité, quand vous le souhaiterez.\n${sig}`,
     );
   }
   return JSON.stringify({ variants });

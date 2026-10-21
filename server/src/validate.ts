@@ -18,7 +18,7 @@ export interface ProfileInput {
   signature_name: string; signature_role: string; tone: Tone;
   strengths: string[]; practical_info: string;
   google_maps_url: string; google_review_url: string;
-  contact_email: string; contact_phone: string;
+  contact_email: string; contact_phone: string; show_phone: boolean;
 }
 
 const GOOGLE_HOSTS = ['google.com', 'google.fr', 'g.page', 'maps.app.goo.gl', 'goo.gl', 'business.google.com', 'search.google.com', 'maps.google.com'];
@@ -59,7 +59,8 @@ export function validateProfile(body: any): { value?: ProfileInput; error?: stri
   if (contact_email && (contact_email.length > 200 || !isEmail(contact_email))) return { error: 'Email de contact invalide.' };
   const contact_phone = str(body.contact_phone, 30);
   if (contact_phone && (contact_phone.length > 30 || !/^[+\d][\d\s().-]{5,}$/.test(contact_phone))) return { error: 'Téléphone de contact invalide.' };
-  return { value: { name, city, cuisine, signature_name, signature_role, tone: tone as Tone, strengths, practical_info, google_maps_url, google_review_url, contact_email, contact_phone } };
+  const show_phone = body.show_phone === true || body.show_phone === 'true' || body.show_phone === 'on';
+  return { value: { name, city, cuisine, signature_name, signature_role, tone: tone as Tone, strengths, practical_info, google_maps_url, google_review_url, contact_email, contact_phone, show_phone } };
 }
 
 /* ---------- Avis ---------- */

@@ -286,6 +286,7 @@ function readProfileForm(f) {
     tone: el.tone.value, strengths: strengths.slice(0, 8), practical_info: el.practical_info.value.trim(),
     google_maps_url: el.google_maps_url.value.trim(), google_review_url: profile?.google_review_url || '',
     contact_email: el.contact_email.value.trim(), contact_phone: el.contact_phone.value.trim(),
+    show_phone: !!(el.show_phone && el.show_phone.checked),
   };
 }
 function fillProfileForm(f, p) {
@@ -293,6 +294,7 @@ function fillProfileForm(f, p) {
   const el = f.elements;
   for (const k of ['name', 'city', 'cuisine', 'signature_name', 'signature_role', 'tone', 'practical_info', 'google_maps_url', 'contact_email', 'contact_phone'])
     if (el[k]) el[k].value = p[k] ?? '';
+  if (el.show_phone) el.show_phone.checked = !!p.show_phone;
   const known = [...f.querySelectorAll('input[name=strengths]')];
   known.forEach(i => { i.checked = (p.strengths || []).includes(i.value); });
   el.strengths_custom.value = (p.strengths || []).filter(s => !known.some(i => i.value === s)).join(', ');

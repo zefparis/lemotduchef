@@ -3,7 +3,7 @@ import { config } from '../config.js';
 import { llmProvider, LlmError } from './provider.js';
 import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt } from './prompt.js';
 import type { PromptProfile, PromptReview } from './prompt.js';
-import { checkReply, parseVariants } from './rules.js';
+import { checkReply, parseVariants, tooSimilar } from './rules.js';
 
 export interface GeneratedVariant { idx: number; text: string; warnings: string[]; words: number }
 export interface GenerationOutcome {
@@ -52,7 +52,7 @@ export async function generateReplies(
     try {
       res = await provider.complete({
         system: SYSTEM_PROMPT,
-        user: attempt === 0 ? user : user + '\n\nRAPPEL : respecte la longueur, la signature seule en dernière ligne et le JSON strict {"variants":[3 chaînes]}.',
+        user: attempt === 0 ? user : user + '\n\nRAPPEL : respecte la longueur indiquée, les formules interdites, la signature seule en dernière ligne, 3 variantes réellement différentes et le JSON strict {"variants":[3 chaînes]}.',
         maxTokens: config.llm.maxOutputTokens,
       }, ctrl.signal);
     } catch (err) {
@@ -68,6 +68,7 @@ export async function generateReplies(
     for (const text of texts) {
       if (accepted.length >= 3) break;
       if (accepted.some(a => a.text === text)) continue;
+      if (accepted.some(a => tooSimilar(a.text, text))) { rejected.push('variante trop proche d’une autre'); continue; }
       const c = checkReply(text, profile, review);
       if (c.ok) accepted.push({ idx: accepted.length, text, warnings: c.warnings, words: c.words });
       else rejected.push(c.errors.join(', '));
