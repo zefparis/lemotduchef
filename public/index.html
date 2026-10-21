@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#8a3b1f">
+<meta name="description" content="Le Mot du Chef rédige avec vous des réponses posées et professionnelles à vos avis Google. Ne laissez plus un avis injuste parler à votre place.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%238a3b1f'/%3E%3Cpath d='M9 21c0-4 3-7 7-7s7 3 7 7M8 21h16M16 9v2' stroke='%23f3c45a' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>Le Mot du Chef — répondez à vos avis Google avec justesse</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<svg aria-hidden="true" style="display:none">
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M8.5 7H17v8.5"/></symbol>
+  <symbol id="i-cloche" viewBox="0 0 24 24"><path d="M4.5 16c0-4.4 3.4-8 7.5-8s7.5 3.6 7.5 8M3.5 16h17M12 5.5v2.5"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.8-.3-4-.9L3.5 20.5l1-4.3A8.5 8.5 0 1 1 20.5 12Z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 3.5V8h4.5"/><path d="M12 7.5V12l3.3 2"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"/><path d="M13.5 13.5h3v3h-3zM18.5 13.5h2M20.5 16.5v4M13.5 18.5v2h3"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9.5 5.5 4h13L20 9.5M4 9.5a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0M5.5 12v8h13v-8M10 20v-5h4v5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.1"/><circle cx="10" cy="16" r="2.1"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m19.5 19.5-3.7-3.7"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4.5v11m0 0 3.8-3.8M12 15.5l-3.8-3.8"/><path d="M5 19.5h14"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11.5" height="11.5" rx="2"/><path d="M5.5 15h-.7A1.8 1.8 0 0 1 3 13.2V4.8A1.8 1.8 0 0 1 4.8 3h8.4A1.8 1.8 0 0 1 15 4.8v.7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5L19.5 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.8M12 16.3h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11.2V16M12 7.7h.01"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9l-5.3 2.8 1.1-5.9-4.3-4.1 5.9-.8Z"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21V4.5h12l-2.5 4 2.5 4h-12"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12.5 20h8"/><path d="M16.7 3.8a2.1 2.1 0 0 1 3 3L7.5 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V5.4A1.4 1.4 0 0 1 10.9 4h2.2a1.4 1.4 0 0 1 1.4 1.4V7M6.8 7l.9 12.2a1.5 1.5 0 0 0 1.5 1.3h5.6a1.5 1.5 0 0 0 1.5-1.3L17.2 7"/><path d="M10.2 11v6M13.8 11v6"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 7.5 8.5 6 8.5-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9.5 6 6 6-6"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4M6 6l2.8 2.8M15.2 15.2 18 18M6 18l2.8-2.8M15.2 8.8 18 6"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 8V3.5h10V8M7 16H4.5v-6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v6H17"/><rect x="7" y="13" width="10" height="7.5" rx="1"/></symbol>
+</svg>
+
+<!-- ==================== PAGE COMMERCIALE ==================== -->
+<header class="site-header">
+  <a class="brand" href="#" aria-label="Le Mot du Chef, retour en haut">
+    <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+    <span class="brand-id">Le Mot du Chef<small>réponses aux avis Google</small></span>
+  </a>
+  <nav class="site-nav" aria-label="Navigation principale">
+    <a href="#methode">Comment ça marche</a>
+    <a href="#exemple">Exemple</a>
+    <a href="#offre">Offres</a>
+    <a href="#faq">Questions</a>
+    <button class="btn btn-quiet btn-sm" data-auth>Se connecter</button>
+    <button class="btn btn-dark btn-sm" data-open>Créer un compte</button>
+  </nav>
+</header>
+
+<main id="landing">
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow"><i></i>Pour les restaurateurs indépendants</p>
+      <h1>Ne laissez plus un avis injuste <em>parler à votre place.</em></h1>
+      <p class="lead">Le Mot du Chef rédige avec vous, en quelques secondes, une réponse posée et professionnelle à chaque avis Google — pour les clients qui la liront demain. Vous relisez, vous ajustez, vous publiez.</p>
+      <div class="actions">
+        <button class="btn btn-primary" data-open>Essayer gratuitement<svg class="icon"><use href="#i-arrow"/></svg></button>
+        <button class="btn btn-outline" data-auth>Se connecter</button>
+      </div>
+      <p class="subtle"><span data-free-replies>—</span> réponses offertes chaque mois · sans carte bancaire · rien n'est publié sans vous</p>
+      <ul class="hero-tags" aria-label="Types d'établissements">
+        <li>Restaurants</li>
+        <li>Brasseries</li>
+        <li>Pizzerias</li>
+        <li>Traiteurs</li>
+      </ul>
+    </div>
+
+    <div class="hero-features">
+      <ul class="feature-list">
+        <li>
+          <span class="feature-icon"><svg class="icon"><use href="#i-msg"/></svg></span>
+          <div><strong>Trois réponses, votre ton</strong><p>Chaleureux, élégant ou familial : le rédacteur connaît votre maison, vos points forts et votre signature.</p></div>
+        </li>
+        <li>
+          <span class="feature-icon"><svg class="icon"><use href="#i-check"/></svg></span>
+          <div><strong>Toujours courtois, jamais sur la défensive</strong><p>Les faits sont rétablis avec tact. Pas d'accusation, pas de menace, aucune donnée personnelle sur le client.</p></div>
+        </li>
+        <li>
+          <span class="feature-icon"><svg class="icon"><use href="#i-flag"/></svg></span>
+          <div><strong>Avis suspect ? Un guide honnête</strong><p>Indicateurs simples et texte de signalement prêt à copier — en vous disant clairement ce que Google retire, et ce qu'il ne retire pas.</p></div>
+        </li>
+        <li>
+          <span class="feature-icon"><svg class="icon"><use href="#i-qr"/></svg></span>
+          <div><strong>Plus d'avis de clients satisfaits</strong><p>Chevalet de table et encart d'addition avec QR code vers votre fiche Google — pour tous vos clients, sans tri ni contrepartie.</p></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="method" id="methode">
+    <div class="method-intro">
+      <p class="eyebrow"><i></i>Trois étapes</p>
+      <h2>Collez l'avis,<br>choisissez votre réponse.</h2>
+      <p class="section-lead">Le Mot du Chef ne publie rien à votre place : il prépare, vous décidez. La V1 fonctionne par copier-coller depuis votre fiche Google.</p>
+    </div>
+    <div class="steps">
+      <article>
+        <span class="step-num">01</span>
+        <div class="step-icon"><svg class="icon"><use href="#i-store"/></svg></div>
+        <h3>Décrivez votre maison</h3>
+        <p>Nom, ville, cuisine, points forts, ton souhaité et signature (« Marc, chef et propriétaire »). Deux minutes, une seule fois.</p>
+      </article>
+      <article>
+        <span class="step-num">02</span>
+        <div class="step-icon"><svg class="icon"><use href="#i-msg"/></svg></div>
+        <h3>Collez l'avis</h3>
+        <p>Texte, note et prénom tel qu'affiché. Pour un avis négatif, précisez le contexte en un clic : complet ce soir-là, client inconnu, prix affichés, sujet santé…</p>
+      </article>
+      <article>
+        <span class="step-num">03</span>
+        <div class="step-icon"><svg class="icon"><use href="#i-copy"/></svg></div>
+        <h3>Choisissez, ajustez, publiez</h3>
+        <p>Trois variantes modifiables. Copiez celle qui vous ressemble, ouvrez votre fiche Google et collez-la. Cochez « publiée » pour garder l'historique.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="example" id="exemple">
+    <div class="method-intro">
+      <p class="eyebrow"><i></i>Avant / après</p>
+      <h2>Ce que lisent vos futurs clients.</h2>
+      <p class="section-lead"><strong>Exemple fictif</strong> : l'avis ci-dessous est inventé pour illustrer la méthode ; aucun restaurant ni client réel n'est concerné. La réponse « après » a été produite par Le Mot du Chef à partir d'un profil d'exemple.</p>
+    </div>
+    <div class="example-grid">
+      <article class="example-card example-review">
+        <p class="example-label">L'avis (fictif)</p>
+        <p class="stars" aria-label="1 étoile sur 5"><span class="on">★</span><span>★</span><span>★</span><span>★</span><span>★</span></p>
+        <p class="example-quote">« Attente de 45 minutes pour un plat froid et un serveur qui nous ignore. Prix exagérés pour ce que c'est. Jamais plus. »</p>
+        <p class="example-meta">— Kévin, il y a 3 jours</p>
+      </article>
+      <article class="example-card example-before">
+        <p class="example-label">Avant — réponse écrite à chaud</p>
+        <p class="example-quote">« Vous êtes venu un samedi soir complet et vous avez été prévenu de l'attente, votre plat n'était pas froid, et nos prix sont affichés. Ce genre d'avis est injuste pour une petite équipe qui fait de son mieux. »</p>
+        <p class="example-why">Factuelle mais défensive : un futur client lit « ils contestent, ils se justifient ».</p>
+      </article>
+      <article class="example-card example-after">
+        <p class="example-label">Après — avec Le Mot du Chef</p>
+        <p class="example-quote">« Bonjour Kévin, merci d'avoir pris le temps de nous écrire. Nous sommes sincèrement désolés que ce samedi soir n'ait pas été à la hauteur : la salle était complète et, malgré l'attente annoncée à l'arrivée, nous comprenons que ce moment ait été long. Un plat servi tiède n'est pas acceptable chez nous, et nous en avons reparlé en cuisine dès le lendemain. Notre carte, affichée à l'entrée, repose sur des produits frais travaillés maison — nous serions heureux de vous le montrer dans de meilleures conditions, en semaine par exemple. N'hésitez pas à nous écrire directement pour en discuter.<br>Marc, chef et propriétaire »</p>
+        <p class="example-why">Les faits sont posés sans accuser, un point fort est rappelé, la porte reste ouverte. C'est ce que retiendront les prochains lecteurs.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="offer" id="offre">
+    <div class="offer-copy">
+      <p class="eyebrow eyebrow-light"><i></i>Nos offres</p>
+      <h2>Commencez gratuitement, passez en Pro quand les avis s'enchaînent.</h2>
+      <p>L'offre Gratuit vous donne chaque mois quelques réponses sans carte bancaire. L'offre Pro lève la limite, débloque les supports imprimables de collecte d'avis et l'historique complet.</p>
+      <p class="offer-note">Paiement sécurisé par Stripe · code promo accepté à la souscription · résiliable à tout moment depuis votre espace.</p>
+    </div>
+    <div class="price" aria-label="Tarifs des offres">
+      <p class="price-label">Nos offres</p>
+      <div class="price-plans">
+        <div class="price-plan">
+          <strong>Gratuit</strong>
+          <p><b>0 €</b></p>
+          <small><span data-free-replies>—</span> réponses par mois · historique <span data-free-history>—</span> jours · sans carte</small>
+        </div>
+        <div class="price-plan">
+          <strong>Pro</strong>
+          <p><b><span data-price="pro_monthly">—</span></b> / mois</p>
+          <small><span data-price="pro_yearly">—</span> / an · réponses illimitées · chevalets et encarts PDF · historique complet</small>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" data-open>Créer un compte gratuit<svg class="icon"><use href="#i-arrow"/></svg></button>
+      <small class="price-note">Sans engagement · changement d'offre à tout moment</small>
+      <small class="price-note" data-legal="vatMention"></small>
+    </div>
+  </section>
+
+  <section class="faq" id="faq">
+    <div class="faq-intro">
+      <p class="eyebrow"><i></i>Questions fréquentes</p>
+      <h2>Ce qu'il faut savoir avant de commencer.</h2>
+    </div>
+    <div class="faq-list">
+      <details>
+        <summary>Peut-on faire supprimer un avis ?<svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p>Rarement, et jamais parce qu'il est injuste. Google ne retire que les avis contraires à ses règles de contenu : hors sujet, spam, conflit d'intérêts (concurrent, ancien salarié), injures, informations personnelles, faux avis manifeste. Un avis sévère, exagéré ou que vous contestez reste en ligne. Le Mot du Chef vous signale les indices qui relèvent de ces règles et vous prépare le signalement — mais la décision appartient à Google, et le plus efficace reste une réponse publique posée, lue par vos futurs clients.</p>
+      </details>
+      <details>
+        <summary>Les réponses sont-elles publiées automatiquement ?<svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p>Non. Dans cette version, vous copiez la réponse et la collez vous-même sur votre fiche Google ; rien ne part sans vous. La connexion directe à Google Business Profile (lecture des avis, publication en un clic) est prévue dans une prochaine version et restera optionnelle.</p>
+      </details>
+      <details>
+        <summary>Qui écrit les réponses ?<svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p>Un modèle de langage, encadré par des règles strictes que nous vérifions à la sortie : vouvoiement, courtoisie, aucune accusation de mensonge, aucune mention judiciaire, aucune donnée personnelle sur le client, prudence absolue sur les sujets santé et allergies, longueur maîtrisée, votre signature. Vous restez l'auteur : relisez et modifiez toujours avant de publier.</p>
+      </details>
+      <details>
+        <summary>Que deviennent les avis que je colle ?<svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p>Ils contiennent des données de vos clients (prénom, texte). Nous n'en stockons que le nécessaire, isolé par restaurant, sur un serveur en France. Le texte et le prénom sont effacés automatiquement après <span data-retention-months>12</span> mois ; la note, la date et votre réponse restent dans votre historique. Vous êtes responsable de ces données, nous en sommes le sous-traitant (voir la <a href="/confidentialite">politique de confidentialité</a>).</p>
+      </details>
+      <details>
+        <summary>Le QR code trie-t-il les clients satisfaits ?<svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p>Non, et nous ne le proposerons pas. Le QR code mène directement à votre page d'avis Google, pour tous vos clients. Les pages « êtes-vous satisfait ? » qui ne redirigent vers Google que les contents, comme les cadeaux contre un avis, sont interdits par Google et constituent une pratique commerciale trompeuse.</p>
+      </details>
+      <details>
+        <summary>Comment se passe le paiement ?<svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p>Vous souscrivez sur une page de paiement hébergée par Stripe (code promo accepté), puis tout se gère depuis votre espace : changement d'offre, carte, factures, résiliation. L'offre Gratuit ne demande aucune carte.</p>
+      </details>
+    </div>
+  </section>
+
+  <p class="limits">Compte sécurisé · données hébergées sur notre serveur en France · gratuit pour démarrer · résiliable à tout moment.</p>
+
+  <footer class="site-footer">
+    <a class="brand" href="#">
+      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+      Le Mot du Chef
+    </a>
+    <span>Le Mot du Chef — réponses aux avis Google pour les restaurateurs</span>
+    <button class="btn btn-quiet" data-open>Créer un compte</button>
+    <nav class="legal-links" aria-label="Pages légales">
+      <a href="/mentions-legales">Mentions légales</a>
+      <a href="/cgv">CGV</a>
+      <a href="/confidentialite">Confidentialité</a>
+    </nav>
+  </footer>
+</main>
+
+<!-- ==================== CONNEXION / INSCRIPTION ==================== -->
+<section id="auth" hidden aria-label="Connexion à votre espace">
+  <div class="auth-wrap">
+    <a class="brand" href="#" id="auth-home">
+      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+      <span class="brand-id">Le Mot du Chef<small>réponses aux avis Google</small></span>
+    </a>
+    <div class="auth-card">
+      <p class="eyebrow"><i></i>Espace restaurateur</p>
+      <h1 class="auth-title">Vos réponses, sur votre compte.</h1>
+      <p class="auth-sub" id="auth-sub">Connectez-vous pour retrouver votre restaurant, vos avis et vos réponses. Les données sont isolées par établissement.</p>
+
+      <div class="auth-tabs" id="auth-tabs" hidden>
+        <button class="auth-tab active" id="tab-login" type="button">Connexion</button>
+        <button class="auth-tab" id="tab-signup" type="button" hidden>Créer un compte</button>
+      </div>
+
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="l-email">Email</label>
+          <input id="l-email" name="email" type="email" required autocomplete="email" placeholder="vous@restaurant.fr">
+        </div>
+        <div class="field">
+          <label for="l-pass">Mot de passe</label>
+          <input id="l-pass" name="password" type="password" required autocomplete="current-password" placeholder="••••••••••">
+        </div>
+        <p class="field-error" id="err-login" hidden></p>
+        <button class="btn btn-primary btn-block" type="submit" id="login-btn">Se connecter</button>
+        <button class="btn btn-quiet btn-sm" type="button" id="forgot-link">Mot de passe oublié&nbsp;?</button>
+      </form>
+
+      <form id="forgot-form" hidden novalidate>
+        <p class="auth-sub">Saisissez votre email : si un compte existe, un lien de réinitialisation vous sera envoyé (valable 1 h).</p>
+        <div class="field">
+          <label for="fp-email">Email</label>
+          <input id="fp-email" name="email" type="email" required autocomplete="email" placeholder="vous@restaurant.fr">
+        </div>
+        <p class="field-error" id="err-forgot" hidden></p>
+        <p class="field-ok" id="ok-forgot" hidden></p>
+        <button class="btn btn-primary btn-block" type="submit" id="forgot-btn">Recevoir le lien</button>
+        <button class="btn btn-quiet btn-sm" type="button" id="forgot-back">← Retour à la connexion</button>
+      </form>
+
+      <form id="reset-form" hidden novalidate>
+        <p class="auth-sub">Choisissez votre nouveau mot de passe (12 caractères minimum).</p>
+        <div class="field">
+          <label for="r-pass">Nouveau mot de passe</label>
+          <input id="r-pass" name="password" type="password" required minlength="12" autocomplete="new-password" placeholder="••••••••••">
+        </div>
+        <div class="field">
+          <label for="r-pass2">Confirmez le mot de passe</label>
+          <input id="r-pass2" name="password2" type="password" required minlength="12" autocomplete="new-password" placeholder="••••••••••">
+        </div>
+        <p class="field-error" id="err-reset" hidden></p>
+        <button class="btn btn-primary btn-block" type="submit" id="reset-btn">Enregistrer le nouveau mot de passe</button>
+      </form>
+
+      <div id="verify-note" hidden>
+        <p class="verify-icon"><svg class="icon"><use href="#i-mail"/></svg></p>
+        <p class="auth-sub"><strong>Vérifiez votre boîte mail.</strong><br>Un email de confirmation vient de partir vers <b id="verify-email-addr"></b>. Cliquez sur le lien (valable 24 h) pour activer votre compte, puis connectez-vous.</p>
+        <p class="subtle">Le lien est expiré ou l'email n'arrive pas&nbsp;? Reconnectez-vous : un nouvel email pourra être renvoyé.</p>
+        <button class="btn btn-outline btn-block" type="button" id="verify-back">Retour à la connexion</button>
+      </div>
+
+      <form id="signup-form" hidden novalidate>
+        <div class="field">
+          <label for="s-name">Votre nom</label>
+          <input id="s-name" name="name" required maxlength="100" autocomplete="name" placeholder="Ex. Marc Lefèvre">
+        </div>
+        <div class="field">
+          <label for="s-company">Nom du restaurant</label>
+          <input id="s-company" name="company" required maxlength="100" placeholder="Ex. La Table d'Aurore">
+        </div>
+        <div class="field">
+          <label for="s-email">Email</label>
+          <input id="s-email" name="email" type="email" required autocomplete="email" placeholder="vous@restaurant.fr">
+        </div>
+        <div class="field">
+          <label for="s-pass">Mot de passe <span class="opt">(12 caractères minimum)</span></label>
+          <input id="s-pass" name="password" type="password" required minlength="12" autocomplete="new-password" placeholder="••••••••••">
+        </div>
+        <label class="check-row" for="s-cgv">
+          <input type="checkbox" id="s-cgv" required>
+          <span>J'agis à des fins professionnelles et j'accepte les <a href="/cgv" target="_blank" rel="noopener">conditions générales de vente</a>.</span>
+        </label>
+        <p class="field-error" id="err-cgv" hidden></p>
+        <p class="field-error" id="err-signup" hidden></p>
+        <button class="btn btn-primary btn-block" type="submit" id="signup-btn">Créer mon compte</button>
+        <p class="subtle">Un email de vérification vous sera envoyé : il est nécessaire pour activer le compte.</p>
+      </form>
+
+      <div class="auth-alt">
+        <button class="btn btn-quiet btn-sm" data-landing>← Retour au site</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ONBOARDING : PROFIL DU RESTAURANT ==================== -->
+<section id="onboard" hidden aria-label="Profil de votre restaurant">
+  <div class="auth-wrap wide">
+    <a class="brand" href="#">
+      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+      Le Mot du Chef
+    </a>
+    <div class="auth-card">
+      <p class="eyebrow"><i></i>Bienvenue</p>
+      <h1 class="auth-title">Parlez-nous de votre maison.</h1>
+      <p class="auth-sub">Ces informations nourrissent chaque réponse : le rédacteur ne saura de vous que ce que vous écrivez ici. Modifiable à tout moment.</p>
+      <form id="onboard-form" class="profile-fields" novalidate></form>
+      <p class="field-error" id="err-onboard" hidden></p>
+      <button class="btn btn-primary btn-block" type="submit" form="onboard-form" id="onboard-btn">Créer mon espace</button>
+    </div>
+  </div>
+</section>
+
+<!-- Gabarit des champs de profil (onboarding et « Mon restaurant ») -->
+<template id="profile-template">
+  <div class="form-grid">
+    <div class="field">
+      <label for="{p}-name">Nom du restaurant <span class="req" aria-hidden="true">*</span></label>
+      <input id="{p}-name" name="name" required maxlength="100" placeholder="Ex. La Table d'Aurore">
+    </div>
+    <div class="field">
+      <label for="{p}-city">Ville</label>
+      <input id="{p}-city" name="city" maxlength="100" placeholder="Ex. Lyon">
+    </div>
+    <div class="field">
+      <label for="{p}-cuisine">Type de cuisine</label>
+      <input id="{p}-cuisine" name="cuisine" maxlength="100" placeholder="Ex. bistronomie, pizzeria napolitaine…">
+    </div>
+    <div class="field">
+      <label for="{p}-tone">Ton des réponses <span class="opt">(vouvoiement toujours)</span></label>
+      <select id="{p}-tone" name="tone">
+        <option value="chaleureux">Chaleureux</option>
+        <option value="elegant">Élégant</option>
+        <option value="familial">Familial</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="{p}-signame">Prénom (ou nom) de signature</label>
+      <input id="{p}-signame" name="signature_name" maxlength="80" placeholder="Ex. Marc">
+    </div>
+    <div class="field">
+      <label for="{p}-sigrole">Rôle dans la signature</label>
+      <input id="{p}-sigrole" name="signature_role" maxlength="80" placeholder="Ex. chef et propriétaire">
+    </div>
+    <div class="field full">
+      <span class="label">Points forts <span class="opt">(le rédacteur en rappelle un par réponse)</span></span>
+      <div class="chips" data-strengths>
+        <label class="chip"><input type="checkbox" name="strengths" value="fait maison"><span>Fait maison</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="produits locaux"><span>Produits locaux</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="produits de saison"><span>De saison</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="terrasse"><span>Terrasse</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="carte des vins"><span>Carte des vins</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="accueil des familles"><span>Familles bienvenues</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="options végétariennes"><span>Options végétariennes</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="équipe attentive"><span>Équipe attentive</span></label>
+      </div>
+      <input name="strengths_custom" maxlength="120" placeholder="Autres points forts, séparés par des virgules (ex. pain maison, cave voûtée)">
+    </div>
+    <div class="field full">
+      <label for="{p}-practical">Infos pratiques <span class="opt">(réservation, horaires…)</span></label>
+      <input id="{p}-practical" name="practical_info" maxlength="300" placeholder="Ex. réservation conseillée le week-end, fermé le lundi">
+    </div>
+    <div class="field full">
+      <label for="{p}-maps">Lien de votre fiche Google <span class="opt">(URL Google Maps)</span></label>
+      <input id="{p}-maps" name="google_maps_url" type="url" maxlength="500" placeholder="https://maps.app.goo.gl/…">
+      <p class="field-hint">Sert au bouton « Ouvrir ma fiche Google » après chaque réponse.</p>
+    </div>
+    <div class="field">
+      <label for="{p}-cemail">Email de contact pour les réclamations</label>
+      <input id="{p}-cemail" name="contact_email" type="email" maxlength="200" placeholder="contact@restaurant.fr">
+    </div>
+    <div class="field">
+      <label for="{p}-cphone">Téléphone de contact</label>
+      <input id="{p}-cphone" name="contact_phone" type="tel" maxlength="30" placeholder="04 00 00 00 00">
+    </div>
+  </div>
+  <p class="field-hint">Sur les sujets santé ou allergie, la réponse invite toujours à un contact privé via cet email ou ce téléphone.</p>
+</template>
+
+<!-- ==================== APPLICATION ==================== -->
+<section id="app" hidden aria-label="Espace Le Mot du Chef">
+
+  <aside class="sidebar">
+    <a href="#" class="brand" id="brand-home">
+      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+      Le Mot du Chef
+    </a>
+    <div class="workspace">
+      <span class="avatar" id="ws-avatar">–</span>
+      <div>
+        <strong id="ws-name">Votre restaurant</strong>
+        <small id="ws-plan">Offre Gratuit</small>
+      </div>
+    </div>
+    <nav class="side-nav" aria-label="Navigation">
+      <button data-tab="reply" class="nav-item active">
+        <svg class="icon"><use href="#i-msg"/></svg><span>Répondre à un avis</span>
+      </button>
+      <button data-tab="history" class="nav-item">
+        <svg class="icon"><use href="#i-history"/></svg><span>Historique</span>
+      </button>
+      <button data-tab="collect" class="nav-item">
+        <svg class="icon"><use href="#i-qr"/></svg><span>Collecte d'avis</span>
+      </button>
+      <button data-tab="restaurant" class="nav-item">
+        <svg class="icon"><use href="#i-store"/></svg><span>Mon restaurant</span>
+      </button>
+      <button data-tab="account" class="nav-item">
+        <svg class="icon"><use href="#i-user"/></svg><span>Compte</span>
+      </button>
+    </nav>
+    <div class="aside-bottom">
+      <p class="storage-note"><svg class="icon"><use href="#i-info"/></svg>Rien n'est publié sans vous.</p>
+      <button id="logout" class="nav-item"><svg class="icon"><use href="#i-x"/></svg><span>Se déconnecter</span></button>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <div class="app-top">
+      <span class="crumb">Votre espace <span aria-hidden="true">/</span> <b id="breadcrumb">Répondre à un avis</b></span>
+      <div class="app-top-right">
+        <span class="quota-pill" id="quota-pill" hidden></span>
+        <div class="user-menu">
+          <button class="avatar avatar-btn" id="top-avatar" aria-label="Menu du compte" aria-haspopup="menu" aria-expanded="false">–</button>
+          <div class="user-menu-pop" id="user-menu" hidden role="menu">
+            <p class="user-menu-id" id="user-menu-email"></p>
+            <button class="user-menu-item" data-tab="account" role="menuitem"><svg class="icon"><use href="#i-user"/></svg>Mon compte</button>
+            <button class="user-menu-item" id="menu-admin" role="menuitem" hidden><svg class="icon"><use href="#i-sliders"/></svg>Administration</button>
+            <button class="user-menu-item" id="menu-logout" role="menuitem"><svg class="icon"><use href="#i-x"/></svg>Se déconnecter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cgv-banner" id="cgv-banner" hidden role="alert">
+      <p>Nos <a href="/cgv" data-legal-link>conditions générales de vente</a> ont été mises à jour (version <b id="cgv-version-label"></b>). Merci de les accepter pour continuer.</p>
+      <button class="btn btn-primary btn-sm" id="cgv-accept">J'accepte les CGV</button>
+    </div>
+
+    <!-- ===== Répondre ===== -->
+    <div id="reply" class="tab">
+      <div class="page-title">
+        <div>
+          <p class="eyebrow" id="today"></p>
+          <h2>Répondre à un avis.</h2>
+          <p class="page-sub">Collez l'avis tel qu'il apparaît sur Google. Trois réponses vous seront proposées, à relire avant de publier.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" id="reply-new" hidden><svg class="icon"><use href="#i-x"/></svg>Nouvel avis</button>
+      </div>
+
+      <div class="reply-grid">
+        <form id="review-form" class="panel form-panel" novalidate>
+          <input type="hidden" name="id">
+          <div class="field">
+            <label for="rv-body">Texte de l'avis <span class="opt">(collé depuis Google — peut être vide)</span></label>
+            <textarea id="rv-body" name="body" rows="6" maxlength="4000" placeholder="« Attente de 45 minutes pour un plat froid… »"></textarea>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <span class="label">Note <span class="req" aria-hidden="true">*</span></span>
+              <div class="star-input" id="rv-stars" role="radiogroup" aria-label="Note de l'avis">
+                <input type="radio" name="rating" value="1" id="st1"><label for="st1" title="1 étoile">★</label>
+                <input type="radio" name="rating" value="2" id="st2"><label for="st2" title="2 étoiles">★</label>
+                <input type="radio" name="rating" value="3" id="st3"><label for="st3" title="3 étoiles">★</label>
+                <input type="radio" name="rating" value="4" id="st4"><label for="st4" title="4 étoiles">★</label>
+                <input type="radio" name="rating" value="5" id="st5" checked><label for="st5" title="5 étoiles">★</label>
+                <span class="star-label" id="star-label">5 / 5</span>
+              </div>
+              <p class="field-error" id="err-rating" hidden></p>
+            </div>
+            <div class="field">
+              <label for="rv-author">Prénom de l'auteur <span class="opt">(tel qu'affiché)</span></label>
+              <input id="rv-author" name="author_name" maxlength="80" placeholder="Ex. Kévin">
+            </div>
+            <div class="field">
+              <label for="rv-date">Date de visite <span class="opt">(si connue)</span></label>
+              <input id="rv-date" name="visited_on" type="date">
+            </div>
+          </div>
+
+          <div id="context-block" hidden>
+            <span class="label">Contexte <span class="opt">(plusieurs choix possibles — aide le rédacteur à rétablir les faits avec tact)</span></span>
+            <div class="chips" id="context-chips"></div>
+            <input name="context_note" id="rv-note" maxlength="300" placeholder="Précision libre et courte (ex. « table de 8 arrivée sans réservation »)" hidden>
+          </div>
+
+          <div id="plan-limit-note" class="plan-limit" hidden>
+            <p id="plan-limit-text"></p>
+            <button type="button" class="btn btn-primary btn-sm" id="plan-limit-upgrade">Passer en Pro</button>
+          </div>
+          <p class="field-error" id="err-review" hidden></p>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" id="generate-btn"><svg class="icon"><use href="#i-sparkle"/></svg>Rédiger 3 réponses</button>
+            <span class="subtle" id="generate-hint"></span>
+          </div>
+        </form>
+
+        <div class="reply-side">
+          <div class="panel suspect-panel" id="suspect-panel" hidden>
+            <p class="suspect-badge"><svg class="icon"><use href="#i-flag"/></svg>Avis potentiellement contraire aux règles Google</p>
+            <ul id="suspect-flags" class="flag-list"></ul>
+            <details class="report-guide">
+              <summary>Guide de signalement<svg class="icon"><use href="#i-chev"/></svg></summary>
+              <p class="report-notice" id="report-notice"></p>
+              <p><strong>Motif conseillé :</strong> <span id="report-reason"></span></p>
+              <label for="report-text" class="label">Texte de signalement (prêt à copier)</label>
+              <textarea id="report-text" rows="5" readonly></textarea>
+              <div class="form-actions">
+                <button class="btn btn-outline btn-sm" type="button" id="report-copy"><svg class="icon"><use href="#i-copy"/></svg>Copier</button>
+                <a class="btn btn-quiet btn-sm" id="report-help" href="#" target="_blank" rel="noopener">Aide Google : signaler un avis<svg class="icon"><use href="#i-arrow"/></svg></a>
+              </div>
+              <p class="subtle">Sur Google Maps : avis → menu ⋮ → « Signaler un avis », choisissez le motif ci-dessus. Google ne retire que les contenus contraires à ses règles.</p>
+            </details>
+          </div>
+          <div class="panel tips-panel" id="tips-panel">
+            <h3>Avant de publier</h3>
+            <ul class="tips">
+              <li>Relisez : vous êtes l'auteur de la réponse publiée.</li>
+              <li>Ne corrigez jamais un détail que vous ne pouvez pas affirmer.</li>
+              <li>Sujet santé ou allergie : restez sur l'invitation au contact privé.</li>
+              <li>Une réponse courte et posée vaut mieux qu'une longue justification.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div id="variants-block" hidden>
+        <div class="panel-header variants-head">
+          <div>
+            <h3>Trois propositions</h3>
+            <p id="variants-meta"></p>
+          </div>
+          <div class="tools">
+            <a class="btn btn-outline btn-sm" id="open-google" href="#" target="_blank" rel="noopener"><svg class="icon"><use href="#i-arrow"/></svg>Ouvrir ma fiche Google</a>
+            <button class="btn btn-quiet btn-sm" id="regenerate"><svg class="icon"><use href="#i-sparkle"/></svg>Trois autres</button>
+          </div>
+        </div>
+        <div class="variants" id="variants"></div>
+        <p class="published-note" id="published-note" hidden></p>
+      </div>
+    </div>
+
+    <!-- ===== Historique ===== -->
+    <div id="history" class="tab" hidden>
+      <div class="page-title">
+        <div>
+          <p class="eyebrow">Vos avis et vos réponses</p>
+          <h2>Historique.</h2>
+          <p class="page-sub" id="history-sub">Retrouvez chaque avis, les réponses proposées et celle que vous avez publiée.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="filters">
+          <label class="search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input id="h-search" placeholder="Rechercher un prénom, un mot de l'avis…" aria-label="Rechercher un avis">
+          </label>
+          <select id="h-rating" aria-label="Filtrer par note">
+            <option value="">Toutes les notes</option>
+            <option value="5">5 étoiles</option><option value="4">4 étoiles</option><option value="3">3 étoiles</option><option value="2">2 étoiles</option><option value="1">1 étoile</option>
+          </select>
+          <select id="h-status" aria-label="Filtrer par statut">
+            <option value="">Tous</option>
+            <option value="pending">Sans réponse publiée</option>
+            <option value="published">Publiée sur Google</option>
+            <option value="flagged">Avis suspects</option>
+          </select>
+        </div>
+        <p class="history-limit" id="history-limit" hidden></p>
+        <div class="review-list" id="review-list"></div>
+        <div class="empty-state" id="history-empty" hidden>
+          <svg class="icon empty-icon"><use href="#i-msg"/></svg>
+          <h3>Aucun avis pour l'instant</h3>
+          <p>Collez votre premier avis dans « Répondre à un avis ».</p>
+          <button class="btn btn-primary" data-tab="reply">Répondre à un avis</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Collecte d'avis ===== -->
+    <div id="collect" class="tab" hidden>
+      <div class="page-title">
+        <div>
+          <p class="eyebrow">Plus d'avis de clients satisfaits</p>
+          <h2>Collecte d'avis.</h2>
+          <p class="page-sub">Un chevalet de table et un encart d'addition avec QR code vers votre page d'avis Google.</p>
+        </div>
+      </div>
+      <div class="pledge" id="collect-pledge"><svg class="icon"><use href="#i-info"/></svg><p></p></div>
+      <div class="settings-grid">
+        <div class="settings-col">
+          <form id="review-url-form" class="panel form-panel" novalidate>
+            <h3>Votre lien « laisser un avis »</h3>
+            <p class="form-intro">C'est l'adresse que le QR code ouvrira. Elle est différente du lien de votre fiche.</p>
+            <ol class="help-steps" id="collect-help"></ol>
+            <div class="field">
+              <label for="c-review-url">Lien « laisser un avis »</label>
+              <input id="c-review-url" name="google_review_url" type="url" maxlength="500" placeholder="https://g.page/r/…/review">
+              <p class="field-error" id="err-review-url" hidden></p>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit" id="review-url-btn">Enregistrer le lien</button>
+              <a class="btn btn-quiet" id="test-review-url" href="#" target="_blank" rel="noopener" hidden>Tester le lien<svg class="icon"><use href="#i-arrow"/></svg></a>
+            </div>
+          </form>
+          <form id="collect-form" class="panel form-panel" novalidate>
+            <h3>Texte imprimé</h3>
+            <div class="field">
+              <label for="c-title">Titre</label>
+              <input id="c-title" name="title" maxlength="60">
+            </div>
+            <div class="field">
+              <label for="c-message">Message</label>
+              <textarea id="c-message" name="message" rows="3" maxlength="200"></textarea>
+              <p class="field-hint">Aucune contrepartie (remise, cadeau, boisson offerte) ne peut être proposée en échange d'un avis.</p>
+              <p class="field-error" id="err-collect" hidden></p>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit" id="collect-btn">Enregistrer le texte</button>
+            </div>
+          </form>
+        </div>
+        <div class="settings-col">
+          <div class="panel form-panel qr-panel">
+            <h3>Aperçu et impression</h3>
+            <div class="qr-preview" id="qr-preview"><p class="subtle">Renseignez votre lien « laisser un avis » pour voir le QR code.</p></div>
+            <div class="danger-actions" id="pdf-actions">
+              <button class="btn btn-outline btn-sm" data-pdf="chevalet"><svg class="icon"><use href="#i-print"/></svg>Chevalet de table (PDF A4 à plier)</button>
+              <button class="btn btn-outline btn-sm" data-pdf="encart"><svg class="icon"><use href="#i-print"/></svg>Encarts d'addition (8 par page)</button>
+            </div>
+            <p class="plan-limit" id="pdf-pro-note" hidden>Les PDF imprimables sont réservés à l'offre Pro. <button type="button" class="btn btn-primary btn-sm" data-tab="restaurant">Passer en Pro</button></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Mon restaurant ===== -->
+    <div id="restaurant" class="tab" hidden>
+      <div class="page-title">
+        <div>
+          <p class="eyebrow">Ce que le rédacteur sait de vous</p>
+          <h2>Mon restaurant.</h2>
+          <p class="page-sub">Ton, points forts, signature et contacts utilisés dans chaque réponse.</p>
+        </div>
+      </div>
+      <div id="sub-panel" class="panel form-panel" hidden>
+        <h3>Abonnement</h3>
+        <div id="sub-body"><p class="form-intro">Chargement…</p></div>
+      </div>
+      <form id="restaurant-form" class="panel form-panel profile-fields" novalidate>
+        <h3>Profil</h3>
+        <div data-profile-fields></div>
+        <p class="field-error" id="err-restaurant" hidden></p>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit" id="restaurant-btn">Enregistrer le profil</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ===== Compte ===== -->
+    <div id="account" class="tab" hidden>
+      <div class="page-title">
+        <div>
+          <p class="eyebrow">Votre compte</p>
+          <h2>Profil et sécurité.</h2>
+          <p class="page-sub">Identifiants, sessions, export et suppression de vos données.</p>
+        </div>
+      </div>
+      <div class="settings-grid">
+        <div class="settings-col">
+          <form id="profile-form" class="panel form-panel" novalidate>
+            <h3>Informations personnelles</h3>
+            <div class="field">
+              <label for="p-name">Votre nom</label>
+              <input id="p-name" name="name" required maxlength="100" autocomplete="name">
+              <p class="field-error" id="err-pname" hidden></p>
+            </div>
+            <div class="field">
+              <label for="p-email">Email du compte</label>
+              <input id="p-email" name="email" type="email" disabled aria-describedby="p-email-hint">
+              <p class="field-hint" id="p-email-hint">Pour changer d'adresse, renseignez la nouvelle : un email de confirmation lui sera envoyé.</p>
+            </div>
+            <div class="field">
+              <label for="p-newemail">Nouvelle adresse email <span class="opt">(optionnel)</span></label>
+              <input id="p-newemail" name="newemail" type="email" autocomplete="off" placeholder="nouvelle@restaurant.fr">
+              <p class="field-error" id="err-pemail" hidden></p>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit" id="profile-btn">Enregistrer</button>
+            </div>
+          </form>
+          <form id="password-form" class="panel form-panel" novalidate>
+            <h3>Changer le mot de passe</h3>
+            <div class="field">
+              <label for="pw-current">Mot de passe actuel</label>
+              <input id="pw-current" name="current" type="password" required autocomplete="current-password">
+            </div>
+            <div class="field">
+              <label for="pw-new">Nouveau mot de passe <span class="opt">(12 caractères minimum)</span></label>
+              <input id="pw-new" name="next" type="password" required minlength="12" autocomplete="new-password">
+            </div>
+            <p class="field-error" id="err-password" hidden></p>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit" id="password-btn">Changer le mot de passe</button>
+            </div>
+          </form>
+        </div>
+        <div class="settings-col">
+          <div class="panel form-panel">
+            <h3>Sessions actives</h3>
+            <p class="form-intro">Chaque session correspond à un appareil connecté. Révoquez celle que vous ne reconnaissez pas.</p>
+            <ul class="session-list" id="session-list"><li class="subtle">Chargement…</li></ul>
+            <div class="form-actions">
+              <button class="btn btn-outline btn-sm" id="revoke-others">Déconnecter les autres appareils</button>
+            </div>
+          </div>
+          <div class="panel form-panel danger-zone">
+            <h3>Vos données</h3>
+            <p class="form-intro">Export complet de votre compte en JSON (profil, avis, réponses), et suppression définitive. Le texte des avis est effacé automatiquement après <span data-retention-months>12</span> mois.</p>
+            <div class="danger-actions">
+              <button class="btn btn-outline btn-sm" id="export-data"><svg class="icon"><use href="#i-download"/></svg>Exporter toutes mes données (JSON)</button>
+              <button class="btn btn-danger btn-sm" id="delete-account"><svg class="icon"><use href="#i-alert"/></svg>Supprimer mon compte</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <nav class="legal-links" aria-label="Pages légales">
+      <a href="/mentions-legales">Mentions légales</a>
+      <a href="/cgv">CGV</a>
+      <a href="/confidentialite">Confidentialité</a>
+    </nav>
+  </footer>
+
+  <nav class="mobile-nav" aria-label="Navigation">
+    <button data-tab="reply" class="mobile-item active"><svg class="icon"><use href="#i-msg"/></svg><span>Répondre</span></button>
+    <button data-tab="history" class="mobile-item"><svg class="icon"><use href="#i-history"/></svg><span>Historique</span></button>
+    <button data-tab="collect" class="mobile-item"><svg class="icon"><use href="#i-qr"/></svg><span>Collecte</span></button>
+    <button data-tab="restaurant" class="mobile-item"><svg class="icon"><use href="#i-store"/></svg><span>Restaurant</span></button>
+    <button data-tab="account" class="mobile-item"><svg class="icon"><use href="#i-user"/></svg><span>Compte</span></button>
+  </nav>
+</section>
+
+<!-- ==================== ADMINISTRATION ==================== -->
+<section id="admin" hidden aria-label="Back-office Le Mot du Chef">
+  <div class="app-main admin-main">
+    <div class="app-top">
+      <span class="crumb">Le Mot du Chef <span aria-hidden="true">/</span> <b>Administration</b></span>
+      <div class="app-top-right">
+        <button class="btn btn-quiet btn-sm" id="admin-back">← Espace restaurateur</button>
+      </div>
+    </div>
+    <div class="admin-wrap">
+      <div class="stats" id="admin-stats"></div>
+      <div class="panel">
+        <div class="panel-header">
+          <div><h3>Restaurants</h3><p id="admin-companies-count"></p></div>
+          <div class="tools">
+            <label class="search"><svg class="icon"><use href="#i-search"/></svg><input id="admin-co-search" placeholder="Rechercher (nom, ville)" aria-label="Rechercher un restaurant"></label>
+            <select id="admin-co-sort" aria-label="Trier">
+              <option value="created_at">Plus récents</option>
+              <option value="name">Nom (A→Z)</option>
+              <option value="reviews">Avis saisis</option>
+              <option value="activity">Dernière génération</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">Restaurant</th><th scope="col">Ville</th><th scope="col">Offre</th><th scope="col">Créé le</th><th scope="col">Avis</th><th scope="col">Générations (mois)</th><th scope="col">Dernière activité</th></tr></thead>
+            <tbody id="admin-companies"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div><h3>Utilisateurs</h3><p id="admin-users-count"></p></div>
+          <div class="tools"><label class="search"><svg class="icon"><use href="#i-search"/></svg><input id="admin-u-search" placeholder="Rechercher (nom, email)" aria-label="Rechercher un utilisateur"></label></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">Utilisateur</th><th scope="col">Restaurant</th><th scope="col">Email vérifié</th><th scope="col">Inscription</th><th scope="col">Dernière connexion</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody id="admin-users"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="admin-cols">
+        <div class="panel form-panel">
+          <h3>Inscriptions</h3>
+          <p class="form-intro">Interrupteur en base — prioritaire sur la variable d'environnement.</p>
+          <label class="toggle-row"><input type="checkbox" id="admin-signup-toggle"><span>Ouvrir l'inscription publique</span></label>
+          <p class="field-error" id="err-admin-settings" hidden></p>
+        </div>
+        <form class="panel form-panel" id="admin-invite-form" novalidate>
+          <h3>Créer un compte restaurateur</h3>
+          <p class="form-intro">Le restaurateur reçoit un email d'invitation pour définir son mot de passe.</p>
+          <div class="field"><label for="inv-name">Nom</label><input id="inv-name" name="name" required maxlength="100"></div>
+          <div class="field"><label for="inv-email">Email</label><input id="inv-email" name="email" type="email" required maxlength="200"></div>
+          <p class="field-error" id="err-invite" hidden></p>
+          <div class="form-actions"><button class="btn btn-primary" type="submit" id="invite-btn">Créer et envoyer l'invitation</button></div>
+        </form>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div><h3>Journal d'audit</h3><p>Actions administrateur récentes (200 dernières).</p></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">Date</th><th scope="col">Administrateur</th><th scope="col">Action</th><th scope="col">Cible</th><th scope="col">IP</th></tr></thead>
+            <tbody id="admin-audit"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== PAGES LÉGALES ==================== -->
+<section id="legal" hidden aria-label="Pages légales">
+  <div class="legal-wrap">
+    <a class="brand" href="/">
+      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+      Le Mot du Chef
+    </a>
+    <div class="legal-card panel">
+      <nav class="legal-nav" aria-label="Navigation des pages légales">
+        <a href="/mentions-legales" data-legal-page="mentions">Mentions légales</a>
+        <a href="/cgv" data-legal-page="cgv">CGV</a>
+        <a href="/confidentialite" data-legal-page="confidentialite">Confidentialité</a>
+      </nav>
+      <p class="legal-warn" id="legal-warn" hidden>Variables légales non configurées — environnement de développement uniquement.</p>
+
+      <article id="legal-mentions">
+        <h1>Mentions légales</h1>
+        <h2>Éditeur du service</h2>
+        <p>
+          <strong data-legal="name">—</strong><br>
+          SIREN&nbsp;: <span data-legal="siren">—</span> · <span data-legal="rcs">—</span><br>
+          Adresse&nbsp;: <span data-legal="address">—</span><br>
+          Email&nbsp;: <a data-legal-email href="#"><span data-legal="email">—</span></a>
+        </p>
+        <h2>Directeur de la publication</h2>
+        <p><span data-legal="publisher">—</span></p>
+        <h2>Hébergement</h2>
+        <p>Site web (frontend)&nbsp;: Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis.</p>
+        <p>Application et base de données&nbsp;: serveur exploité par l'éditeur, situé en France.</p>
+        <h2>Prestataires techniques</h2>
+        <p>Cloudflare Inc. (réseau de diffusion et tunnel sécurisé), 101 Townsend St, San Francisco, CA 94107, États-Unis. Anthropic PBC (modèle de langage utilisé pour la rédaction des réponses), 548 Market St, San Francisco, CA 94104, États-Unis. Stripe (paiement). Le Mot du Chef n'est pas affilié à Google LLC&nbsp;; « Google » et « Google Maps » sont des marques de Google LLC.</p>
+      </article>
+
+      <article id="legal-cgv" hidden>
+        <h1>Conditions générales de vente</h1>
+        <p class="legal-version">Version du <span data-legal-version>—</span></p>
+        <h2>1. Objet et champ d'application</h2>
+        <p>Les présentes conditions générales de vente (« CGV ») régissent l'accès et l'utilisation du service Le Mot du Chef, outil en ligne d'aide à la rédaction de réponses aux avis publiés sur Google et de supports de collecte d'avis, édité par <span data-legal="name">—</span> (« l'Éditeur »). Le service est réservé aux professionnels de la restauration. En créant un compte, vous déclarez agir à des fins professionnelles et acceptez sans réserve les présentes CGV.</p>
+        <h2>2. Offres et prix</h2>
+        <p>Le service est proposé selon les offres suivantes&nbsp;: <strong>Gratuit</strong>, limité à <span data-free-replies>—</span> réponses générées par mois civil et par restaurant et à un historique de <span data-free-history>—</span> jours, sans carte bancaire&nbsp;; et <strong>Pro</strong>, sans limite de réponses, avec les supports imprimables de collecte d'avis et l'historique complet, en abonnement mensuel ou annuel. Les prix sont affichés en euros, sans TVA&nbsp;: <span data-legal="vatMention">—</span>. Les montants en vigueur sont ceux affichés sur la page de paiement au moment de la souscription.</p>
+        <h2>3. Souscription et paiement</h2>
+        <p>La souscription s'effectue via une page de paiement sécurisée hébergée par Stripe, paiement d'avance par carte bancaire pour la période choisie. Un code promotionnel peut être appliqué. Aucune donnée bancaire ne transite par nos serveurs.</p>
+        <h2>4. Durée, renouvellement et résiliation</h2>
+        <p>L'abonnement se renouvelle par tacite reconduction. Vous pouvez résilier à tout moment depuis le portail de facturation accessible dans votre espace&nbsp;: la résiliation prend effet à la fin de la période en cours, sans remboursement au prorata. À l'échéance, le compte repasse en offre Gratuit&nbsp;: aucune donnée n'est supprimée, seules les limites de l'offre Gratuit s'appliquent de nouveau.</p>
+        <h2>5. Défaut de paiement</h2>
+        <p>En cas d'échec de prélèvement, Stripe effectue des tentatives de recouvrement pendant lesquelles l'accès est maintenu. À l'issue, l'abonnement est résilié et le compte repasse en offre Gratuit, sans perte de données.</p>
+        <h2>6. Absence de droit de rétractation</h2>
+        <p>Le service étant réservé aux professionnels, le droit de rétractation des contrats conclus à distance ne s'applique pas (article L. 221-3 du Code de la consommation).</p>
+        <h2>7. Nature du service et responsabilité de l'utilisateur</h2>
+        <p>Le service propose des textes générés par un modèle de langage à partir des informations que vous fournissez. Ces propositions sont des aides à la rédaction&nbsp;: vous les relisez, les modifiez et décidez seul de leur publication. Vous êtes l'auteur et le responsable des réponses que vous publiez sur Google ou ailleurs, ainsi que de l'exactitude des faits que vous y affirmez. L'Éditeur ne garantit ni le retrait d'un avis par Google, ni un effet quelconque sur votre note ou votre fréquentation.</p>
+        <h2>8. Usage loyal des supports de collecte</h2>
+        <p>Les supports imprimables mènent directement à la page d'avis Google et s'adressent à tous vos clients. Vous vous engagez à ne pas les utiliser pour filtrer les clients selon leur satisfaction, ni à proposer une contrepartie en échange d'un avis, conformément aux règles de Google et à la réglementation sur les pratiques commerciales trompeuses.</p>
+        <h2>9. Modification des prix</h2>
+        <p>L'Éditeur peut modifier les prix des offres. Toute modification est notifiée par email au moins 30 jours avant son application aux abonnements en cours. Vous pouvez résilier avant l'entrée en vigueur du nouveau prix.</p>
+        <h2>10. Disponibilité et sauvegardes</h2>
+        <p>L'Éditeur s'engage à une obligation de moyens pour la disponibilité du service, qui dépend notamment de la disponibilité du fournisseur de modèle de langage. Des opérations de maintenance peuvent interrompre temporairement l'accès. Les données sont sauvegardées quotidiennement.</p>
+        <h2>11. Responsabilité</h2>
+        <p>La responsabilité de l'Éditeur, tous fondements confondus, est limitée aux sommes effectivement versées au cours des douze derniers mois précédant le fait générateur. L'Éditeur ne saurait être tenu des dommages indirects (perte d'exploitation, de clientèle, d'image, de données).</p>
+        <h2>12. Propriété des données</h2>
+        <p>Vous restez propriétaire des données saisies (profil, avis, réponses). Elles sont exportables à tout moment (JSON) et supprimées à la clôture du compte.</p>
+        <h2>13. Données personnelles et sous-traitance</h2>
+        <p>Le traitement des données personnelles est décrit dans la <a href="/confidentialite">politique de confidentialité</a>. Pour les données des auteurs d'avis que vous saisissez dans le service, vous êtes responsable de traitement et l'Éditeur agit en qualité de sous-traitant au sens de l'article 28 du RGPD&nbsp;: il traite ces données uniquement sur vos instructions documentées, garantit leur confidentialité et leur sécurité, informe de tout sous-traitant ultérieur, vous assiste dans l'exercice des droits des personnes, notifie toute violation de données et supprime les données en fin de contrat.</p>
+        <h2>14. Droit applicable et litiges</h2>
+        <p>Les présentes CGV sont soumises au droit français. Tout litige relatif à leur exécution ou leur interprétation relève des tribunaux compétents du ressort du siège de l'Éditeur.</p>
+      </article>
+
+      <article id="legal-privacy" hidden>
+        <h1>Politique de confidentialité</h1>
+        <h2>Données traitées et finalités</h2>
+        <p>Le Mot du Chef traite&nbsp;: les données de compte (nom, email, mot de passe chiffré), le profil de votre restaurant (nom, ville, cuisine, signature, points forts, coordonnées de contact, liens Google), et les avis que vous saisissez (prénom de l'auteur tel qu'affiché publiquement, note, texte, date de visite, contexte que vous indiquez) ainsi que les réponses générées et publiées. Ces données servent exclusivement à fournir le service&nbsp;: authentification, rédaction assistée des réponses, historique, supports de collecte, facturation et obligations légales comptables.</p>
+        <h2>Rédaction assistée</h2>
+        <p>Pour produire les propositions de réponse, le profil du restaurant et le contenu de l'avis (prénom affiché, note, texte, contexte) sont transmis à notre fournisseur de modèle de langage, Anthropic PBC (États-Unis), encadré par des clauses contractuelles types de la Commission européenne. Ce fournisseur n'utilise pas ces données pour entraîner ses modèles. Nous journalisons le volume de texte traité (tokens) pour le suivi des coûts, jamais le contenu.</p>
+        <h2>Bases légales</h2>
+        <p>L'exécution du contrat (fourniture du service), l'intérêt légitime (sécurité, statistiques internes) et les obligations légales (conservation comptable des éléments de facturation).</p>
+        <h2>Durées de conservation</h2>
+        <p>Données de compte et profil&nbsp;: pendant toute la durée du compte, supprimées à sa clôture. <strong>Avis saisis&nbsp;: le texte de l'avis, le prénom de l'auteur, le contexte et les propositions de réponse sont effacés automatiquement <span data-retention-months>12</span> mois après la saisie</strong>&nbsp;; la note, la date et la réponse que vous avez publiée sont conservées dans votre historique jusqu'à la clôture du compte. Éléments de facturation&nbsp;: 10 ans. Journaux techniques&nbsp;: durée courte nécessaire à la sécurité.</p>
+        <h2>Sous-traitants</h2>
+        <p>Le service s'appuie sur&nbsp;: Vercel Inc. (hébergement du site web, États-Unis), Cloudflare Inc. (réseau sécurisé, États-Unis), Stripe (paiement, Irlande/Union européenne), Resend (emails transactionnels, Irlande/Union européenne), Anthropic PBC (modèle de langage, États-Unis). L'application et la base de données sont hébergées sur un serveur exploité par l'éditeur, situé en France.</p>
+        <h2>Vos droits</h2>
+        <p>Vous disposez des droits d'accès, de rectification, d'effacement, de portabilité, de limitation et d'opposition. L'export complet de vos données est disponible dans l'application (JSON), ainsi que la suppression de votre compte. Vous pouvez aussi écrire à <a data-legal-email href="#"><span data-legal="email">—</span></a>. Vous pouvez introduire une réclamation auprès de la CNIL (cnil.fr).</p>
+        <h2>Auteurs d'avis</h2>
+        <p>Si vous êtes l'auteur d'un avis Google et souhaitez exercer vos droits sur les données qu'un restaurant aurait saisies dans Le Mot du Chef, adressez-vous d'abord au restaurant concerné, responsable de traitement. Nous l'assistons dans le traitement de votre demande&nbsp;; vous pouvez également nous écrire à l'adresse ci-dessus.</p>
+        <h2>Cookies</h2>
+        <p>L'application utilise un unique cookie de session, strictement nécessaire au fonctionnement du service (authentification). Aucun cookie de mesure d'audience ou publicitaire n'est déposé&nbsp;: aucun bandeau de consentement n'est donc requis.</p>
+        <h2>Accord de sous-traitance (art. 28 RGPD)</h2>
+        <p>Pour les données des auteurs d'avis saisies dans Le Mot du Chef, vous agissez en qualité de responsable de traitement et l'Éditeur en qualité de sous-traitant. L'Éditeur s'engage à&nbsp;: traiter ces données uniquement sur vos instructions documentées (fourniture du service, y compris la transmission au fournisseur de modèle de langage pour la rédaction)&nbsp;; garantir la confidentialité des personnes autorisées à y accéder&nbsp;; mettre en œuvre les mesures techniques et organisationnelles appropriées (chiffrement des accès, isolation par restaurant, sauvegardes, effacement automatique après <span data-retention-months>12</span> mois)&nbsp;; vous informer avant tout recours à un sous-traitant ultérieur&nbsp;; vous assister dans l'exercice des droits des personnes concernées&nbsp;; vous notifier sans délai indu toute violation de données dont il aurait connaissance&nbsp;; et supprimer ou restituer les données à la fin du contrat.</p>
+      </article>
+    </div>
+    <button class="btn btn-quiet" data-legal-back>← Retour</button>
+  </div>
+</section>
+
+<!-- ==================== DIALOGUES ==================== -->
+<dialog id="delete-account-dlg" aria-labelledby="delete-account-title">
+  <div class="dialog-head">
+    <div><p class="eyebrow"><i></i>Action définitive</p><h2 id="delete-account-title">Supprimer votre compte&nbsp;?</h2></div>
+    <button type="button" class="btn-icon" data-close aria-label="Fermer"><svg class="icon"><use href="#i-x"/></svg></button>
+  </div>
+  <p class="confirm-text">Votre compte, votre restaurant, vos avis et vos réponses seront définitivement supprimés. Cette action est irréversible.</p>
+  <div class="field">
+    <label for="del-password">Confirmez par votre mot de passe</label>
+    <input id="del-password" type="password" autocomplete="current-password" required>
+    <p class="field-error" id="err-delete-account" hidden></p>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn btn-quiet" data-close>Annuler</button>
+    <button class="btn btn-danger" id="delete-account-confirm">Supprimer définitivement</button>
+  </div>
+</dialog>
+
+<dialog id="admin-delete-dlg" aria-labelledby="admin-delete-title">
+  <div class="dialog-head">
+    <div><p class="eyebrow"><i></i>Action définitive</p><h2 id="admin-delete-title">Supprimer ce compte&nbsp;?</h2></div>
+    <button type="button" class="btn-icon" data-close aria-label="Fermer"><svg class="icon"><use href="#i-x"/></svg></button>
+  </div>
+  <p class="confirm-text">Le compte <strong id="admin-delete-email"></strong>, son restaurant et toutes ses données seront supprimés. Tapez son email pour confirmer.</p>
+  <div class="field">
+    <label for="admin-delete-confirm-email">Email du compte</label>
+    <input id="admin-delete-confirm-email" type="email" autocomplete="off">
+    <p class="field-error" id="err-admin-delete" hidden></p>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn btn-quiet" data-close>Annuler</button>
+    <button class="btn btn-danger" id="admin-delete-confirm">Supprimer définitivement</button>
+  </div>
+</dialog>
+
+<dialog id="confirm" aria-labelledby="confirm-title">
+  <div class="dialog-head">
+    <div><p class="eyebrow"><i></i>Confirmation requise</p><h2 id="confirm-title">Confirmer</h2></div>
+    <button type="button" class="btn-icon" data-close aria-label="Fermer"><svg class="icon"><use href="#i-x"/></svg></button>
+  </div>
+  <p id="confirm-text" class="confirm-text"></p>
+  <div class="dialog-footer">
+    <button class="btn btn-quiet" id="confirm-cancel">Annuler</button>
+    <button class="btn btn-danger" id="confirm-ok">Confirmer</button>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
