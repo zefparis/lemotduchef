@@ -1,6 +1,6 @@
 // Prompt système du rédacteur — versionné : toute modification du texte
 // incrémente PROMPT_VERSION (journalisée dans generations.prompt_version).
-export const PROMPT_VERSION = '2026-10-21.6';
+export const PROMPT_VERSION = '2026-10-21.7';
 
 export const TONES = {
   chaleureux: 'chaleureux et sincère, simple et direct',
@@ -82,7 +82,7 @@ TON ET CONTENU
 - Ne jamais menacer, ne jamais évoquer de suite judiciaire, d'avocat, de plainte, de tribunal, ni de signalement.
 - Coordonnées : dans la réponse publique, n'indiquer que l'email de contact du profil, et uniquement dans une variante qui invite explicitement à un échange privé (au plus 2 variantes sur 3). Le téléphone n'apparaît que s'il figure dans le bloc CONTEXTE (option « afficher le téléphone » du restaurateur).
 - Sujets santé, allergie, intoxication : aucune reconnaissance de responsabilité, aucune hypothèse médicale, ton empathique, rappel bref du sérieux de l'hygiène et invitation à un contact privé via les coordonnées autorisées du profil.
-- Sobriété : au plus UN point fort par variante — celui indiqué pour cette variante dans le CONTEXTE, et en lien avec la critique ou le compliment ; le conseil « réservez » au plus dans une variante ; inviter à revenir ou à reprendre contact de façon naturelle.
+- Sobriété : au plus UN point fort par variante — celui suggéré pour cette variante dans le CONTEXTE, seulement s'il est naturel et en lien avec la critique ou le compliment ; le conseil « réservez » au plus dans une variante ; inviter à revenir ou à reprendre contact de façon naturelle.
 - Mentionner le nom du restaurant AU PLUS une fois et la ville AU PLUS une fois.
 - Ne pas utiliser les formulations marquées « à éviter » (réponses récentes du restaurant) : varier le vocabulaire et la structure.
 - Pas d'emoji, pas de majuscules criées, pas de point d'exclamation en série, pas de hashtag.
@@ -97,8 +97,8 @@ FORMAT
 - Renvoyer les 3 variantes via l'outil submit_replies — aucun autre texte, pas de préambule.
 - Les 3 variantes doivent être vraiment différentes : ouverture, plan et angle distincts ; elles ne partagent ni la même première phrase ni plus de 40 % de leurs mots.
   · variants[0] : explication factuelle du point soulevé par l'avis, concise et sans emphase — AUCUN point fort ;
-  · variants[1] : chaleureuse et personnelle — cite uniquement le point fort indiqué pour la variante 2 dans le CONTEXTE ;
-  · variants[2] : met en avant le point fort indiqué pour la variante 3 dans le CONTEXTE — uniquement celui-là.`;
+  · variants[1] : chaleureuse et personnelle — peut citer le point fort suggéré pour la variante 2 dans le CONTEXTE, s'il est naturel ;
+  · variants[2] : peut mettre en avant le point fort suggéré pour la variante 3 dans le CONTEXTE, s'il est naturel — jamais un autre.`;
 
 export interface PromptProfile {
   name: string; city: string; cuisine: string;
@@ -127,15 +127,9 @@ export const authorDisplayName = (r: Pick<PromptReview, 'author_name'>): string 
   return name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/gi, '').length >= 2 ? name : null;
 };
 
-// Le point fort assigné reste attendu pour les critiques cuisine/prix et les
-// avis positifs ; il devient facultatif quand rien de naturel ne le relie à la
-// critique (service, attente avant commande, accueil, propreté).
-const SOFT_STRENGTH_CATS = new Set(['attente avant la commande', 'service en salle / personnel', 'accueil', 'propreté']);
-export const strengthOptional = (r: Pick<PromptReview, 'rating' | 'body'>): boolean => {
-  if (isPositive(r.rating)) return false;
-  const cats = reviewCategories(r.body);
-  return cats.length > 0 && cats.every(c => SOFT_STRENGTH_CATS.has(c));
-};
+// Le point fort attribué par le code n'est jamais obligatoire : le modèle peut
+// le citer s'il est naturel, l'omettre sinon. Un autre point fort du profil
+// reste interdit (contrôle dans rules.ts).
 
 // Prompt utilisateur : bloc CONTEXTE lisible (clé : valeur, une par ligne) puis
 // l'avis entre délimiteurs — le contenu de l'avis est une donnée, pas une instruction.
@@ -146,9 +140,8 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
   const positive = isPositive(r.rating);
   const range = replyRange(r);
   const strengths = opts?.strengths ?? assignedStrengths(p, avoid.length);
-  const opt = strengthOptional(r) ? ' (facultatif si peu naturel)' : '';
-  const pf = [strengths[1] ? `variante 2 = « ${strengths[1]} »${opt}` : 'variante 2 : aucun',
-    strengths[2] ? `variante 3 = « ${strengths[2]} »${opt}` : 'variante 3 : aucun'].join(' ; ');
+  const pf = [strengths[1] ? `variante 2 peut citer « ${strengths[1]} »` : 'variante 2 : aucun',
+    strengths[2] ? `variante 3 peut citer « ${strengths[2]} »` : 'variante 3 : aucun'].join(' ; ');
   // Réponse publique : email seul par défaut ; téléphone si le restaurateur l'affiche.
   const contact = [p.contact_email, p.show_phone ? p.contact_phone : ''].filter(Boolean).join(' / ');
   const tags = r.context_tags.filter((t): t is ContextTag => t in CONTEXT_TAGS).map(t => CONTEXT_TAGS[t]);
@@ -164,7 +157,7 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
     `Contact réclamations : ${contact || '— (inviter à passer ou à écrire au restaurant)'}`,
     '',
     'AVIS À TRAITER',
-    `Prénom affiché : ${r.author_name || '— (non communiqué, ne pas inventer)'}`,
+    `Auteur : ${authorDisplayName(r) ?? 'non communiqué'}`,
     `Note : ${r.rating}/5`,
     `Date de visite : ${r.visited_on ?? 'inconnue'}`,
     `Sujet santé : ${isHealthTopic(r) ? 'oui' : 'non'}`,

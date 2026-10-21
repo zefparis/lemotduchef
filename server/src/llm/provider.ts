@@ -130,14 +130,14 @@ function field(user: string, key: string): string {
 // email dans 2 variantes max, aucun fait interne inventé.
 export function mockVariants(user: string): string {
   const restaurant = field(user, 'Restaurant') || 'notre restaurant';
-  const rawAuthor = field(user, 'Prénom affiché') || '';
-  const author = rawAuthor.startsWith('—')
+  const rawAuthor = field(user, 'Auteur') || field(user, 'Prénom affiché') || '';
+  const author = /^(—|non communiqué)/i.test(rawAuthor)
     || /^(anonyme|anonymous|inconnu|client|google|user|utilisateur|membre)\b/i.test(rawAuthor)
     || rawAuthor.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/gi, '').length < 2
     ? '' : rawAuthor;
   const rating = parseInt(field(user, 'Note') || '5', 10);
-  const s2 = /variante 2 = « ([^»]+) »/.exec(user)?.[1] ?? '';
-  const s3 = /variante 3 = « ([^»]+) »/.exec(user)?.[1] ?? '';
+  const s2 = /variante 2 (?:= |peut citer )?« ([^»]+) »/.exec(user)?.[1] ?? '';
+  const s3 = /variante 3 (?:= |peut citer )?« ([^»]+) »/.exec(user)?.[1] ?? '';
   const rawContact = field(user, 'Contact réclamations');
   const contact = rawContact.startsWith('—') ? '' : rawContact;
   const health = /oui/i.test(field(user, 'Sujet santé'));

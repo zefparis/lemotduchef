@@ -1,7 +1,7 @@
 import { pool } from '../db.js';
 import { config } from '../config.js';
 import { llmProvider, LlmError } from './provider.js';
-import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, signatureOf, assignedStrengths, strengthOptional } from './prompt.js';
+import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, signatureOf, assignedStrengths } from './prompt.js';
 import type { PromptProfile, PromptReview } from './prompt.js';
 import { checkReply, parseVariants, tooSimilar, withSignature, mentionsContactEmail, mentionsReservation } from './rules.js';
 
@@ -40,7 +40,6 @@ export async function generateReplies(
   // Point fort imposé par variante, décidé par le code (rotation historique) :
   // variante 1 factuelle → aucun ; variantes 2 et 3 → chacune le sien.
   const strengths = assignedStrengths(profile, avoid.length);
-  const optionalStrength = strengthOptional(review);
   const sig = signatureOf(profile);
   const started = Date.now();
   let inputTokens = 0, outputTokens = 0, model = config.llm.model, stopReason = '';
@@ -91,7 +90,7 @@ export async function generateReplies(
       if (hasEmail && emailVariants >= 2) { rejected.push(`variante ${i + 1} : email dans trop de variantes`); continue; }
       const hasReservation = mentionsReservation(text);
       if (hasReservation && reservationUsed) { rejected.push(`variante ${i + 1} : « réservez » déjà utilisé`); continue; }
-      const c = checkReply(text, profile, review, { allowedStrength: strengths[i], strengthOptional: optionalStrength });
+      const c = checkReply(text, profile, review, { allowedStrength: strengths[i] });
       if (c.ok) {
         slots[i] = { idx: i, text, warnings: c.warnings, words: c.words };
         if (hasEmail) emailVariants++;

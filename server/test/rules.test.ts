@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // Règles du rédacteur sur des cas d'avis réels (LLM mocké — aucun réseau, aucune DB).
 const { checkReply, parseVariants, tooSimilar, wordCount, withSignature } = await import('../src/llm/rules.js');
 const { mockVariants } = await import('../src/llm/provider.js');
-const { buildUserPrompt, signatureOf, assignedStrengths, strengthOptional, authorDisplayName } = await import('../src/llm/prompt.js');
+const { buildUserPrompt, signatureOf, assignedStrengths, authorDisplayName } = await import('../src/llm/prompt.js');
 const { SAMPLE_CASES, SAMPLE_PROFILE } = await import('../src/llm/sampleCases.js');
 
 const sig = signatureOf(SAMPLE_PROFILE);
@@ -170,13 +170,13 @@ test('style : analyse interne, « de une », signataire 3e personne, « Bonjour 
   assert.equal(checkReply(`${body(c, 1)} Votre retour est transmis à l’équipe dès aujourd’hui.\n${sig}`, c.profile, c.review).ok, true);
 });
 
-/* ---------- Point fort imposé par variante ---------- */
-test('point fort : le code l’attribue par variante, facultatif selon la critique', () => {
+/* ---------- Point fort suggéré par variante ---------- */
+test('point fort : suggéré par le code, jamais obligatoire, autre point fort interdit', () => {
   assert.deepEqual(assignedStrengths(SAMPLE_PROFILE, 0), [null, 'fait maison', 'produits locaux']);
   assert.deepEqual(assignedStrengths(SAMPLE_PROFILE, 1), [null, 'produits locaux', 'terrasse ombragée']);
   const u = buildUserPrompt(SAMPLE_PROFILE, byKey('positif').review, []);
-  assert.match(u, /variante 2 = « fait maison »/);
-  assert.match(u, /variante 3 = « produits locaux »/);
+  assert.match(u, /variante 2 peut citer « fait maison »/);
+  assert.match(u, /variante 3 peut citer « produits locaux »/);
   assert.ok(!/Points forts :/.test(u), 'la liste complète n’est plus transmise');
   const c = byKey('positif');
   const wrong = `Bonjour Julie, la terrasse ombragée vous attend ; ${pad(35)}\n${sig}`;
@@ -184,20 +184,12 @@ test('point fort : le code l’attribue par variante, facultatif selon la critiq
   const factuelle = `Bonjour Julie, le fait maison fait notre fierté chaque jour ; ${pad(35)}\n${sig}`;
   assert.match(checkReply(factuelle, c.profile, c.review, { allowedStrength: null }).errors.join(), /non demandé/);
   assert.equal(checkReply(factuelle, c.profile, c.review, { allowedStrength: 'fait maison' }).ok, true);
-  // Attendu (positif, cuisine, prix) → rejet si non cité.
-  const sansPf = `Bonjour Julie, merci pour ce retour chaleureux et précis ; ${pad(35)}\n${sig}`;
-  assert.match(checkReply(sansPf, c.profile, c.review, { allowedStrength: 'fait maison' }).errors.join(), /non cité/);
-  // Facultatif pour service / attente avant commande / accueil / propreté.
-  assert.equal(strengthOptional(byKey('commande').review), true, 'attente avant commande + personnel → facultatif');
-  assert.equal(strengthOptional(byKey('serveur').review), true, 'serveur désagréable → facultatif');
-  assert.equal(strengthOptional(byKey('toilettes').review), true, 'propreté → facultatif');
-  assert.equal(strengthOptional(byKey('plat-froid').review), false, 'cuisine → attendu');
-  assert.equal(strengthOptional(byKey('prix').review), false, 'prix → attendu');
-  assert.equal(strengthOptional(byKey('positif').review), false, 'positif → attendu');
-  assert.match(buildUserPrompt(SAMPLE_PROFILE, byKey('commande').review, []), /variante 2 = « fait maison » \(facultatif/);
-  const sansPfServ = `Bonjour Nadia, votre retour est transmis à l’équipe ${pad(35)}\n${sig}`;
-  assert.equal(checkReply(sansPfServ, SAMPLE_PROFILE, byKey('commande').review,
-    { allowedStrength: 'fait maison', strengthOptional: true }).ok, true);
+  // Suggestion seulement : omettre le point fort suggéré est toujours accepté.
+  for (const key of ['positif', 'commande', 'plat-froid']) {
+    const k = byKey(key);
+    const sansPf = `Bonjour ${authorDisplayName(k.review) ?? ''}, merci pour ce retour ; ${pad(35)}\n${sig}`.replace('  ', ' ');
+    assert.equal(checkReply(sansPf, k.profile, k.review, { allowedStrength: 'fait maison' }).ok, true, key);
+  }
 });
 
 /* ---------- Formules interdites ---------- */

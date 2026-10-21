@@ -4,7 +4,7 @@
 //   ANTHROPIC_API_KEY=… npm run llm:sample
 // Aucune écriture en base : l'appel se fait directement au fournisseur.
 import { AnthropicProvider } from '../src/llm/provider.js';
-import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, replyRange, signatureOf, reviewCategories, assignedStrengths, strengthOptional } from '../src/llm/prompt.js';
+import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, replyRange, signatureOf, reviewCategories, assignedStrengths } from '../src/llm/prompt.js';
 import { checkReply, parseVariants, tooSimilar, withSignature, citedStrengths, mentionsContactEmail, mentionsReservation } from '../src/llm/rules.js';
 import { SAMPLE_CASES } from '../src/llm/sampleCases.js';
 import { config } from '../src/config.js';
@@ -37,7 +37,7 @@ for (const c of SAMPLE_CASES) {
     console.log(`(${res.inputTokens} + ${res.outputTokens} jetons — stop_reason=${res.stopReason || '—'} — ${(ms / 1000).toFixed(1)} s — ${vs.length} variantes)\n`);
     const usedStrengths = new Set<string>(); let emails = 0; let reserved = false;
     vs.forEach((v, i) => {
-      const r = checkReply(v, c.profile, c.review, { allowedStrength: strengths[i], strengthOptional: strengthOptional(c.review) });
+      const r = checkReply(v, c.profile, c.review, { allowedStrength: strengths[i] });
       const dup = i > 0 && vs.slice(0, i).some(a => tooSimilar(a, v));
       const str = citedStrengths(v, c.profile);
       const repeatedStrength = str.some(s => usedStrengths.has(s));

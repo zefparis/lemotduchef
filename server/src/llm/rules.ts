@@ -137,7 +137,7 @@ export const mentionsContactEmail = (text: string, p: PromptProfile) => {
 export const mentionsReservation = (text: string) => /réserv|reserv/i.test(text);
 
 export function checkReply(text: string, p: PromptProfile, r: PromptReview,
-  opts?: { allowedStrength?: string | null; strengthOptional?: boolean }): RuleCheck {
+  opts?: { allowedStrength?: string | null }): RuleCheck {
   const errors: string[] = [], warnings: string[] = [];
   const t = text.trim();
   // Longueur mesurée sur le corps, hors ligne de signature.
@@ -219,15 +219,13 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
   if (ANALYSIS_LEAK_RE.test(t)) errors.push('analyse interne recopiée (« nature de la critique »)');
   if (DE_UNE_RE.test(t)) errors.push('« de une étoile » — écrire « une étoile »');
 
-  // Sobriété : au plus UN point fort du profil par variante, et celui assigné
-  // (attendu sauf si la consigne l'a rendu facultatif pour cette critique).
+  // Sobriété : au plus UN point fort du profil par variante, et seulement
+  // celui suggéré à cette variante — jamais obligatoire.
   const strengths = citedStrengths(t, p);
   if (strengths.length > 1) errors.push(`plusieurs points forts cités (${strengths.slice(0, 2).join(', ')})`);
   else if (opts?.allowedStrength === null && strengths.length) errors.push('point fort non demandé dans la variante factuelle');
   else if (typeof opts?.allowedStrength === 'string' && strengths.some(s => s !== opts.allowedStrength))
-    errors.push(`point fort non attribué à cette variante (« ${opts.allowedStrength} » attendu)`);
-  else if (typeof opts?.allowedStrength === 'string' && !strengths.length && !opts.strengthOptional)
-    errors.push(`point fort assigné non cité (« ${opts.allowedStrength} » attendu)`);
+    errors.push(`point fort non attribué à cette variante (« ${opts.allowedStrength} » suggéré)`);
 
   // Au plus une mention de l'équipe par réponse.
   if ((norm(t).match(/\bequipes?\b/g) ?? []).length > 1) errors.push('mention de l’équipe répétée');
