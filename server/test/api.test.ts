@@ -419,7 +419,7 @@ test('génération : erreur LLM → 502 propre avec CORS conservés', async () =
 test('LLM : le corps envoyé au fournisseur ne contient ni temperature ni top_p/top_k', async () => {
   const { AnthropicProvider } = await import('../src/llm/provider.js');
   const { config } = await import('../src/config.js');
-  let sent: Record<string, unknown> | null = null;
+  let sent: Record<string, unknown> = {};
   const orig = globalThis.fetch;
   (globalThis as any).fetch = async (_url: any, init: any) => {
     sent = JSON.parse(init.body);
@@ -437,11 +437,11 @@ test('LLM : le corps envoyé au fournisseur ne contient ni temperature ni top_p/
     (globalThis as any).fetch = orig;
     (config.llm as any).anthropicApiKey = '';
   }
-  assert.ok(sent, 'corps de requête capturé');
-  assert.equal('temperature' in sent!, false);
-  assert.equal('top_p' in sent!, false);
-  assert.equal('top_k' in sent!, false);
-  assert.ok(sent!.system && Array.isArray(sent!.messages) && sent!.max_tokens === 64);
+  assert.ok(Object.keys(sent).length, 'corps de requête capturé');
+  assert.equal('temperature' in sent, false);
+  assert.equal('top_p' in sent, false);
+  assert.equal('top_k' in sent, false);
+  assert.ok(sent.system && Array.isArray(sent.messages) && sent.max_tokens === 64);
 });
 
 /* ====================== Quotas serveur ====================== */
