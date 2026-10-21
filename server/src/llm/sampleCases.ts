@@ -32,6 +32,36 @@ export const SAMPLE_CASES: SampleCase[] = [
     },
   },
   {
+    key: 'commande',
+    label: 'Attente avant commande (service)',
+    profile: SAMPLE_PROFILE,
+    review: {
+      author_name: 'Nadia', rating: 2,
+      body: '45 minutes avant de commander, sans un regard du personnel.',
+      visited_on: null, context_tags: [], context_note: '',
+    },
+  },
+  {
+    key: 'serveur',
+    label: 'Serveur désagréable',
+    profile: SAMPLE_PROFILE,
+    review: {
+      author_name: 'Thomas', rating: 2,
+      body: 'Serveur désagréable du début à la fin du repas.',
+      visited_on: null, context_tags: [], context_note: '',
+    },
+  },
+  {
+    key: 'toilettes',
+    label: 'Toilettes sales (propreté)',
+    profile: SAMPLE_PROFILE,
+    review: {
+      author_name: 'Manon', rating: 2,
+      body: 'Toilettes sales, vraiment pas à la hauteur.',
+      visited_on: null, context_tags: [], context_note: '',
+    },
+  },
+  {
     key: 'prix',
     label: 'Prix jugé trop élevé',
     profile: SAMPLE_PROFILE,

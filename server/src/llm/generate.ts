@@ -1,15 +1,15 @@
 import { pool } from '../db.js';
 import { config } from '../config.js';
 import { llmProvider, LlmError } from './provider.js';
-import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt } from './prompt.js';
+import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, signatureOf } from './prompt.js';
 import type { PromptProfile, PromptReview } from './prompt.js';
-import { checkReply, parseVariants, tooSimilar } from './rules.js';
+import { checkReply, parseVariants, tooSimilar, withSignature, citedStrengths, mentionsContactEmail, mentionsReservation } from './rules.js';
 
 export interface GeneratedVariant { idx: number; text: string; warnings: string[]; words: number }
 export interface GenerationOutcome {
   generationId: string;
   variants: GeneratedVariant[];
-  usage: { inputTokens: number; outputTokens: number; model: string; provider: string; durationMs: number };
+  usage: { inputTokens: number; outputTokens: number; model: string; provider: string; durationMs: number; stopReason: string };
   rejected: string[]; // motifs des variantes écartées (debug/UI)
 }
 
@@ -39,9 +39,14 @@ export async function generateReplies(
   const avoid = await recentPhrases(companyId, reviewId);
   const user = buildUserPrompt(profile, review, avoid);
   const started = Date.now();
-  let inputTokens = 0, outputTokens = 0, model = config.llm.model;
+  let inputTokens = 0, outputTokens = 0, model = config.llm.model, stopReason = '';
   const accepted: GeneratedVariant[] = [];
   const rejected: string[] = [];
+  const sig = signatureOf(profile);
+  // Sobriété entre variantes : un point fort ne se répète pas, l'email de
+  // contact dans au plus 2 réponses, « réservez » dans une seule.
+  const usedStrengths = new Set<string>();
+  let emailVariants = 0, reservationUsed = false;
 
   // Deux tentatives maximum : la seconde ne se produit que si moins de 3
   // variantes valides sont obtenues (format ou règles).
@@ -62,16 +67,29 @@ export async function generateReplies(
       throw new LlmError('Génération impossible pour le moment.', 'upstream');
     }
     clearTimeout(timer);
-    inputTokens += res.inputTokens; outputTokens += res.outputTokens; model = res.model;
+    inputTokens += res.inputTokens; outputTokens += res.outputTokens; model = res.model; stopReason = res.stopReason;
     const texts = parseVariants(res.text);
     if (!texts.length) { rejected.push('réponse du modèle illisible (JSON attendu)'); continue; }
-    for (const text of texts) {
+    for (const raw of texts) {
       if (accepted.length >= 3) break;
+      // La signature exacte du profil est ajoutée ici : les règles contrôlent
+      // le texte final assemblé, la longueur se mesure sur le corps seul.
+      const text = withSignature(raw, sig);
       if (accepted.some(a => a.text === text)) continue;
       if (accepted.some(a => tooSimilar(a.text, text))) { rejected.push('variante trop proche d’une autre'); continue; }
+      const strengths = citedStrengths(text, profile);
+      if (strengths.some(s => usedStrengths.has(s))) { rejected.push('point fort déjà utilisé dans une autre variante'); continue; }
+      const hasEmail = mentionsContactEmail(text, profile);
+      if (hasEmail && emailVariants >= 2) { rejected.push('email de contact présent dans trop de variantes'); continue; }
+      const hasReservation = mentionsReservation(text);
+      if (hasReservation && reservationUsed) { rejected.push('conseil « réservez » déjà utilisé'); continue; }
       const c = checkReply(text, profile, review);
-      if (c.ok) accepted.push({ idx: accepted.length, text, warnings: c.warnings, words: c.words });
-      else rejected.push(c.errors.join(', '));
+      if (c.ok) {
+        accepted.push({ idx: accepted.length, text, warnings: c.warnings, words: c.words });
+        strengths.forEach(s => usedStrengths.add(s));
+        if (hasEmail) emailVariants++;
+        if (hasReservation) reservationUsed = true;
+      } else rejected.push(c.errors.join(', '));
     }
   }
   const durationMs = Date.now() - started;
@@ -105,7 +123,7 @@ export async function generateReplies(
     throw err;
   } finally { client.release(); }
 
-  // Journal du coût par réponse (tokens) — jamais le contenu de l'avis.
-  log.info({ generationId, companyId, provider: provider.name, model, inputTokens, outputTokens, durationMs, variants: accepted.length, rejected: rejected.length }, 'llm: génération');
-  return { generationId, variants: accepted, usage: { inputTokens, outputTokens, model, provider: provider.name, durationMs }, rejected };
+  // Journal du coût par réponse (tokens, stop_reason) — jamais le contenu de l'avis.
+  log.info({ generationId, companyId, provider: provider.name, model, inputTokens, outputTokens, stopReason, durationMs, variants: accepted.length, rejected: rejected.length }, 'llm: génération');
+  return { generationId, variants: accepted, usage: { inputTokens, outputTokens, model, provider: provider.name, durationMs, stopReason }, rejected };
 }

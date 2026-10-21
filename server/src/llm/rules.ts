@@ -8,7 +8,7 @@ import type { PromptProfile, PromptReview } from './prompt.js';
 export interface RuleCheck { ok: boolean; errors: string[]; warnings: string[]; words: number }
 
 export { wordCount };
-const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[’‘`]/g, "'");
 const countOccurrences = (hay: string, needle: string) => {
   if (!needle) return 0;
   const h = norm(hay), n = norm(needle);
@@ -23,13 +23,18 @@ const EMOJI = /\p{Extended_Pictographic}/u;
 const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
 const PHONE_RE = /(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}/g;
 const ADMISSION = /\b(notre faute|de notre fait|notre responsabilite|notre responsabilité|nous sommes responsables|nous reconnaissons|nous admettons|nous avouons|c'est de notre faute)\b/i;
-const CONTACT_INVITE = /(contact|joindre|appeler|ecrire|écrire|telephon|téléphon|email|e-mail|mail|échanger|echanger)/i;
+const CONTACT_INVITE = /(contact|joign|appel|ecri|écri|telephon|téléphon|email|e-mail|mail|échang|echang|vive voix|en privé|en direct)/i;
 const COMMERCIAL_GESTURE = /(rembours|offert|offr(?:ir|ons|e)\b|gratuit|geste commercial|bon d'achat|dédommag|dedommag)/i;
-// Formules trop génériques, interdites par la consigne (comparées normalisées).
+// Formules trop génériques ou désinvoltes, interdites par la consigne
+// (comparées normalisées : accents et apostrophes neutralisés).
 const BANNED_PHRASES = [
   'sincèrement désolés', 'sincèrement désolé', 'nous prenons votre avis au sérieux',
   'nous prenons votre message au sérieux', 'votre avis compte', 'nous sommes navrés',
+  'ce ressenti', 'votre ressenti', 'nous tenons à préciser', 'en connaissance de cause',
+  "mérite d'être savouré", 'sans précipitation',
 ];
+// Tournures qui laissent entendre que le client est impatient ou de mauvaise foi.
+const IMPATIENCE_RE = /(impatient|impatience|mauvaise foi|mauvaise intention|malhonn[eê]t|pas de bonne foi|vous exagérez|votre exagération)/i;
 // Regrets / excuses : franches uniquement si le contexte « problème réel » est
 // coché ; sinon au plus une occurrence.
 const APOLOGY_RE = /(nous (sommes |serions |vous sommes )?(sincèrement |vraiment )?désolé|nous (vous )?(présentons|adressons|offrons) nos (plus |sincères )?excuses|toutes nos excuses|nous nous excusons|veuillez (accepter|recevoir|croire à|agréer) nos (sincères |plus sincères )?(excuses|regrets)|nous (le |la |les |vous )?regrettons|nous sommes navrés|je (vous )?(regrette|m'excuse|présente mes (plus |sincères )?excuses))/gi;
@@ -75,24 +80,49 @@ const foodMentions = (text: string, known: string): string[] => {
   return [...hits];
 };
 
+// Signature exacte ajoutée par le code : remplace une signature partielle
+// (« Marc ») ou une formule de clôture écrite par le modèle, sinon l'ajoute.
+export function withSignature(text: string, sig: string): string {
+  const lines = text.trim().split('\n').map(s => s.trim()).filter(Boolean);
+  const last = lines.at(-1) ?? '';
+  const nl = norm(last), ns = norm(sig);
+  if (nl === ns) return lines.join('\n');
+  if (nl && nl.length < ns.length && ns.includes(nl)) lines[lines.length - 1] = sig;
+  else if (last && last.length < 50 && /cordialement|bien à vous|bien a vous|l'équipe|l'equipe|amicalement|très bonne journée|bonne soirée/i.test(last))
+    lines[lines.length - 1] = sig;
+  else lines.push(sig);
+  return lines.join('\n');
+}
+
+// Aides transversales (contrôles entre variantes dans generate.ts).
+export const citedStrengths = (text: string, p: PromptProfile) =>
+  (p.strengths ?? []).filter(s => s && norm(text).includes(norm(s)));
+export const mentionsContactEmail = (text: string, p: PromptProfile) => {
+  const key = (s: string) => s.replace(/[\s.()-]/g, '').toLowerCase();
+  const allowed = new Set([p.contact_email].filter(Boolean).map(key));
+  return (text.match(EMAIL_RE) ?? []).some(m => allowed.has(key(m.replace(/[.,;:)]+$/, ''))));
+};
+export const mentionsReservation = (text: string) => /réserv|reserv/i.test(text);
+
 export function checkReply(text: string, p: PromptProfile, r: PromptReview): RuleCheck {
   const errors: string[] = [], warnings: string[] = [];
   const t = text.trim();
-  const words = wordCount(t);
+  // Longueur mesurée sur le corps, hors ligne de signature.
+  const sig = signatureOf(p);
+  const lines = t.split('\n').map(s => s.trim()).filter(Boolean);
+  const lastLine = lines.at(-1) ?? '';
+  const signed = norm(lastLine) === norm(sig);
+  const bodyNoSig = (signed ? lines.slice(0, -1).join('\n') : t).trim();
+  const words = wordCount(bodyNoSig);
   const range = replyRange(r);
   // Longueur : rejet au-delà d'une tolérance de 15 % (le LLM n'est pas un compteur exact).
   if (words < Math.floor(range.min * 0.85)) errors.push(`trop court (${words} mots, minimum ${range.min})`);
   else if (words > Math.ceil(range.max * 1.15)) errors.push(`trop long (${words} mots, maximum ${range.max})`);
   else if (words < range.min || words > range.max) warnings.push(`longueur hors cible (${words} mots, cible ${range.min}–${range.max})`);
 
-  // Signature : présente, en fin de texte.
-  const sig = signatureOf(p);
-  const lastLine = t.split('\n').map(s => s.trim()).filter(Boolean).at(-1) ?? '';
+  // Signature (texte final assemblé) : présente, seule en fin de texte.
   if (!norm(t).includes(norm(sig))) errors.push('signature absente');
-  else if (norm(lastLine) !== norm(sig)) warnings.push('la signature n’est pas seule sur la dernière ligne');
-
-  // Nom du restaurant et ville : au plus une fois chacun (hors signature).
-  const bodyNoSig = t.slice(0, Math.max(0, norm(t).lastIndexOf(norm(sig))));
+  else if (!signed) warnings.push('la signature n’est pas seule sur la dernière ligne');
   const nameCount = countOccurrences(bodyNoSig, p.name);
   if (p.name && nameCount > 1 && !norm(sig).includes(norm(p.name))) errors.push(`nom du restaurant répété (${nameCount} fois)`);
   if (p.city && countOccurrences(bodyNoSig, p.city) > 1) errors.push('ville répétée');
@@ -103,20 +133,28 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview): Rul
   if (EMOJI.test(t)) errors.push('emoji');
   if (/!{2,}|\?{2,}/.test(t)) warnings.push('ponctuation en série');
 
-  // Posture : excuses franches seulement si « problème réel » est coché ;
-  // sinon au plus une formule de regret légère.
+  // Excuses : franches si « problème réel » est coché ; une excuse brève sinon
+  // (critique plausible). Jamais quand le contexte est « jamais venu » ou
+  // « prix affichés » : s'excuser y reviendrait à endosser un fait contesté.
   const apologies = (t.match(APOLOGY_RE) ?? []).length;
-  if (!r.context_tags.includes('real_problem') && apologies > 1)
+  const noApology = r.context_tags.some(tg => tg === 'unknown_customer' || tg === 'prices_displayed');
+  if (noApology && apologies > 0) errors.push('excuse inadaptée au contexte (« jamais venu » ou « prix affichés »)');
+  else if (!r.context_tags.includes('real_problem') && apologies > 1)
     errors.push('excuses répétées sans contexte « problème réel »');
 
   // Formules génériques interdites par la consigne.
   for (const b of BANNED_PHRASES)
     if (norm(t).includes(norm(b))) { errors.push(`formule interdite (${b})`); break; }
   if (countOccurrences(t, 'au plaisir') > 1) errors.push('« au plaisir » répété dans la même réponse');
+  if (IMPATIENCE_RE.test(t)) errors.push('tournure suggérant l’impatience ou la mauvaise foi du client');
 
   // Dire « l'avis ne donne pas de détail » alors qu'il en contient : faux.
   if (r.body.trim() && NO_DETAIL_RE.test(t))
     errors.push('affirme à tort que l’avis ne donne aucun détail');
+
+  // Sobriété : au plus UN point fort du profil par variante.
+  const strengths = citedStrengths(t, p);
+  if (strengths.length > 1) errors.push(`plusieurs points forts cités (${strengths.slice(0, 2).join(', ')})`);
 
   // Plats et aliments : tout mot culinaire cité doit venir de l'avis ou du profil.
   const known = norm([r.body, p.name, p.city, p.cuisine, p.practical_info, ...(p.strengths ?? [])].join(' '));
@@ -128,12 +166,20 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview): Rul
   const key = (s: string) => s.replace(/[\s.()-]/g, '').toLowerCase();
   const allowedEmails = new Set([p.contact_email].filter(Boolean).map(key));
   const allowedPhones = new Set((p.show_phone ? [p.contact_phone] : []).filter(Boolean).map(key));
-  for (const m of t.match(EMAIL_RE) ?? []) if (!allowedEmails.has(key(m.replace(/[.,;:)]+$/, '')))) errors.push(`email étranger au profil (${m})`);
+  let hasContactEmail = false;
+  for (const m of t.match(EMAIL_RE) ?? []) {
+    if (allowedEmails.has(key(m.replace(/[.,;:)]+$/, '')))) hasContactEmail = true;
+    else errors.push(`email étranger au profil (${m})`);
+  }
   for (const m of t.match(PHONE_RE) ?? []) {
     if (allowedPhones.has(key(m))) continue;
     if (key(p.contact_phone) && key(m) === key(p.contact_phone)) errors.push('téléphone affiché sans que l’option du profil soit activée');
     else errors.push('numéro de téléphone étranger au profil');
   }
+  // L'email de contact ne se justifie que dans une variante qui invite
+  // explicitement à un échange privé (mot d'invitation hors l'adresse elle-même).
+  if (hasContactEmail && !CONTACT_INVITE.test(t.replace(EMAIL_RE, '')))
+    errors.push('email cité sans invitation à un échange privé');
 
   // Santé : pas d'aveu de responsabilité, invitation au contact privé.
   if (isHealthTopic(r)) {

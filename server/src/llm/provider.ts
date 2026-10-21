@@ -14,6 +14,7 @@ export interface LlmResult {
   inputTokens: number;
   outputTokens: number;
   model: string;
+  stopReason: string;
 }
 export interface LlmProvider {
   readonly name: string;
@@ -27,6 +28,27 @@ export class LlmError extends Error {
 }
 
 /* ---------- Anthropic (Messages API, sans SDK) ---------- */
+// Réflexion interne désactivée : ~10× moins de jetons de sortie et de latence.
+// Sur claude-sonnet-5.5, « disabled » est refusé (400) — « between_tools » est
+// le réglage minimal équivalent.
+const thinkingFor = (model: string) =>
+  /sonnet-5-5|sonnet-5\.5/.test(model) ? { type: 'between_tools' } : { type: 'disabled' };
+
+// Sortie structurée forcée par un outil : le modèle remplit input.variants,
+// ce qui garantit un JSON valide quel que soit le babillage autour.
+const REPLY_TOOL = {
+  name: 'submit_replies',
+  description: 'Soumet les 3 variantes de réponse rédigées, sans signature ni formule de clôture.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      variants: { type: 'array', minItems: 3, maxItems: 3, items: { type: 'string' } },
+    },
+    required: ['variants'],
+    additionalProperties: false,
+  },
+} as const;
+
 export class AnthropicProvider implements LlmProvider {
   readonly name = 'anthropic';
   async complete(req: LlmRequest, signal: AbortSignal): Promise<LlmResult> {
@@ -47,7 +69,10 @@ export class AnthropicProvider implements LlmProvider {
         body: JSON.stringify({
           model: config.llm.model,
           max_tokens: req.maxTokens,
+          thinking: thinkingFor(config.llm.model),
           system: req.system,
+          tools: [REPLY_TOOL],
+          tool_choice: { type: 'tool', name: REPLY_TOOL.name },
           messages: [{ role: 'user', content: req.user }],
         }),
       });
@@ -63,12 +88,17 @@ export class AnthropicProvider implements LlmProvider {
       throw e;
     }
     const data: any = await res.json();
-    const text = (data?.content ?? []).filter((c: any) => c?.type === 'text').map((c: any) => c.text).join('\n');
+    const blocks = (data?.content ?? []) as any[];
+    const toolUse = blocks.find(c => c?.type === 'tool_use' && Array.isArray(c?.input?.variants));
+    const text = toolUse
+      ? JSON.stringify({ variants: toolUse.input.variants })
+      : blocks.filter(c => c?.type === 'text').map(c => c.text).join('\n');
     return {
       text,
       inputTokens: Number(data?.usage?.input_tokens ?? 0),
       outputTokens: Number(data?.usage?.output_tokens ?? 0),
       model: String(data?.model ?? config.llm.model),
+      stopReason: String(data?.stop_reason ?? ''),
     };
   }
 }
@@ -81,7 +111,7 @@ export class MockProvider implements LlmProvider {
   constructor(private readonly override?: (req: LlmRequest) => string) {}
   async complete(req: LlmRequest): Promise<LlmResult> {
     const text = this.override ? this.override(req) : mockVariants(req.user);
-    return { text, inputTokens: Math.ceil((req.system.length + req.user.length) / 4), outputTokens: Math.ceil(text.length / 4), model: 'mock' };
+    return { text, inputTokens: Math.ceil((req.system.length + req.user.length) / 4), outputTokens: Math.ceil(text.length / 4), model: 'mock', stopReason: 'end_turn' };
   }
 }
 
@@ -93,9 +123,12 @@ function field(user: string, key: string): string {
 // des fourchettes court/long, donc conformes quel que soit l'avis. Trois angles
 // distincts (factuel / chaleureux / point fort), vocabulaire volontairement
 // disjoint pour passer le contrôle de similarité.
+// Variantes sans signature (ajoutée par le code, comme en production) :
+// ~50-56 mots en négatif, ~38-50 en positif — dans le recouvrement des
+// fourchettes court/long. Angles distincts (factuel / chaleureux / point
+// fort), un seul point fort cité (variante 2), email dans 2 variantes max.
 export function mockVariants(user: string): string {
   const restaurant = field(user, 'Restaurant') || 'notre restaurant';
-  const sig = field(user, 'Signature') || 'L’équipe';
   const author = field(user, 'Prénom affiché') || '';
   const rating = parseInt(field(user, 'Note') || '5', 10);
   const strength = (field(user, 'Points forts').split(',')[0] || 'notre cuisine faite maison').trim();
@@ -108,21 +141,21 @@ export function mockVariants(user: string): string {
   const variants: string[] = [];
   if (rating >= 4) {
     variants.push(
-      `${hello} merci pour ce retour précis et généreux : ravis que votre moment chez ${restaurant} vous ait plu. C’est exactement l’expérience que toute l’équipe s’attache à offrir, chaque jour, à chaque table.\n${sig}`,
-      `${hello} quel plaisir de vous lire ce matin. Vos mots ont fait sourire toute la maison, et nous vous remercions d’avoir pris le temps de les partager. On espère vous retrouver très vite autour d’une table.\n${sig}`,
-      `${hello} votre message illumine notre journée entière. ${cap(strength)} est au cœur de ce que nous aimons partager chez ${restaurant} ; savoir que cela vous a touché est la plus belle des récompenses. À très bientôt.\n${sig}`,
+      `${hello} merci pour ce retour précis et généreux : ravis que votre moment chez ${restaurant} vous ait plu. C’est exactement l’expérience que toute l’équipe s’attache à offrir chaque jour, avec attention, à chaque table.`,
+      `${hello} quel plaisir de vous lire ce matin. Vos mots ont fait sourire toute la maison, et nous vous remercions d’avoir pris le temps de les partager. On espère vous retrouver très vite autour d’une table.`,
+      `${hello} votre message illumine notre journée entière. ${cap(strength)} est au cœur de ce que nous aimons partager chez ${restaurant} ; savoir que cela vous a touché est la plus belle des récompenses. À très bientôt.`,
     );
   } else if (health) {
     variants.push(
-      `${hello} votre message nous touche : le bien-être de nos clients passe avant tout, et nous lisons le vôtre avec attention. Nos procédures d’hygiène et de traçabilité sont documentées et rigoureusement appliquées chaque jour, sans exception. Contactez-nous${reach} pour que nous comprenions ce qui s’est passé.\n${sig}`,
-      `${hello} nous entendons votre inquiétude et elle nous tient à cœur. Chez nous, l’hygiène n’est pas un argument mais une discipline quotidienne, suivie par toute l’équipe sans relâche. Joignez-nous directement${reach} : nous prendrons le temps de comprendre ensemble ce qui s’est passé.\n${sig}`,
-      `${hello} la confiance de nos clients est ce que nous défendons le plus, avec ${strength} et une exigence d’hygiène de tous les instants, à chaque service. Pour comprendre votre expérience, contactez-nous${reach} : vous aurez une réponse personnelle et attentionnée.\n${sig}`,
+      `${hello} votre message nous touche : le bien-être de nos clients passe avant tout, et nous lisons le vôtre avec la plus grande attention. Nos procédures d’hygiène et de traçabilité sont documentées et rigoureusement appliquées chaque jour, sans exception. Contactez-nous${reach} pour que nous comprenions ce qui s’est passé.`,
+      `${hello} nous entendons votre inquiétude et elle nous tient à cœur. Chez nous, l’hygiène n’est pas un argument mais une discipline quotidienne, suivie par toute l’équipe sans relâche. Joignez-nous directement${reach} : nous prendrons tout le temps nécessaire pour comprendre ensemble ce qui s’est passé.`,
+      `${hello} la confiance de nos clients est ce que nous défendons le plus, avec ${strength} et une exigence d’hygiène de tous les instants, à chaque service — toute l’équipe y veille. Pour comprendre votre expérience, contactez-nous directement au restaurant : vous aurez une réponse personnelle et attentionnée.`,
     );
   } else {
     variants.push(
-      `${hello} votre retour appelle une réponse claire : ce que vous décrivez n’est pas le niveau de service que nous voulons proposer. Nous revoyons dès aujourd’hui l’organisation en salle et en cuisine pour tenir nos délais, comme nous le faisons déjà sur l’accueil de chacun de nos clients.\n${sig}`,
-      `${hello} lire votre avis n’est pas un moment agréable, et nous le regardons en face. Votre soirée aurait dû être belle ; qu’elle ne l’ait pas été nous importe vraiment. Écrivez-nous${reach} si vous souhaitez en parler de vive voix : nous vous écouterons avec attention.\n${sig}`,
-      `${hello} ce que vous décrivez est l’inverse de ce que nous défendons chaque jour : ${strength} et une attention sincère portée à chaque table qui passe notre porte. Nous serions heureux de vous le prouver lors d’une prochaine visite, en toute simplicité, quand vous le souhaiterez.\n${sig}`,
+      `${hello} votre retour appelle une réponse claire : ce que vous décrivez n’est pas le niveau de service que nous voulons proposer. Nous revoyons dès aujourd’hui l’organisation en salle et en cuisine pour tenir nos délais, comme nous le faisons déjà chaque jour sur l’accueil de chacun de nos clients.`,
+      `${hello} lire votre avis n’est pas un moment agréable, et nous le regardons en face. Votre soirée aurait dû être belle ; qu’elle ne l’ait pas été nous importe vraiment. Écrivez-nous${reach} si vous souhaitez en parler de vive voix : nous vous écouterons avec attention et sans détour.`,
+      `${hello} ce que vous décrivez est l’inverse de ce que nous défendons chaque jour : ${strength} et une attention sincère portée à chaque table qui passe notre porte. Nous serions heureux de vous le prouver lors d’une prochaine visite, quand vous le souhaiterez, en toute simplicité et avec le sourire.`,
     );
   }
   return JSON.stringify({ variants });

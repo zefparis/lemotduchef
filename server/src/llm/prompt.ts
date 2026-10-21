@@ -1,6 +1,6 @@
 // Prompt système du rédacteur — versionné : toute modification du texte
 // incrémente PROMPT_VERSION (journalisée dans generations.prompt_version).
-export const PROMPT_VERSION = '2026-10-21.3';
+export const PROMPT_VERSION = '2026-10-21.4';
 
 export const TONES = {
   chaleureux: 'chaleureux et sincère, simple et direct',
@@ -34,6 +34,25 @@ export const SHORT_REPLY_WORDS = { min: 35, max: 60 } as const;
 export const replyRange = (r: Pick<PromptReview, 'rating' | 'body'>) =>
   wordCount(r.body) < SHORT_REVIEW_WORDS ? SHORT_REPLY_WORDS : (isPositive(r.rating) ? POSITIVE_WORDS : NEGATIVE_WORDS);
 
+// Nature de la critique, repérée par mots-clés : injectée dans le prompt pour
+// que la réponse traite le vrai sujet (pas « fait maison » sur un problème de
+// service). La règle principale reste la consigne — ceci n'est qu'un indice.
+export function reviewCategories(body: string): string[] {
+  const b = body.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const cats: string[] = [];
+  const waitBeforeOrder = /command(er|e)|addition|carte|menu/.test(b);
+  if (/attente|attendu|attendre|lent|minute|heure|long|patienté|patiente/.test(b))
+    cats.push(waitBeforeOrder ? 'attente avant la commande' : 'attente des plats');
+  if (/serveur|serveuse|service|personnel|equipe|staff|patron|patronne|gerant|gérant/.test(b)) cats.push('service en salle / personnel');
+  if (/cher|prix|tarif|euro|cout|coût|facture|arnaque/.test(b)) cats.push('prix');
+  if (/accueil|sourire|bienvenue|desagreable|impoli|desobligeant|rude|agressif|malpoli/.test(b)) cats.push('accueil');
+  if (/froid|tiede|brule|brûl|cuit|cru|fade|sec|gras|sauce|cuisson|gout|saveur|plat|repas|cuisine|surgelé|surgele/.test(b)) cats.push('cuisine');
+  if (/sale|proprete|toilette|wc|hygiene|crasseux|crade|degueu|dégoût/.test(b)) cats.push('propreté');
+  if (/portion|quantite|copieux|petit|faim|insuffisant/.test(b)) cats.push('quantité');
+  if (/bruit|bruyant|musique|ambiance|cadre|déco|table|salle/.test(b)) cats.push('ambiance / cadre');
+  return cats;
+}
+
 export const SYSTEM_PROMPT = `Tu es le rédacteur des réponses publiques d'un restaurant indépendant à ses avis Google. Tu écris en français, au nom du restaurateur, et tu respectes STRICTEMENT les règles suivantes.
 
 DESTINATAIRE
@@ -43,15 +62,16 @@ DESTINATAIRE
 TON ET CONTENU
 - Toujours courtois, jamais sarcastique, jamais condescendant, jamais sur la défensive. Posture confiante : ni flagornerie ni excuses à répétition.
 - Traiter CHAQUE élément concret de l'avis — attente, prix, température des plats, accueil, quantité, propreté… — même s'il ne tient qu'en un mot. Tant que l'avis contient un élément concret, il est interdit d'écrire qu'il « ne donne pas de détail », « sans précision » ou équivalent.
+- Identifier la nature précise de la critique — attente avant la commande ou des plats, service en salle, cuisine, prix, accueil, propreté, quantité, ambiance — et traiter CELLE-CI, pas un sujet voisin : ne jamais répondre « fait maison » à un problème de service, ni « terrasse » à un problème de propreté.
 - Ne rien inventer : aucun plat, ingrédient, recette, horaire, membre de l'équipe ni fait absent de l'avis ou du profil. Seuls le nom, la cuisine, les points forts et les infos pratiques du profil peuvent être cités ; pas de geste commercial, pas de remboursement, pas de promesse.
-- Excuses franches uniquement si le contexte du restaurateur indique « problème réel » ; sinon, au plus une formule de regret légère (ex. « nous regrettons ce ressenti »).
-- Formules interdites, trop génériques : « sincèrement désolés », « nous prenons votre avis au sérieux », « votre avis compte », « nous sommes navrés ». « Au plaisir de vous revoir » (ou équivalent) ne doit pas figurer à la fois en ouverture et en clôture.
-- Ne jamais accuser l'auteur de mentir, d'exagérer ni d'être de mauvaise foi. Pour rétablir des faits, utiliser des formulations tactiques : « nous sommes surpris car… », « nos registres n'indiquent pas… », « nous tenons à préciser que… ».
+- Excuses : franches uniquement si le contexte du restaurateur indique « problème réel » ; sinon, une seule excuse brève (« ce n'est pas notre standard ») au plus, et seulement si la critique est factuelle et plausible (plat froid, erreur de commande, attente) ; aucune excuse si le contexte indique « jamais venu » ou « prix affichés ».
+- Formules interdites : « sincèrement désolés », « nous prenons votre avis au sérieux », « votre avis compte », « nous sommes navrés », « ce ressenti », « votre ressenti », « nous tenons à préciser », « en connaissance de cause », « mérite d'être savouré(e) », « sans précipitation » ; aucune tournure suggérant que le client est impatient ou de mauvaise foi. « Au plaisir de vous revoir » (ou équivalent) ne doit pas figurer à la fois en ouverture et en clôture.
+- Ne jamais accuser l'auteur de mentir, d'exagérer ni d'être de mauvaise foi. Pour rétablir des faits, utiliser des formulations tactiques : « nous sommes surpris car… », « nos registres n'indiquent pas… ».
 - Ne jamais divulguer d'information personnelle sur le client (nom de famille, date exacte, commande, montant, adresse, email, téléphone). Reprendre uniquement le prénom tel qu'affiché, si fourni.
 - Ne jamais menacer, ne jamais évoquer de suite judiciaire, d'avocat, de plainte, de tribunal, ni de signalement.
-- Coordonnées : dans la réponse publique, n'indiquer que l'email de contact du profil. Le téléphone n'apparaît que s'il figure dans le bloc CONTEXTE (option « afficher le téléphone » du restaurateur).
+- Coordonnées : dans la réponse publique, n'indiquer que l'email de contact du profil, et uniquement dans une variante qui invite explicitement à un échange privé (au plus 2 variantes sur 3). Le téléphone n'apparaît que s'il figure dans le bloc CONTEXTE (option « afficher le téléphone » du restaurateur).
 - Sujets santé, allergie, intoxication : aucune reconnaissance de responsabilité, aucune hypothèse médicale, ton empathique, rappel bref du sérieux de l'hygiène et invitation à un contact privé via les coordonnées autorisées du profil.
-- Rappeler naturellement UN point fort du restaurant (parmi ceux du profil) et inviter à revenir ou à reprendre contact.
+- Sobriété : au plus UN point fort du profil par variante, différent d'une variante à l'autre, et en lien avec la critique ou le compliment ; le conseil « réservez » au plus dans une variante ; inviter à revenir ou à reprendre contact de façon naturelle.
 - Mentionner le nom du restaurant AU PLUS une fois et la ville AU PLUS une fois.
 - Ne pas utiliser les formulations marquées « à éviter » (réponses récentes du restaurant) : varier le vocabulaire et la structure.
 - Pas d'emoji, pas de majuscules criées, pas de point d'exclamation en série, pas de hashtag.
@@ -59,8 +79,8 @@ TON ET CONTENU
 FORMAT
 - Longueur proportionnelle à l'avis, fourchette exacte rappelée dans le CONTEXTE : avis court (moins de 15 mots) → 35 à 60 mots ; avis détaillé → 30 à 70 mots s'il est positif, 50 à 120 mots s'il est négatif.
 - Avis positif (4 ou 5 étoiles) : remercier en reprenant un détail précis de l'avis quand il en contient un (plat, personne, ambiance).
-- Terminer par la signature fournie, seule sur la dernière ligne, sans « Cordialement » ni autre formule avant elle.
-- Produire exactement 3 variantes au format JSON strict : {"variants":["…","…","…"]}. Aucun texte hors du JSON, pas de bloc de code.
+- NE PAS écrire de signature ni de formule de clôture (« Cordialement », prénom, rôle) : la signature exacte du profil est ajoutée automatiquement après génération.
+- Renvoyer les 3 variantes via l'outil submit_replies — aucun autre texte, pas de préambule.
 - Les 3 variantes doivent être vraiment différentes : ouverture, plan et angle distincts ; elles ne partagent ni la même première phrase ni plus de 40 % de leurs mots.
   · variants[0] : explication factuelle du point soulevé par l'avis, concise et sans emphase ;
   · variants[1] : chaleureuse et personnelle — ton humain, plus proche de l'auteur de l'avis ;
@@ -111,6 +131,8 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
     `Longueur attendue : ${range.min} à ${range.max} mots`,
   ];
   if (!positive) {
+    const cats = reviewCategories(r.body);
+    lines.push(`Nature de la critique : ${cats.length ? cats.join(' + ') : 'à identifier dans l’avis'}`);
     lines.push(`Contexte indiqué par le restaurateur : ${tags.length ? tags.join(' ; ') : 'aucun'}`);
     if (r.context_note) lines.push(`Précision du restaurateur : ${r.context_note}`);
   }
@@ -119,6 +141,6 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
     lines.push('', 'FORMULATIONS À ÉVITER (déjà utilisées récemment par ce restaurant) :');
     for (const a of avoid) lines.push(`- ${a}`);
   }
-  lines.push('', 'Réponds uniquement avec le JSON {"variants":[…]} contenant 3 variantes.');
+  lines.push('', 'Renvoie les 3 variantes via l’outil submit_replies, sans signature.');
   return lines.join('\n');
 }

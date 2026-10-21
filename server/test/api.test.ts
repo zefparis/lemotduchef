@@ -34,7 +34,7 @@ const { stripe } = await import('../src/stripe.js');
 const { outbox } = await import('../src/mailer.js');
 const { CGV_VERSION } = await import('../src/legal.js');
 const { MockProvider, setLlmProvider, mockVariants } = await import('../src/llm/provider.js');
-const { checkReply, wordCount, parseVariants } = await import('../src/llm/rules.js');
+const { checkReply, wordCount, parseVariants, withSignature } = await import('../src/llm/rules.js');
 const { buildUserPrompt, SYSTEM_PROMPT, PROMPT_VERSION, signatureOf } = await import('../src/llm/prompt.js');
 const { computeFlags, reportGuide } = await import('../src/moderation.js');
 const { purgeExpiredReviews } = await import('../src/retention.js');
@@ -323,7 +323,8 @@ test('mock : les variantes produites respectent les règles (positif, négatif, 
     const vs = parseVariants(mockVariants(buildUserPrompt(RULE_PROFILE as any, r as any, [])));
     assert.equal(vs.length, 3);
     for (const v of vs) {
-      const c = checkReply(v, RULE_PROFILE as any, r as any);
+      // Le modèle n'écrit pas de signature : le code l'ajoute (comme generate.ts).
+      const c = checkReply(withSignature(v, sig), RULE_PROFILE as any, r as any);
       assert.ok(c.ok, `note ${r.rating} : ${c.errors.join(', ')}\n${v}`);
     }
   }
@@ -416,7 +417,7 @@ test('génération : erreur LLM → 502 propre avec CORS conservés', async () =
   } finally { setLlmProvider(null); }
 });
 
-test('LLM : le corps envoyé au fournisseur ne contient ni temperature ni top_p/top_k', async () => {
+test('LLM : requête sans temperature/top_p/top_k, thinking désactivé, sortie par outil', async () => {
   const { AnthropicProvider } = await import('../src/llm/provider.js');
   const { config } = await import('../src/config.js');
   let sent: Record<string, unknown> = {};
@@ -424,23 +425,29 @@ test('LLM : le corps envoyé au fournisseur ne contient ni temperature ni top_p/
   (globalThis as any).fetch = async (_url: any, init: any) => {
     sent = JSON.parse(init.body);
     return new Response(JSON.stringify({
-      content: [{ type: 'text', text: '{"variants":["a","b","c"]}' }],
-      usage: { input_tokens: 10, output_tokens: 5 }, model: 'claude-haiku-5-5',
+      content: [{ type: 'tool_use', name: 'submit_replies', input: { variants: ['a', 'b', 'c'] } }],
+      usage: { input_tokens: 10, output_tokens: 5 }, model: 'claude-haiku-5-5', stop_reason: 'tool_use',
     }), { status: 200, headers: { 'content-type': 'application/json' } });
   };
+  let res: any;
   try {
     (config.llm as any).anthropicApiKey = 'test-key';
-    const res = await new AnthropicProvider().complete(
+    res = await new AnthropicProvider().complete(
       { system: 'système', user: 'utilisateur', maxTokens: 64 }, new AbortController().signal);
-    assert.equal(res.model, 'claude-haiku-5-5');
   } finally {
     (globalThis as any).fetch = orig;
     (config.llm as any).anthropicApiKey = '';
   }
+  assert.equal(res.model, 'claude-haiku-5-5');
+  assert.equal(res.stopReason, 'tool_use');
+  assert.deepEqual(JSON.parse(res.text), { variants: ['a', 'b', 'c'] });
   assert.ok(Object.keys(sent).length, 'corps de requête capturé');
   assert.equal('temperature' in sent, false);
   assert.equal('top_p' in sent, false);
   assert.equal('top_k' in sent, false);
+  assert.deepEqual(sent.thinking, { type: 'disabled' }, 'réflexion désactivée explicitement');
+  assert.ok(Array.isArray(sent.tools), 'sortie structurée par outil');
+  assert.deepEqual(sent.tool_choice, { type: 'tool', name: 'submit_replies' });
   assert.ok(sent.system && Array.isArray(sent.messages) && sent.max_tokens === 64);
 });
 
