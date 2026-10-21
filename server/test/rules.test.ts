@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // Règles du rédacteur sur des cas d'avis réels (LLM mocké — aucun réseau, aucune DB).
 const { checkReply, parseVariants, tooSimilar, wordCount, withSignature } = await import('../src/llm/rules.js');
 const { mockVariants } = await import('../src/llm/provider.js');
-const { buildUserPrompt, signatureOf } = await import('../src/llm/prompt.js');
+const { buildUserPrompt, signatureOf, assignedStrengths } = await import('../src/llm/prompt.js');
 const { SAMPLE_CASES, SAMPLE_PROFILE } = await import('../src/llm/sampleCases.js');
 
 const sig = signatureOf(SAMPLE_PROFILE);
@@ -13,6 +13,7 @@ const byKey = (k: string) => SAMPLE_CASES.find(c => c.key === k)!;
 // Sortie du modèle (sans signature) → texte final assemblé, comme generate.ts.
 const rawVariants = (c: ReturnType<typeof byKey>) => parseVariants(mockVariants(buildUserPrompt(c.profile, c.review, [])));
 const variants = (c: ReturnType<typeof byKey>) => rawVariants(c).map(v => withSignature(v, sig));
+const body = (c: ReturnType<typeof byKey>, i = 0) => rawVariants(c)[i];
 
 /* ---------- Les cas typiques passent toutes les règles ---------- */
 test('cas typiques : le mock produit 3 variantes conformes et distinctes', () => {
@@ -42,18 +43,23 @@ test('signature : ajoutée si absente, complétée si partielle, jamais doublée
 });
 
 /* ---------- Longueur proportionnelle ---------- */
-test('longueur : avis court → 35-60 mots, avis détaillé → fourchette pleine', () => {
+test('longueur : cible 45 mots (court) / 80 mots (détaillé), +10 % = avertissement', () => {
   const court = byKey('plat-froid'); // « Plat froid. » = 2 mots
   const good = variants(court)[0];
-  assert.match(buildUserPrompt(court.profile, court.review, []), /Longueur attendue : 35 à 60 mots/);
+  const u = buildUserPrompt(court.profile, court.review, []);
+  assert.match(u, /Longueur attendue : 35 à 60 mots \(vise ~45\)/);
   assert.match(checkReply(`${good} ${pad(30)}`, court.profile, court.review).errors.join(), /trop long/);
+  // +10 % : avertissement, pas rejet (62 ≤ 66).
+  const slightOver = checkReply(`Bonjour Paul, ${pad(59)}\n${sig}`, court.profile, court.review);
+  assert.equal(slightOver.ok, true, slightOver.errors.join());
+  assert.match(slightOver.warnings.join(), /hors cible/);
   assert.match(checkReply(`Bonjour Paul, ${pad(20)}\n${sig}`, court.profile, court.review).errors.join(), /trop court/);
 
   const detaille = { ...byKey('positif').review, body: byKey('positif').review.body }; // ≥ 15 mots
   assert.ok(wordCount(detaille.body) >= 15);
-  assert.match(buildUserPrompt(SAMPLE_PROFILE, detaille, []), /Longueur attendue : 30 à 70 mots/);
+  assert.match(buildUserPrompt(SAMPLE_PROFILE, detaille, []), /Longueur attendue : 40 à 120 mots \(vise ~80\)/);
   const longPos = variants({ ...byKey('positif'), review: detaille })[0];
-  assert.match(checkReply(`${longPos} ${pad(50)}`, SAMPLE_PROFILE, detaille).errors.join(), /trop long/);
+  assert.match(checkReply(`${longPos} ${pad(100)}`, SAMPLE_PROFILE, detaille).errors.join(), /trop long/);
 
   const negDetaille = { ...byKey('attente').review, body: 'Attente de plus d’une heure ce soir, malgré une salle à moitié vide et trois serveurs qui discutaient entre eux au comptoir.' };
   assert.match(buildUserPrompt(SAMPLE_PROFILE, negDetaille, []), /Longueur attendue : 50 à 120 mots/);
@@ -90,18 +96,77 @@ test('plat ou aliment absent de l\'avis et du profil → rejeté', () => {
 /* ---------- Excuses selon le contexte ---------- */
 test('excuses : au plus une brève sans contexte ; aucune sur « jamais venu » ou « prix affichés »', () => {
   const c = byKey('commande'); // critique factuelle, aucun contexte coché
-  const good = variants(c)[0];
-  const oneSorry = `${good} Ce n’est pas notre standard, nous sommes désolés.`;
+  const oneSorry = `${body(c)} Ce n’est pas notre standard, nous sommes désolés.\n${sig}`;
   assert.equal(checkReply(oneSorry, c.profile, c.review).ok, true, 'une excuse brève autorisée');
-  const twoSorry = `${good} Nous sommes désolés et nous vous présentons nos excuses.`;
+  const twoSorry = `${body(c)} Nous sommes désolés et nous vous présentons nos excuses.\n${sig}`;
   assert.match(checkReply(twoSorry, c.profile, c.review).errors.join(), /excuses répétées/);
   const real = { ...c.review, context_tags: ['real_problem'] };
   assert.equal(checkReply(twoSorry, c.profile, real).ok, true);
   for (const key of ['inconnu', 'prix']) {
     const withTag = byKey(key); // unknown_customer / prices_displayed
-    const sorry = `${variants(withTag)[0]} Nous sommes désolés pour cette expérience.`;
+    const sorry = `${body(withTag)} Nous sommes désolés pour cette expérience.\n${sig}`;
     assert.match(checkReply(sorry, withTag.profile, withTag.review).errors.join(), /excuse inadaptée/, key);
   }
+});
+
+/* ---------- Faits internes inventés ---------- */
+test('procédures, registres et actions internes non fournis → rejet', () => {
+  const c = byKey('toilettes'); // Manon, « Toilettes sales »
+  const good = body(c);
+  for (const frag of ['nos registres de nettoyage sont tenus chaque jour', 'nous vérifions nos sanitaires régulièrement',
+    'nous travaillons à mieux répartir les tables', 'notre protocole d’hygiène est strict',
+    'nous mettons en place des contrôles renforcés', 'nous revoyons notre organisation du service'])
+    assert.match(checkReply(`${good} D’ailleurs, ${frag}.\n${sig}`, c.profile, c.review).errors.join(), /fait interne inventé/, frag);
+  // « Registres » permis seulement avec le contexte « jamais venu ».
+  const inconnu = byKey('inconnu');
+  const reg = `${body(inconnu)} Nos registres n’indiquent pas votre venue.\n${sig}`;
+  assert.equal(checkReply(reg, inconnu.profile, inconnu.review).ok, true);
+  assert.match(checkReply(reg, c.profile, c.review).errors.join(), /fait interne inventé/);
+  // Engagement générique autorisé.
+  assert.equal(checkReply(`${good} Votre retour est transmis à l’équipe dès aujourd’hui.\n${sig}`, c.profile, c.review).ok, true);
+});
+
+/* ---------- « Surpris » selon le contexte ---------- */
+test('« surpris / surprenant » seulement avec « jamais venu » ou « plat conforme »', () => {
+  const c = byKey('commande'); // aucun contexte coché
+  const surprised = `${body(c)} Nous sommes surpris par votre description.\n${sig}`;
+  assert.match(checkReply(surprised, c.profile, c.review).errors.join(), /surpris/);
+  const inconnu = byKey('inconnu');
+  assert.equal(checkReply(`${body(inconnu)} Nous sommes surpris par votre description.\n${sig}`,
+    inconnu.profile, inconnu.review).ok, true);
+  const conf = { ...byKey('plat-froid').review, context_tags: ['dish_as_described'] };
+  const confText = `Bonjour Paul, ${pad(38)} Ce retour est surprenant, le plat était conforme.\n${sig}`;
+  assert.equal(checkReply(confText, SAMPLE_PROFILE, conf).ok, true);
+});
+
+/* ---------- Style : analyse recopiée, « de une », signataire, ouverture ---------- */
+test('style : analyse interne, « de une », signataire 3e personne, « Bonjour {prénom} »', () => {
+  const c = byKey('serveur'); // Thomas
+  const good = variants(c)[0];
+  assert.match(checkReply(`${good} Au sujet de la nature de la critique évoquée…`, c.profile, c.review).errors.join(), /analyse interne/);
+  assert.match(checkReply(`${good} Votre note de une étoile nous attriste.`, c.profile, c.review).errors.join(), /de une/);
+  assert.match(checkReply(`${good} Marc, le chef, vous répondra personnellement.`, c.profile, c.review).errors.join(), /3e personne/);
+  assert.match(checkReply(`Bonsoir Thomas, merci de votre visite ${pad(30)}\n${sig}`, c.profile, c.review).errors.join(), /« Bonjour »/);
+  assert.match(checkReply(`Bonjour, merci de votre visite ${pad(35)}\n${sig}`, c.profile, c.review).errors.join(), /prénom/);
+  // Prénom absent de l'avis → « Bonjour » seul suffit.
+  const noName = { ...c.review, author_name: '' };
+  assert.equal(checkReply(`Bonjour, merci de votre visite ${pad(35)}\n${sig}`, c.profile, noName).ok, true);
+});
+
+/* ---------- Point fort imposé par variante ---------- */
+test('point fort : le code l’attribue par variante, le modèle cite uniquement celui-là', () => {
+  assert.deepEqual(assignedStrengths(SAMPLE_PROFILE, 0), [null, 'fait maison', 'produits locaux']);
+  assert.deepEqual(assignedStrengths(SAMPLE_PROFILE, 1), [null, 'produits locaux', 'terrasse ombragée']);
+  const u = buildUserPrompt(SAMPLE_PROFILE, byKey('positif').review, []);
+  assert.match(u, /variante 2 = « fait maison »/);
+  assert.match(u, /variante 3 = « produits locaux »/);
+  assert.ok(!/Points forts :/.test(u), 'la liste complète n’est plus transmise');
+  const c = byKey('positif');
+  const wrong = `Bonjour Julie, la terrasse ombragée vous attend ; ${pad(35)}\n${sig}`;
+  assert.match(checkReply(wrong, c.profile, c.review, { allowedStrength: 'fait maison' }).errors.join(), /non attribué/);
+  const factuelle = `Bonjour Julie, le fait maison fait notre fierté chaque jour ; ${pad(35)}\n${sig}`;
+  assert.match(checkReply(factuelle, c.profile, c.review, { allowedStrength: null }).errors.join(), /non demandé/);
+  assert.equal(checkReply(factuelle, c.profile, c.review, { allowedStrength: 'fait maison' }).ok, true);
 });
 
 /* ---------- Formules interdites ---------- */
@@ -136,11 +201,11 @@ test('sobriété : un seul point fort par variante ; email seulement avec invita
 /* ---------- Coordonnées : email seul, téléphone sur option ---------- */
 test('coordonnées : email du profil seul ; téléphone uniquement si l\'option est active', () => {
   const c = byKey('attente');
-  const good = variants(c)[0];
+  const good = body(c);
   assert.ok(!/04 78/.test(buildUserPrompt(c.profile, c.review, [])), 'prompt sans le téléphone quand show_phone est faux');
-  const withMail = checkReply(`${good} Écrivez à contact@tabledaurore.fr.`, c.profile, c.review);
+  const withMail = checkReply(`${good} Écrivez à contact@tabledaurore.fr.\n${sig}`, c.profile, c.review);
   assert.equal(withMail.ok, true);
-  const withPhone = `${good} Joignez-nous au 04 78 00 00 00.`;
+  const withPhone = `${good} Joignez-nous au 04 78 00 00 00.\n${sig}`;
   assert.match(checkReply(withPhone, c.profile, c.review).errors.join(), /téléphone/);
   const profilTel = { ...c.profile, show_phone: true };
   assert.equal(checkReply(withPhone, profilTel, c.review).ok, true);

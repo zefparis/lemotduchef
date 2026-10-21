@@ -274,7 +274,7 @@ const words = (n: number) => Array.from({ length: n }, (_, i) => `mot${i}`).join
 
 test('prompt système versionné : règles clés présentes', () => {
   assert.match(PROMPT_VERSION, /^\d{4}-\d{2}-\d{2}\.\d+$/);
-  for (const re of [/FUTURS clients/, /vouvoyant/, /jamais accuser l'auteur de mentir/i, /information personnelle/i, /judiciaire/, /allergie, intoxication/, /UN point fort/, /AU PLUS une fois/, /30 à 70 mots/, /50 à 120 mots/, /3 variantes/])
+  for (const re of [/FUTURS clients/, /vouvoyant/, /jamais accuser l'auteur de mentir/i, /information personnelle/i, /judiciaire/, /allergie, intoxication/, /UN point fort/, /AU PLUS une fois/, /vise environ 45 mots/, /vise environ 80 mots/, /3 variantes/, /aucun point fort/i])
     assert.match(SYSTEM_PROMPT, re);
   const u = buildUserPrompt(RULE_PROFILE as any, NEGATIVE as any, ['Merci pour votre retour.']);
   assert.match(u, /Signature : Marc, chef et propriétaire/);
@@ -349,7 +349,8 @@ test('génération : 3 variantes, journalisation des tokens, variante non confor
   const one = await app.inject({ method: 'GET', url: `/api/reviews/${id}`, headers: { cookie } });
   assert.equal(one.json().variants.length, 3);
 
-  // Le modèle renvoie une variante tutoyante + une fuite d'email + une bonne : seule la bonne passe.
+  // Le modèle renvoie une variante tutoyante + une fuite d'email + une bonne :
+  // la bonne passe, les autres reviennent marquées « à revoir ».
   let calls = 0;
   setLlmProvider(new MockProvider(req => {
     calls++;
@@ -361,17 +362,18 @@ test('génération : 3 variantes, journalisation des tokens, variante non confor
   try {
     const r2 = await generate(cookie, id);
     assert.equal(r2.statusCode, 200, r2.body);
-    assert.equal(r2.json().variants.length, 1, 'une seule variante conforme');
+    assert.equal(r2.json().variants.filter((v: any) => !v.needsReview).length, 1, 'une seule variante conforme');
+    assert.equal(r2.json().variants.filter((v: any) => v.needsReview).length, 2, 'positions écartées marquées à revoir');
     assert.ok(r2.json().rejected.some((x: string) => /tutoiement/.test(x)));
     assert.ok(r2.json().rejected.some((x: string) => /email étranger/.test(x)));
     assert.equal(calls, 2, 'seconde tentative pour compléter');
-    // Aucune variante conforme → 502 propre, coût journalisé quand même.
+    // Aucune variante conforme → 502 propre, sans décompte du quota.
     setLlmProvider(new MockProvider(() => 'pas du json'));
     const r3 = await generate(cookie, id);
     assert.equal(r3.statusCode, 502);
     assert.equal(r3.json().code, 'LLM_FORMAT');
     const { rows: g2 } = await pool.query('SELECT count(*) AS n FROM generations WHERE review_id=$1', [id]);
-    assert.equal(Number(g2[0].n), 3);
+    assert.equal(Number(g2[0].n), 2, 'l’échec total ne consomme pas le quota');
     // Anti-répétition : les réponses précédentes sont transmises comme « à éviter ».
     let seen = '';
     setLlmProvider(new MockProvider(req => { seen = req.user; return mockVariants(req.user); }));

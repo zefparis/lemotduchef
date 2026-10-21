@@ -467,7 +467,8 @@ function renderVariants(g) {
   const block = $('#variants-block');
   block.hidden = false;
   const u = g.usage || {};
-  $('#variants-meta').textContent = `${g.variants.length} proposition(s) · relisez et ajustez avant de publier` + (g.rejected?.length ? ` · ${g.rejected.length} écartée(s) par les règles` : '');
+  const validCount = g.variants.filter(v => !v.needsReview).length;
+  $('#variants-meta').textContent = `${validCount} proposition(s) · relisez et ajustez avant de publier` + (g.rejected?.length ? ` · ${g.rejected.length} écartée(s) par les règles` : '');
   const maps = profile?.google_maps_url;
   const og = $('#open-google');
   og.hidden = !maps; if (maps) og.href = maps;
@@ -475,9 +476,9 @@ function renderVariants(g) {
     <article class="variant" data-idx="${i}">
       <div class="variant-head">
         <strong>Proposition ${i + 1}</strong>
-        <small><span data-words>${words(v.text)}</span> mots${v.warnings?.length ? ` · <span class="warn" title="${esc(v.warnings.join(' · '))}">à vérifier</span>` : ''}</small>
+        <small><span data-words>${words(v.text)}</span> mots${v.needsReview ? ' · <span class="warn">à revoir — écartée par les règles, rédigez ou régénérez</span>' : v.warnings?.length ? ` · <span class="warn" title="${esc(v.warnings.join(' · '))}">à vérifier</span>` : ''}</small>
       </div>
-      <textarea rows="8" data-variant>${esc(v.text)}</textarea>
+      <textarea rows="8" data-variant${v.needsReview ? ' placeholder="Variante non conforme — écrivez votre réponse ou régénérez."' : ''}>${esc(v.text)}</textarea>
       <div class="variant-actions">
         <button class="btn btn-primary btn-sm" data-copy="${i}">${icon('i-copy')}Copier</button>
         <button class="btn btn-outline btn-sm" data-publish="${i}">${icon('i-check')}Marquer comme publiée</button>

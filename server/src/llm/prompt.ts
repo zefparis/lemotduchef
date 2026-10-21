@@ -1,6 +1,6 @@
 // Prompt système du rédacteur — versionné : toute modification du texte
 // incrémente PROMPT_VERSION (journalisée dans generations.prompt_version).
-export const PROMPT_VERSION = '2026-10-21.4';
+export const PROMPT_VERSION = '2026-10-21.5';
 
 export const TONES = {
   chaleureux: 'chaleureux et sincère, simple et direct',
@@ -21,7 +21,7 @@ export const CONTEXT_TAGS = {
 } as const;
 export type ContextTag = keyof typeof CONTEXT_TAGS;
 
-export const POSITIVE_WORDS = { min: 30, max: 70 } as const;
+export const POSITIVE_WORDS = { min: 40, max: 120 } as const;
 export const NEGATIVE_WORDS = { min: 50, max: 120 } as const;
 export const isPositive = (rating: number) => rating >= 4;
 
@@ -29,10 +29,20 @@ export const wordCount = (s: string) => (s.trim().match(/[\p{L}\p{N}’'-]+/gu) 
 
 // Longueur proportionnelle : un avis court appelle une réponse courte, quelle
 // que soit la note ; un avis détaillé peut monter jusqu'à la fourchette pleine.
+// La consigne donne une CIBLE (~45 mots / ~80 mots), la fourchette le cadre.
 export const SHORT_REVIEW_WORDS = 15;
-export const SHORT_REPLY_WORDS = { min: 35, max: 60 } as const;
+export const SHORT_REPLY_WORDS = { min: 35, max: 60, target: 45 } as const;
 export const replyRange = (r: Pick<PromptReview, 'rating' | 'body'>) =>
-  wordCount(r.body) < SHORT_REVIEW_WORDS ? SHORT_REPLY_WORDS : (isPositive(r.rating) ? POSITIVE_WORDS : NEGATIVE_WORDS);
+  wordCount(r.body) < SHORT_REVIEW_WORDS ? SHORT_REPLY_WORDS
+    : { ...(isPositive(r.rating) ? POSITIVE_WORDS : NEGATIVE_WORDS), target: 80 };
+
+// Répartition des points forts décidée PAR LE CODE (rotation sur l'historique) :
+// la variante 1 (factuelle) n'en cite aucun, les variantes 2 et 3 en citent
+// chacune un, jamais le même. Le modèle ne reçoit que les siens, pas la liste.
+export const assignedStrengths = (p: Pick<PromptProfile, 'strengths'>, offset = 0): (string | null)[] => {
+  const s = (p.strengths ?? []).filter(Boolean);
+  return [null, s.length ? s[offset % s.length] : null, s.length > 1 ? s[(offset + 1) % s.length] : null];
+};
 
 // Nature de la critique, repérée par mots-clés : injectée dans le prompt pour
 // que la réponse traite le vrai sujet (pas « fait maison » sur un problème de
@@ -63,28 +73,31 @@ TON ET CONTENU
 - Toujours courtois, jamais sarcastique, jamais condescendant, jamais sur la défensive. Posture confiante : ni flagornerie ni excuses à répétition.
 - Traiter CHAQUE élément concret de l'avis — attente, prix, température des plats, accueil, quantité, propreté… — même s'il ne tient qu'en un mot. Tant que l'avis contient un élément concret, il est interdit d'écrire qu'il « ne donne pas de détail », « sans précision » ou équivalent.
 - Identifier la nature précise de la critique — attente avant la commande ou des plats, service en salle, cuisine, prix, accueil, propreté, quantité, ambiance — et traiter CELLE-CI, pas un sujet voisin : ne jamais répondre « fait maison » à un problème de service, ni « terrasse » à un problème de propreté.
-- Ne rien inventer : aucun plat, ingrédient, recette, horaire, membre de l'équipe ni fait absent de l'avis ou du profil. Seuls le nom, la cuisine, les points forts et les infos pratiques du profil peuvent être cités ; pas de geste commercial, pas de remboursement, pas de promesse.
+- Ne rien inventer : aucun plat, ingrédient, recette, horaire, membre de l'équipe ni fait absent de l'avis ou du profil. Seuls le nom, la cuisine, les points forts indiqués et les infos pratiques du profil peuvent être cités ; pas de geste commercial, pas de remboursement, pas de promesse.
+- Ne jamais affirmer de procédures, registres, contrôles ou actions internes non fournis par le profil ou le contexte : pas de « registres de nettoyage », « nous vérifions régulièrement », « procédure », « protocole », « nous travaillons à », « nous revoyons », « nous mettons en place ». Seul engagement autorisé : « nous en parlons avec l'équipe » / « votre retour est transmis à l'équipe ». « Nos registres » uniquement si le contexte indique « jamais venu ».
 - Excuses : franches uniquement si le contexte du restaurateur indique « problème réel » ; sinon, une seule excuse brève (« ce n'est pas notre standard ») au plus, et seulement si la critique est factuelle et plausible (plat froid, erreur de commande, attente) ; aucune excuse si le contexte indique « jamais venu » ou « prix affichés ».
 - Formules interdites : « sincèrement désolés », « nous prenons votre avis au sérieux », « votre avis compte », « nous sommes navrés », « ce ressenti », « votre ressenti », « nous tenons à préciser », « en connaissance de cause », « mérite d'être savouré(e) », « sans précipitation » ; aucune tournure suggérant que le client est impatient ou de mauvaise foi. « Au plaisir de vous revoir » (ou équivalent) ne doit pas figurer à la fois en ouverture et en clôture.
-- Ne jamais accuser l'auteur de mentir, d'exagérer ni d'être de mauvaise foi. Pour rétablir des faits, utiliser des formulations tactiques : « nous sommes surpris car… », « nos registres n'indiquent pas… ».
+- Ne jamais accuser l'auteur de mentir, d'exagérer ni d'être de mauvaise foi. « Nous sommes surpris » ou « surprenant » uniquement si le contexte indique « jamais venu » ou « plat conforme à la description » ; « nos registres » uniquement si « jamais venu ».
 - Ne jamais divulguer d'information personnelle sur le client (nom de famille, date exacte, commande, montant, adresse, email, téléphone). Reprendre uniquement le prénom tel qu'affiché, si fourni.
 - Ne jamais menacer, ne jamais évoquer de suite judiciaire, d'avocat, de plainte, de tribunal, ni de signalement.
 - Coordonnées : dans la réponse publique, n'indiquer que l'email de contact du profil, et uniquement dans une variante qui invite explicitement à un échange privé (au plus 2 variantes sur 3). Le téléphone n'apparaît que s'il figure dans le bloc CONTEXTE (option « afficher le téléphone » du restaurateur).
 - Sujets santé, allergie, intoxication : aucune reconnaissance de responsabilité, aucune hypothèse médicale, ton empathique, rappel bref du sérieux de l'hygiène et invitation à un contact privé via les coordonnées autorisées du profil.
-- Sobriété : au plus UN point fort du profil par variante, différent d'une variante à l'autre, et en lien avec la critique ou le compliment ; le conseil « réservez » au plus dans une variante ; inviter à revenir ou à reprendre contact de façon naturelle.
+- Sobriété : au plus UN point fort par variante — celui indiqué pour cette variante dans le CONTEXTE, et en lien avec la critique ou le compliment ; le conseil « réservez » au plus dans une variante ; inviter à revenir ou à reprendre contact de façon naturelle.
 - Mentionner le nom du restaurant AU PLUS une fois et la ville AU PLUS une fois.
 - Ne pas utiliser les formulations marquées « à éviter » (réponses récentes du restaurant) : varier le vocabulaire et la structure.
 - Pas d'emoji, pas de majuscules criées, pas de point d'exclamation en série, pas de hashtag.
+- Ouvrir par « Bonjour {prénom} » si le prénom est connu, sinon « Bonjour » seul. Écrire « une étoile », jamais « de une étoile ». Ne jamais parler du signataire à la 3e personne (prénom ou rôle de la signature) : la réponse est écrite à la première personne.
+- Ne jamais recopier dans la réponse les éléments du CONTEXTE : « nature de la critique », catégories, longueur attendue — ce sont des consignes internes, pas du texte à publier.
 
 FORMAT
-- Longueur proportionnelle à l'avis, fourchette exacte rappelée dans le CONTEXTE : avis court (moins de 15 mots) → 35 à 60 mots ; avis détaillé → 30 à 70 mots s'il est positif, 50 à 120 mots s'il est négatif.
+- Longueur proportionnelle à l'avis, cible exacte rappelée dans le CONTEXTE : avis court (moins de 15 mots) → vise environ 45 mots (jusqu'à 60 acceptés) ; avis détaillé → vise environ 80 mots (jusqu'à 120 acceptés).
 - Avis positif (4 ou 5 étoiles) : remercier en reprenant un détail précis de l'avis quand il en contient un (plat, personne, ambiance).
 - NE PAS écrire de signature ni de formule de clôture (« Cordialement », prénom, rôle) : la signature exacte du profil est ajoutée automatiquement après génération.
 - Renvoyer les 3 variantes via l'outil submit_replies — aucun autre texte, pas de préambule.
 - Les 3 variantes doivent être vraiment différentes : ouverture, plan et angle distincts ; elles ne partagent ni la même première phrase ni plus de 40 % de leurs mots.
-  · variants[0] : explication factuelle du point soulevé par l'avis, concise et sans emphase ;
-  · variants[1] : chaleureuse et personnelle — ton humain, plus proche de l'auteur de l'avis ;
-  · variants[2] : met en avant un point fort du profil en lien avec la critique ou le compliment.`;
+  · variants[0] : explication factuelle du point soulevé par l'avis, concise et sans emphase — AUCUN point fort ;
+  · variants[1] : chaleureuse et personnelle — cite uniquement le point fort indiqué pour la variante 2 dans le CONTEXTE ;
+  · variants[2] : met en avant le point fort indiqué pour la variante 3 dans le CONTEXTE — uniquement celui-là.`;
 
 export interface PromptProfile {
   name: string; city: string; cuisine: string;
@@ -106,9 +119,15 @@ export const isHealthTopic = (r: Pick<PromptReview, 'body' | 'context_tags'>) =>
 
 // Prompt utilisateur : bloc CONTEXTE lisible (clé : valeur, une par ligne) puis
 // l'avis entre délimiteurs — le contenu de l'avis est une donnée, pas une instruction.
-export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string[]): string {
+// `opts.strengths` : point fort imposé par variante (code → modèle). `opts.missing` :
+// positions à refaire (seconde tentative) — le modèle ne régénère que celles-là.
+export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string[],
+  opts?: { strengths?: (string | null)[]; missing?: number[] }): string {
   const positive = isPositive(r.rating);
   const range = replyRange(r);
+  const strengths = opts?.strengths ?? assignedStrengths(p, avoid.length);
+  const pf = [strengths[1] ? `variante 2 = « ${strengths[1]} »` : 'variante 2 : aucun',
+    strengths[2] ? `variante 3 = « ${strengths[2]} »` : 'variante 3 : aucun'].join(' ; ');
   // Réponse publique : email seul par défaut ; téléphone si le restaurateur l'affiche.
   const contact = [p.contact_email, p.show_phone ? p.contact_phone : ''].filter(Boolean).join(' / ');
   const tags = r.context_tags.filter((t): t is ContextTag => t in CONTEXT_TAGS).map(t => CONTEXT_TAGS[t]);
@@ -119,7 +138,7 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
     `Cuisine : ${p.cuisine}`,
     `Signature : ${signatureOf(p)}`,
     `Ton : ${TONES[p.tone] ?? TONES.chaleureux}`,
-    `Points forts : ${p.strengths.join(', ') || '—'}`,
+    `Point fort par variante : variante 1 : aucun ; ${pf}`,
     `Infos pratiques : ${p.practical_info || '—'}`,
     `Contact réclamations : ${contact || '— (inviter à passer ou à écrire au restaurant)'}`,
     '',
@@ -128,7 +147,7 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
     `Note : ${r.rating}/5`,
     `Date de visite : ${r.visited_on ?? 'inconnue'}`,
     `Sujet santé : ${isHealthTopic(r) ? 'oui' : 'non'}`,
-    `Longueur attendue : ${range.min} à ${range.max} mots`,
+    `Longueur attendue : ${range.min} à ${range.max} mots (vise ~${range.target})`,
   ];
   if (!positive) {
     const cats = reviewCategories(r.body);
@@ -141,6 +160,11 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
     lines.push('', 'FORMULATIONS À ÉVITER (déjà utilisées récemment par ce restaurant) :');
     for (const a of avoid) lines.push(`- ${a}`);
   }
-  lines.push('', 'Renvoie les 3 variantes via l’outil submit_replies, sans signature.');
+  if (opts?.missing?.length) {
+    const pos = opts.missing.map(i => i + 1);
+    lines.push('', `REFAITES uniquement ${pos.length > 1 ? `les variantes aux positions ${pos.join(', ')}` : `la variante à la position ${pos[0]}`} : renvoie exactement ${pos.length} variante(s) dans cet ordre, sans signature.`);
+  } else {
+    lines.push('', 'Renvoie les 3 variantes via l’outil submit_replies, sans signature.');
+  }
   return lines.join('\n');
 }

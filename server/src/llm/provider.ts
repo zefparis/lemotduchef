@@ -38,11 +38,11 @@ const thinkingFor = (model: string) =>
 // ce qui garantit un JSON valide quel que soit le babillage autour.
 const REPLY_TOOL = {
   name: 'submit_replies',
-  description: 'Soumet les 3 variantes de réponse rédigées, sans signature ni formule de clôture.',
+  description: 'Soumet les variantes de réponse rédigées (3 à la première demande, ou uniquement les positions à refaire ensuite), sans signature ni formule de clôture.',
   input_schema: {
     type: 'object',
     properties: {
-      variants: { type: 'array', minItems: 3, maxItems: 3, items: { type: 'string' } },
+      variants: { type: 'array', minItems: 1, maxItems: 3, items: { type: 'string' } },
     },
     required: ['variants'],
     additionalProperties: false,
@@ -124,14 +124,17 @@ function field(user: string, key: string): string {
 // distincts (factuel / chaleureux / point fort), vocabulaire volontairement
 // disjoint pour passer le contrôle de similarité.
 // Variantes sans signature (ajoutée par le code, comme en production) :
-// ~50-56 mots en négatif, ~38-50 en positif — dans le recouvrement des
+// ~48-56 mots en négatif, ~40-52 en positif — dans le recouvrement des
 // fourchettes court/long. Angles distincts (factuel / chaleureux / point
-// fort), un seul point fort cité (variante 2), email dans 2 variantes max.
+// fort imposé), un seul point fort cité par variante (celui du CONTEXTE),
+// email dans 2 variantes max, aucun fait interne inventé.
 export function mockVariants(user: string): string {
   const restaurant = field(user, 'Restaurant') || 'notre restaurant';
-  const author = field(user, 'Prénom affiché') || '';
+  const rawAuthor = field(user, 'Prénom affiché') || '';
+  const author = rawAuthor.startsWith('—') ? '' : rawAuthor;
   const rating = parseInt(field(user, 'Note') || '5', 10);
-  const strength = (field(user, 'Points forts').split(',')[0] || 'notre cuisine faite maison').trim();
+  const s2 = /variante 2 = « ([^»]+) »/.exec(user)?.[1] ?? '';
+  const s3 = /variante 3 = « ([^»]+) »/.exec(user)?.[1] ?? '';
   const rawContact = field(user, 'Contact réclamations');
   const contact = rawContact.startsWith('—') ? '' : rawContact;
   const health = /oui/i.test(field(user, 'Sujet santé'));
@@ -142,20 +145,24 @@ export function mockVariants(user: string): string {
   if (rating >= 4) {
     variants.push(
       `${hello} merci pour ce retour précis et généreux : ravis que votre moment chez ${restaurant} vous ait plu. C’est exactement l’expérience que toute l’équipe s’attache à offrir chaque jour, avec attention, à chaque table.`,
-      `${hello} quel plaisir de vous lire ce matin. Vos mots ont fait sourire toute la maison, et nous vous remercions d’avoir pris le temps de les partager. On espère vous retrouver très vite autour d’une table.`,
-      `${hello} votre message illumine notre journée entière. ${cap(strength)} est au cœur de ce que nous aimons partager chez ${restaurant} ; savoir que cela vous a touché est la plus belle des récompenses. À très bientôt.`,
+      s2
+        ? `${hello} quel plaisir de vous lire ce matin. Vos mots ont fait sourire toute la maison, et ${s2} est précisément ce que nous aimons partager à chaque service. On espère vous retrouver très vite autour d’une table.`
+        : `${hello} quel plaisir de vous lire ce matin. Vos mots ont fait sourire toute la maison, et nous vous remercions d’avoir pris le temps de les partager. On espère vous retrouver très vite autour d’une table.`,
+      s3
+        ? `${hello} votre message illumine notre journée entière. ${cap(s3)} est au cœur de ce que nous aimons partager chez ${restaurant} ; savoir que cela vous a touché est la plus belle des récompenses. À très bientôt.`
+        : `${hello} votre message illumine notre journée entière. Savoir que ce moment vous a touché est la plus belle des récompenses pour toute l’équipe de ${restaurant}. À très bientôt, avec plaisir.`,
     );
   } else if (health) {
     variants.push(
-      `${hello} votre message nous touche : le bien-être de nos clients passe avant tout, et nous lisons le vôtre avec la plus grande attention. Nos procédures d’hygiène et de traçabilité sont documentées et rigoureusement appliquées chaque jour, sans exception. Contactez-nous${reach} pour que nous comprenions ce qui s’est passé.`,
-      `${hello} nous entendons votre inquiétude et elle nous tient à cœur. Chez nous, l’hygiène n’est pas un argument mais une discipline quotidienne, suivie par toute l’équipe sans relâche. Joignez-nous directement${reach} : nous prendrons tout le temps nécessaire pour comprendre ensemble ce qui s’est passé.`,
-      `${hello} la confiance de nos clients est ce que nous défendons le plus, avec ${strength} et une exigence d’hygiène de tous les instants, à chaque service — toute l’équipe y veille. Pour comprendre votre expérience, contactez-nous directement au restaurant : vous aurez une réponse personnelle et attentionnée.`,
+      `${hello} votre message nous touche : le bien-être de nos clients passe avant tout, et nous lisons le vôtre avec la plus grande attention. L’hygiène est chez nous une discipline de tous les instants, partagée par toute l’équipe. Contactez-nous${reach} pour que nous comprenions ce qui s’est passé.`,
+      `${hello} nous entendons votre inquiétude et elle nous tient à cœur. Chez nous, l’hygiène n’est pas un argument mais une exigence quotidienne, tenue par toute l’équipe sans relâche. Joignez-nous directement${reach} : nous prendrons tout le temps nécessaire pour comprendre ensemble ce qui s’est passé.`,
+      `${hello} la confiance de nos clients est ce que nous défendons le plus${s3 ? `, avec ${s3}` : ''} et une exigence d’hygiène de tous les instants, à chaque service — toute l’équipe y veille. Pour comprendre votre expérience, contactez-nous directement au restaurant : vous aurez une réponse personnelle et attentionnée.`,
     );
   } else {
     variants.push(
-      `${hello} votre retour appelle une réponse claire : ce que vous décrivez n’est pas le niveau de service que nous voulons proposer. Nous revoyons dès aujourd’hui l’organisation en salle et en cuisine pour tenir nos délais, comme nous le faisons déjà chaque jour sur l’accueil de chacun de nos clients.`,
-      `${hello} lire votre avis n’est pas un moment agréable, et nous le regardons en face. Votre soirée aurait dû être belle ; qu’elle ne l’ait pas été nous importe vraiment. Écrivez-nous${reach} si vous souhaitez en parler de vive voix : nous vous écouterons avec attention et sans détour.`,
-      `${hello} ce que vous décrivez est l’inverse de ce que nous défendons chaque jour : ${strength} et une attention sincère portée à chaque table qui passe notre porte. Nous serions heureux de vous le prouver lors d’une prochaine visite, quand vous le souhaiterez, en toute simplicité et avec le sourire.`,
+      `${hello} votre retour appelle une réponse claire : ce que vous décrivez n’est pas le niveau de service que nous voulons proposer. Votre retour est transmis à l’équipe, en salle comme en cuisine, et nous en parlons dès aujourd’hui pour bien mieux faire à chaque service.`,
+      `${hello} lire votre avis n’est pas un moment agréable, et nous le regardons en face. Votre soirée aurait dû être belle ; qu’elle ne l’ait pas été nous importe vraiment. ${s2 ? `${cap(s2)} n’en reste pas moins notre fierté quotidienne. ` : ''}Écrivez-nous${reach} si vous souhaitez en parler de vive voix.`,
+      `${hello} ce que vous décrivez est l’inverse de ce que nous défendons chaque jour${s3 ? ` : ${s3} et une attention sincère portée à chaque table` : ' : une attention sincère portée à chaque table'}. Nous serions heureux de vous le prouver lors d’une prochaine visite, quand vous le souhaiterez, en toute simplicité et avec le sourire.`,
     );
   }
   return JSON.stringify({ variants });

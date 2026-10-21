@@ -35,6 +35,25 @@ const BANNED_PHRASES = [
 ];
 // Tournures qui laissent entendre que le client est impatient ou de mauvaise foi.
 const IMPATIENCE_RE = /(impatient|impatience|mauvaise foi|mauvaise intention|malhonn[eê]t|pas de bonne foi|vous exagérez|votre exagération)/i;
+// Affirmations sur des procédures ou actions internes non fournies par le profil
+// ou le contexte — de la pure invention (« registres de nettoyage », « nous
+// vérifions régulièrement », « nous travaillons à mieux répartir »).
+const INTERNAL_CLAIMS: Array<[RegExp, string]> = [
+  [/\bregistres?\b/i, 'registre'],       // permis seulement si contexte « jamais venu »
+  [/\bcontr[oô]les?\b/i, 'contrôle'],
+  [/\bv[eé]rifi\w*\b/i, 'vérifions'],
+  [/\bproc[eé]dures?\b/i, 'procédure'],
+  [/\bprotocoles?\b/i, 'protocole'],
+  [/\bnous travaillons\b/i, 'nous travaillons à'],
+  [/\bnous revoyons\b/i, 'nous revoyons'],
+  [/\bnous mettons en (place|[œo]uvre)\b/i, 'nous mettons en place'],
+];
+// « Nous sommes surpris / surprenant » : réservé aux contextes où le restaurateur
+// conteste le fait (jamais venu, plat conforme) — ailleurs c'est de la défensive.
+const SURPRISE_RE = /\bsurpris(es)?\b|\bsurpren(ant|ante|ants|antes|ons|ez)\b/i;
+// Fuites de l'analyse interne et fautes de forme.
+const ANALYSIS_LEAK_RE = /\b(nature|cat[ée]gorie|classification|type) de (la |votre |cette )?critique\b/i;
+const DE_UNE_RE = /\bde un(e)?\b/i; // « de une étoile » → « une étoile »
 // Regrets / excuses : franches uniquement si le contexte « problème réel » est
 // coché ; sinon au plus une occurrence.
 const APOLOGY_RE = /(nous (sommes |serions |vous sommes )?(sincèrement |vraiment )?désolé|nous (vous )?(présentons|adressons|offrons) nos (plus |sincères )?excuses|toutes nos excuses|nous nous excusons|veuillez (accepter|recevoir|croire à|agréer) nos (sincères |plus sincères )?(excuses|regrets)|nous (le |la |les |vous )?regrettons|nous sommes navrés|je (vous )?(regrette|m'excuse|présente mes (plus |sincères )?excuses))/gi;
@@ -104,7 +123,8 @@ export const mentionsContactEmail = (text: string, p: PromptProfile) => {
 };
 export const mentionsReservation = (text: string) => /réserv|reserv/i.test(text);
 
-export function checkReply(text: string, p: PromptProfile, r: PromptReview): RuleCheck {
+export function checkReply(text: string, p: PromptProfile, r: PromptReview,
+  opts?: { allowedStrength?: string | null }): RuleCheck {
   const errors: string[] = [], warnings: string[] = [];
   const t = text.trim();
   // Longueur mesurée sur le corps, hors ligne de signature.
@@ -115,10 +135,25 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview): Rul
   const bodyNoSig = (signed ? lines.slice(0, -1).join('\n') : t).trim();
   const words = wordCount(bodyNoSig);
   const range = replyRange(r);
-  // Longueur : rejet au-delà d'une tolérance de 15 % (le LLM n'est pas un compteur exact).
+  // Longueur : dépassement jusqu'à +10 % = avertissement ; au-delà = rejet.
   if (words < Math.floor(range.min * 0.85)) errors.push(`trop court (${words} mots, minimum ${range.min})`);
-  else if (words > Math.ceil(range.max * 1.15)) errors.push(`trop long (${words} mots, maximum ${range.max})`);
+  else if (words > Math.ceil(range.max * 1.10)) errors.push(`trop long (${words} mots, maximum ${range.max})`);
   else if (words < range.min || words > range.max) warnings.push(`longueur hors cible (${words} mots, cible ${range.min}–${range.max})`);
+
+  // Ouverture : « Bonjour {prénom} » si le prénom est connu, sinon « Bonjour ».
+  const nb = norm(bodyNoSig);
+  if (!/^bonjour\b/.test(nb)) errors.push('ouverture différente de « Bonjour »');
+  else if (r.author_name?.trim()) {
+    const a = norm(r.author_name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim();
+    if (a && !new RegExp(`^bonjour\\s+${a}(?![\\p{L}\\p{N}])`, 'u').test(nb)) errors.push('ouverture sans le prénom de l’auteur');
+  }
+  // Le signataire ne se nomme jamais à la 3e personne dans le corps.
+  const reviewAndAuthor = norm(`${r.body} ${r.author_name}`);
+  for (const who of [p.signature_name, p.signature_role].filter(s => s && s.trim().length > 2)) {
+    const w = norm(who).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim();
+    if (w && new RegExp(`\\b${w}\\b`).test(nb) && !reviewAndAuthor.includes(w))
+      { errors.push('signataire cité à la 3e personne'); break; }
+  }
 
   // Signature (texte final assemblé) : présente, seule en fin de texte.
   if (!norm(t).includes(norm(sig))) errors.push('signature absente');
@@ -152,9 +187,28 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview): Rul
   if (r.body.trim() && NO_DETAIL_RE.test(t))
     errors.push('affirme à tort que l’avis ne donne aucun détail');
 
-  // Sobriété : au plus UN point fort du profil par variante.
+  // Faits internes inventés : aucun registre, contrôle ou procédure que le
+  // profil, le contexte ou l'avis ne mentionne pas.
+  const contextCorpus = norm([r.body, r.context_note, p.practical_info, ...(p.strengths ?? [])].join(' '));
+  for (const [re, label] of INTERNAL_CLAIMS) {
+    const m = t.match(re);
+    if (!m) continue;
+    if (label === 'registre' && r.context_tags.includes('unknown_customer')) continue;
+    if (contextCorpus.includes(norm(m[0]))) continue;
+    errors.push(`fait interne inventé (« ${label} »)`);
+    break;
+  }
+  if (SURPRISE_RE.test(t) && !r.context_tags.some(tg => tg === 'unknown_customer' || tg === 'dish_as_described'))
+    errors.push('« surpris / surprenant » réservé aux contextes « jamais venu » ou « plat conforme »');
+  if (ANALYSIS_LEAK_RE.test(t)) errors.push('analyse interne recopiée (« nature de la critique »)');
+  if (DE_UNE_RE.test(t)) errors.push('« de une étoile » — écrire « une étoile »');
+
+  // Sobriété : au plus UN point fort du profil par variante, et celui assigné.
   const strengths = citedStrengths(t, p);
   if (strengths.length > 1) errors.push(`plusieurs points forts cités (${strengths.slice(0, 2).join(', ')})`);
+  else if (opts?.allowedStrength === null && strengths.length) errors.push('point fort non demandé dans la variante factuelle');
+  else if (typeof opts?.allowedStrength === 'string' && strengths.some(s => s !== opts.allowedStrength))
+    errors.push(`point fort non attribué à cette variante (« ${opts.allowedStrength} » attendu)`);
 
   // Plats et aliments : tout mot culinaire cité doit venir de l'avis ou du profil.
   const known = norm([r.body, p.name, p.city, p.cuisine, p.practical_info, ...(p.strengths ?? [])].join(' '));
