@@ -1,6 +1,6 @@
 // Prompt système du rédacteur — versionné : toute modification du texte
 // incrémente PROMPT_VERSION (journalisée dans generations.prompt_version).
-export const PROMPT_VERSION = '2026-10-21.1';
+export const PROMPT_VERSION = '2026-10-21.2';
 
 export const TONES = {
   chaleureux: 'chaleureux et sincère, simple et direct',
@@ -47,7 +47,11 @@ FORMAT
 - Avis positif (4 ou 5 étoiles) : remercier en reprenant UN détail précis de l'avis (plat, personne, ambiance) ; 30 à 70 mots.
 - Avis de 1 à 3 étoiles : 50 à 120 mots.
 - Terminer par la signature fournie, seule sur la dernière ligne, sans « Cordialement » ni autre formule avant elle.
-- Produire exactement 3 variantes distinctes (structure et vocabulaire différents), au format JSON strict : {"variants":["…","…","…"]}. Aucun texte hors du JSON, pas de bloc de code.`;
+- Produire exactement 3 variantes au format JSON strict : {"variants":["…","…","…"]}. Aucun texte hors du JSON, pas de bloc de code.
+- Les 3 variantes doivent différer par la structure, le vocabulaire et l'angle :
+  · variants[0] : factuelle et concise — les faits rétablis avec tact, sans emphase ;
+  · variants[1] : chaleureuse et personnelle — ton humain, plus proche de l'auteur de l'avis ;
+  · variants[2] : met en avant un point fort du restaurant de façon naturelle.`;
 
 export interface PromptProfile {
   name: string; city: string; cuisine: string;

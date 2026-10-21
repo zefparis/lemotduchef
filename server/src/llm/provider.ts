@@ -8,7 +8,6 @@ export interface LlmRequest {
   system: string;
   user: string;
   maxTokens: number;
-  temperature?: number;
 }
 export interface LlmResult {
   text: string;
@@ -28,7 +27,7 @@ export class LlmError extends Error {
 }
 
 /* ---------- Anthropic (Messages API, sans SDK) ---------- */
-class AnthropicProvider implements LlmProvider {
+export class AnthropicProvider implements LlmProvider {
   readonly name = 'anthropic';
   async complete(req: LlmRequest, signal: AbortSignal): Promise<LlmResult> {
     if (!config.llm.anthropicApiKey) throw new LlmError('ANTHROPIC_API_KEY manquante.', 'config');
@@ -42,10 +41,12 @@ class AnthropicProvider implements LlmProvider {
           'x-api-key': config.llm.anthropicApiKey,
           'anthropic-version': '2023-06-01',
         },
+        // Aucun paramètre d'échantillonnage (temperature/top_p/top_k) : les
+        // modèles récents les refusent. La diversité des variantes vient de
+        // la consigne de style du prompt, pas de la température.
         body: JSON.stringify({
           model: config.llm.model,
           max_tokens: req.maxTokens,
-          temperature: req.temperature ?? 0.8,
           system: req.system,
           messages: [{ role: 'user', content: req.user }],
         }),

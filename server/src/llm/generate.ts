@@ -52,9 +52,8 @@ export async function generateReplies(
     try {
       res = await provider.complete({
         system: SYSTEM_PROMPT,
-        user: attempt === 0 ? user : user + '\n\nRAPPEL : respecte la longueur, la signature seule en dernière ligne et le JSON strict.',
+        user: attempt === 0 ? user : user + '\n\nRAPPEL : respecte la longueur, la signature seule en dernière ligne et le JSON strict {"variants":[3 chaînes]}.',
         maxTokens: config.llm.maxOutputTokens,
-        temperature: attempt === 0 ? 0.8 : 0.6,
       }, ctrl.signal);
     } catch (err) {
       clearTimeout(timer);

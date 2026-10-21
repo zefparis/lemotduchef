@@ -102,7 +102,12 @@ export async function buildApp(opts: { retention?: boolean } = {}) {
       }
       const res = await auth.handler(new Request(url, init as RequestInit));
       reply.status(res.status);
-      res.headers.forEach((v, k) => { if (k.toLowerCase() !== 'set-cookie') reply.header(k, v); });
+      // Ni set-cookie (posé à part) ni access-control-* : CORS est fixé
+      // par @fastify/cors, jamais par une réponse amont recopiée.
+      res.headers.forEach((v, k) => {
+        const n = k.toLowerCase();
+        if (n !== 'set-cookie' && !n.startsWith('access-control-')) reply.header(k, v);
+      });
       const cookies = res.headers.getSetCookie?.() ?? [];
       if (cookies.length) reply.header('set-cookie', cookies);
       reply.send(res.body ? Buffer.from(await res.arrayBuffer()) : undefined);

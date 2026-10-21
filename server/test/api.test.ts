@@ -395,6 +395,52 @@ test('génération : erreurs LLM propres (timeout, upstream) et profil requis', 
   assert.equal(Number(rows[0].n), 0, 'aucun quota consommé sur échec réseau');
 });
 
+test('génération : erreur LLM → 502 propre avec CORS conservés', async () => {
+  const cookie = await signup('cors502@x.fr'); const cid = await createRestaurant(cookie);
+  await makePro(cid);
+  const { id } = await addReview(cookie);
+  const { LlmError } = await import('../src/llm/provider.js');
+  setLlmProvider({ name: 'mock', complete: async () => { throw new LlmError('Fournisseur LLM en erreur (400).', 'upstream'); } });
+  try {
+    const r = await app.inject({ method: 'POST', url: `/api/reviews/${id}/generate`,
+      headers: { ...H, cookie, origin: 'https://lemotduchef.test' }, payload: {} });
+    assert.equal(r.statusCode, 502, r.body);
+    assert.equal(r.headers['access-control-allow-origin'], 'https://lemotduchef.test',
+      'l’erreur passe par Fastify : l’en-tête CORS doit être présent');
+    assert.equal(r.json().error, 'La génération est momentanément indisponible, réessayez dans un instant.');
+    assert.equal(r.json().code, 'LLM_UPSTREAM');
+    assert.ok(!/400|anthropic|api/i.test(r.json().error), 'aucun détail technique au client');
+  } finally { setLlmProvider(null); }
+});
+
+test('LLM : le corps envoyé au fournisseur ne contient ni temperature ni top_p/top_k', async () => {
+  const { AnthropicProvider } = await import('../src/llm/provider.js');
+  const { config } = await import('../src/config.js');
+  let sent: Record<string, unknown> | null = null;
+  const orig = globalThis.fetch;
+  (globalThis as any).fetch = async (_url: any, init: any) => {
+    sent = JSON.parse(init.body);
+    return new Response(JSON.stringify({
+      content: [{ type: 'text', text: '{"variants":["a","b","c"]}' }],
+      usage: { input_tokens: 10, output_tokens: 5 }, model: 'claude-haiku-5-5',
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  try {
+    (config.llm as any).anthropicApiKey = 'test-key';
+    const res = await new AnthropicProvider().complete(
+      { system: 'système', user: 'utilisateur', maxTokens: 64 }, new AbortController().signal);
+    assert.equal(res.model, 'claude-haiku-5-5');
+  } finally {
+    (globalThis as any).fetch = orig;
+    (config.llm as any).anthropicApiKey = '';
+  }
+  assert.ok(sent, 'corps de requête capturé');
+  assert.equal('temperature' in sent!, false);
+  assert.equal('top_p' in sent!, false);
+  assert.equal('top_k' in sent!, false);
+  assert.ok(sent!.system && Array.isArray(sent!.messages) && sent!.max_tokens === 64);
+});
+
 /* ====================== Quotas serveur ====================== */
 test('quota Gratuit : N générations/mois → PLAN_LIMIT ; Pro illimité ; résiliation → retour Gratuit', async () => {
   const cookie = await signup('quota@x.fr'); const cid = await createRestaurant(cookie);

@@ -131,7 +131,11 @@ export default async function reviewRoutes(app: FastifyInstance) {
       } catch (err) {
         if (err instanceof LlmError) {
           const status = err.kind === 'config' ? 503 : err.kind === 'timeout' ? 504 : 502;
-          return reply.code(status).send({ error: err.message, code: 'LLM_' + err.kind.toUpperCase() });
+          // Jamais le détail technique du fournisseur au client (loggé côté serveur).
+          const message = err.kind === 'upstream'
+            ? 'La génération est momentanément indisponible, réessayez dans un instant.'
+            : err.message;
+          return reply.code(status).send({ error: message, code: 'LLM_' + err.kind.toUpperCase() });
         }
         throw err;
       }
