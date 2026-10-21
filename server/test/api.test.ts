@@ -354,7 +354,7 @@ test('génération : 3 variantes, journalisation des tokens, variante non confor
   let calls = 0;
   setLlmProvider(new MockProvider(req => {
     calls++;
-    const good = parseVariants(mockVariants(req.user))[0];
+    const good = parseVariants(mockVariants(req.user))[2]; // variante « point fort » : conforme à son slot
     const bad1 = good.replace('Bonjour Julie,', 'Salut Julie, tu');
     const bad2 = good.replace('Bonjour Julie,', 'Bonjour Julie (julie.martin@gmail.com),');
     return JSON.stringify({ variants: [bad1, bad2, good] });

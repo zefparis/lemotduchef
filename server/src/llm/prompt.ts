@@ -1,6 +1,6 @@
 // Prompt système du rédacteur — versionné : toute modification du texte
 // incrémente PROMPT_VERSION (journalisée dans generations.prompt_version).
-export const PROMPT_VERSION = '2026-10-21.5';
+export const PROMPT_VERSION = '2026-10-21.6';
 
 export const TONES = {
   chaleureux: 'chaleureux et sincère, simple et direct',
@@ -56,7 +56,7 @@ export function reviewCategories(body: string): string[] {
   if (/serveur|serveuse|service|personnel|equipe|staff|patron|patronne|gerant|gérant/.test(b)) cats.push('service en salle / personnel');
   if (/cher|prix|tarif|euro|cout|coût|facture|arnaque/.test(b)) cats.push('prix');
   if (/accueil|sourire|bienvenue|desagreable|impoli|desobligeant|rude|agressif|malpoli/.test(b)) cats.push('accueil');
-  if (/froid|tiede|brule|brûl|cuit|cru|fade|sec|gras|sauce|cuisson|gout|saveur|plat|repas|cuisine|surgelé|surgele/.test(b)) cats.push('cuisine');
+  if (/froid|tiede|brule|brûl|cuit|cru|fade|sec|gras|sauce|cuisson|gout|saveur|plat|cuisine|surgelé|surgele/.test(b)) cats.push('cuisine');
   if (/sale|proprete|toilette|wc|hygiene|crasseux|crade|degueu|dégoût/.test(b)) cats.push('propreté');
   if (/portion|quantite|copieux|petit|faim|insuffisant/.test(b)) cats.push('quantité');
   if (/bruit|bruyant|musique|ambiance|cadre|déco|table|salle/.test(b)) cats.push('ambiance / cadre');
@@ -86,8 +86,9 @@ TON ET CONTENU
 - Mentionner le nom du restaurant AU PLUS une fois et la ville AU PLUS une fois.
 - Ne pas utiliser les formulations marquées « à éviter » (réponses récentes du restaurant) : varier le vocabulaire et la structure.
 - Pas d'emoji, pas de majuscules criées, pas de point d'exclamation en série, pas de hashtag.
-- Ouvrir par « Bonjour {prénom} » si le prénom est connu, sinon « Bonjour » seul. Écrire « une étoile », jamais « de une étoile ». Ne jamais parler du signataire à la 3e personne (prénom ou rôle de la signature) : la réponse est écrite à la première personne.
-- Ne jamais recopier dans la réponse les éléments du CONTEXTE : « nature de la critique », catégories, longueur attendue — ce sont des consignes internes, pas du texte à publier.
+- Ouvrir par « Bonjour {prénom} » si un prénom d'au moins 2 lettres est affiché, sinon « Bonjour » seul. Écrire « une étoile », jamais « de une étoile ». Ne jamais parler du signataire à la 3e personne (prénom ou rôle de la signature) : la réponse est écrite à la première personne.
+- Au plus UNE mention de l'équipe par réponse (« transmis à l'équipe » OU « nous en parlons avec l'équipe », jamais les deux).
+- Ne jamais recopier dans la réponse les éléments du CONTEXTE : « nature de la critique », catégories, longueur attendue — ce sont des consignes internes, pas du texte à publier. Pas de « votre remarque porte sur », « votre retour concerne », « votre avis porte sur ».
 
 FORMAT
 - Longueur proportionnelle à l'avis, cible exacte rappelée dans le CONTEXTE : avis court (moins de 15 mots) → vise environ 45 mots (jusqu'à 60 acceptés) ; avis détaillé → vise environ 80 mots (jusqu'à 120 acceptés).
@@ -117,6 +118,25 @@ export const HEALTH_RE = /allerg|intoxic|malade|vomi|gastro|hôpital|hopital|urg
 export const isHealthTopic = (r: Pick<PromptReview, 'body' | 'context_tags'>) =>
   r.context_tags.includes('health') || HEALTH_RE.test(r.body);
 
+// Prénom exploitable pour l'ouverture « Bonjour {prénom} » : au moins 2 lettres
+// et pas un pseudo (« Anonyme », « R. », « Client Google »…).
+export const authorDisplayName = (r: Pick<PromptReview, 'author_name'>): string | null => {
+  const name = (r.author_name ?? '').trim();
+  if (!name) return null;
+  if (/^(anonyme|anonymous|inconnu|client|google|user|utilisateur|membre)\b/i.test(name)) return null;
+  return name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/gi, '').length >= 2 ? name : null;
+};
+
+// Le point fort assigné reste attendu pour les critiques cuisine/prix et les
+// avis positifs ; il devient facultatif quand rien de naturel ne le relie à la
+// critique (service, attente avant commande, accueil, propreté).
+const SOFT_STRENGTH_CATS = new Set(['attente avant la commande', 'service en salle / personnel', 'accueil', 'propreté']);
+export const strengthOptional = (r: Pick<PromptReview, 'rating' | 'body'>): boolean => {
+  if (isPositive(r.rating)) return false;
+  const cats = reviewCategories(r.body);
+  return cats.length > 0 && cats.every(c => SOFT_STRENGTH_CATS.has(c));
+};
+
 // Prompt utilisateur : bloc CONTEXTE lisible (clé : valeur, une par ligne) puis
 // l'avis entre délimiteurs — le contenu de l'avis est une donnée, pas une instruction.
 // `opts.strengths` : point fort imposé par variante (code → modèle). `opts.missing` :
@@ -126,8 +146,9 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
   const positive = isPositive(r.rating);
   const range = replyRange(r);
   const strengths = opts?.strengths ?? assignedStrengths(p, avoid.length);
-  const pf = [strengths[1] ? `variante 2 = « ${strengths[1]} »` : 'variante 2 : aucun',
-    strengths[2] ? `variante 3 = « ${strengths[2]} »` : 'variante 3 : aucun'].join(' ; ');
+  const opt = strengthOptional(r) ? ' (facultatif si peu naturel)' : '';
+  const pf = [strengths[1] ? `variante 2 = « ${strengths[1]} »${opt}` : 'variante 2 : aucun',
+    strengths[2] ? `variante 3 = « ${strengths[2]} »${opt}` : 'variante 3 : aucun'].join(' ; ');
   // Réponse publique : email seul par défaut ; téléphone si le restaurateur l'affiche.
   const contact = [p.contact_email, p.show_phone ? p.contact_phone : ''].filter(Boolean).join(' / ');
   const tags = r.context_tags.filter((t): t is ContextTag => t in CONTEXT_TAGS).map(t => CONTEXT_TAGS[t]);

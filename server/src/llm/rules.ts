@@ -1,4 +1,4 @@
-import { isPositive, isHealthTopic, signatureOf, replyRange, wordCount } from './prompt.js';
+import { isPositive, isHealthTopic, signatureOf, replyRange, wordCount, authorDisplayName } from './prompt.js';
 import type { PromptProfile, PromptReview } from './prompt.js';
 
 // Vérification mécanique des réponses produites par le LLM. Une variante qui
@@ -52,7 +52,7 @@ const INTERNAL_CLAIMS: Array<[RegExp, string]> = [
 // conteste le fait (jamais venu, plat conforme) — ailleurs c'est de la défensive.
 const SURPRISE_RE = /\bsurpris(es)?\b|\bsurpren(ant|ante|ants|antes|ons|ez)\b/i;
 // Fuites de l'analyse interne et fautes de forme.
-const ANALYSIS_LEAK_RE = /\b(nature|cat[ée]gorie|classification|type) de (la |votre |cette )?critique\b/i;
+const ANALYSIS_LEAK_RE = /\b(nature|cat[ée]gorie|classification|type) de (la |votre |cette )?critique\b|votre (remarque|retour|avis|commentaire|critique|note|message) (porte sur|concerne|se concentre sur)/i;
 const DE_UNE_RE = /\bde un(e)?\b/i; // « de une étoile » → « une étoile »
 // Regrets / excuses : franches uniquement si le contexte « problème réel » est
 // coché ; sinon au plus une occurrence.
@@ -100,14 +100,27 @@ const foodMentions = (text: string, known: string): string[] => {
 };
 
 // Signature exacte ajoutée par le code : remplace une signature partielle
-// (« Marc ») ou une formule de clôture écrite par le modèle, sinon l'ajoute.
+// (« Marc »), retire un prénom de signataire en fin de corps (« …, Marc »),
+// remplace une formule de clôture écrite par le modèle, sinon l'ajoute.
 export function withSignature(text: string, sig: string): string {
   const lines = text.trim().split('\n').map(s => s.trim()).filter(Boolean);
+  const first = sig.split(',')[0].trim();
+  const fn = first.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const last = lines.at(-1) ?? '';
   const nl = norm(last), ns = norm(sig);
   if (nl === ns) return lines.join('\n');
-  if (nl && nl.length < ns.length && ns.includes(nl)) lines[lines.length - 1] = sig;
-  else if (last && last.length < 50 && /cordialement|bien à vous|bien a vous|l'équipe|l'equipe|amicalement|très bonne journée|bonne soirée/i.test(last))
+  // Dernière ligne = prénom seul ou signature partielle → remplacée.
+  if (new RegExp(`^${fn}\\.?$`, 'i').test(last) || (nl && nl.length < ns.length && ns.includes(nl)))
+    { lines[lines.length - 1] = sig; return lines.join('\n'); }
+  // Fin de phrase « …, Marc. » : prénom retiré puis signature ajoutée.
+  let stripped = last.replace(new RegExp(`[,\\s]*${fn}\\.?\\s*$`, 'i'), '').trim();
+  if (stripped !== last) {
+    if (stripped && !/[.!?…]$/.test(stripped) && /[.!?…]\s*$/.test(last)) stripped += '.';
+    if (stripped) lines[lines.length - 1] = stripped; else lines.pop();
+    lines.push(sig);
+    return lines.join('\n');
+  }
+  if (last && last.length < 50 && /cordialement|bien à vous|bien a vous|l'équipe|l'equipe|amicalement|très bonne journée|bonne soirée/i.test(last))
     lines[lines.length - 1] = sig;
   else lines.push(sig);
   return lines.join('\n');
@@ -124,7 +137,7 @@ export const mentionsContactEmail = (text: string, p: PromptProfile) => {
 export const mentionsReservation = (text: string) => /réserv|reserv/i.test(text);
 
 export function checkReply(text: string, p: PromptProfile, r: PromptReview,
-  opts?: { allowedStrength?: string | null }): RuleCheck {
+  opts?: { allowedStrength?: string | null; strengthOptional?: boolean }): RuleCheck {
   const errors: string[] = [], warnings: string[] = [];
   const t = text.trim();
   // Longueur mesurée sur le corps, hors ligne de signature.
@@ -140,13 +153,16 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
   else if (words > Math.ceil(range.max * 1.10)) errors.push(`trop long (${words} mots, maximum ${range.max})`);
   else if (words < range.min || words > range.max) warnings.push(`longueur hors cible (${words} mots, cible ${range.min}–${range.max})`);
 
-  // Ouverture : « Bonjour {prénom} » si le prénom est connu, sinon « Bonjour ».
+  // Ouverture : « Bonjour {prénom} » si un prénom exploitable est affiché
+  // (≥ 2 lettres, pas un pseudo comme « Anonyme » ou « R. »), sinon « Bonjour ».
   const nb = norm(bodyNoSig);
+  const name = authorDisplayName(r);
   if (!/^bonjour\b/.test(nb)) errors.push('ouverture différente de « Bonjour »');
-  else if (r.author_name?.trim()) {
-    const a = norm(r.author_name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim();
-    if (a && !new RegExp(`^bonjour\\s+${a}(?![\\p{L}\\p{N}])`, 'u').test(nb)) errors.push('ouverture sans le prénom de l’auteur');
-  }
+  else if (name) {
+    const a = norm(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!new RegExp(`^bonjour\\s+${a}(?![\\p{L}\\p{N}])`, 'u').test(nb)) errors.push('ouverture sans le prénom de l’auteur');
+  } else if (/^bonjour\s+[a-z](?![a-z])/i.test(nb))
+    errors.push('« Bonjour » seul attendu (initiale non communiquée)');
   // Le signataire ne se nomme jamais à la 3e personne dans le corps.
   const reviewAndAuthor = norm(`${r.body} ${r.author_name}`);
   for (const who of [p.signature_name, p.signature_role].filter(s => s && s.trim().length > 2)) {
@@ -203,12 +219,18 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
   if (ANALYSIS_LEAK_RE.test(t)) errors.push('analyse interne recopiée (« nature de la critique »)');
   if (DE_UNE_RE.test(t)) errors.push('« de une étoile » — écrire « une étoile »');
 
-  // Sobriété : au plus UN point fort du profil par variante, et celui assigné.
+  // Sobriété : au plus UN point fort du profil par variante, et celui assigné
+  // (attendu sauf si la consigne l'a rendu facultatif pour cette critique).
   const strengths = citedStrengths(t, p);
   if (strengths.length > 1) errors.push(`plusieurs points forts cités (${strengths.slice(0, 2).join(', ')})`);
   else if (opts?.allowedStrength === null && strengths.length) errors.push('point fort non demandé dans la variante factuelle');
   else if (typeof opts?.allowedStrength === 'string' && strengths.some(s => s !== opts.allowedStrength))
     errors.push(`point fort non attribué à cette variante (« ${opts.allowedStrength} » attendu)`);
+  else if (typeof opts?.allowedStrength === 'string' && !strengths.length && !opts.strengthOptional)
+    errors.push(`point fort assigné non cité (« ${opts.allowedStrength} » attendu)`);
+
+  // Au plus une mention de l'équipe par réponse.
+  if ((norm(t).match(/\bequipes?\b/g) ?? []).length > 1) errors.push('mention de l’équipe répétée');
 
   // Plats et aliments : tout mot culinaire cité doit venir de l'avis ou du profil.
   const known = norm([r.body, p.name, p.city, p.cuisine, p.practical_info, ...(p.strengths ?? [])].join(' '));

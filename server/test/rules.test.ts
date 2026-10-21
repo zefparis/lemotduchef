@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // Règles du rédacteur sur des cas d'avis réels (LLM mocké — aucun réseau, aucune DB).
 const { checkReply, parseVariants, tooSimilar, wordCount, withSignature } = await import('../src/llm/rules.js');
 const { mockVariants } = await import('../src/llm/provider.js');
-const { buildUserPrompt, signatureOf, assignedStrengths } = await import('../src/llm/prompt.js');
+const { buildUserPrompt, signatureOf, assignedStrengths, strengthOptional, authorDisplayName } = await import('../src/llm/prompt.js');
 const { SAMPLE_CASES, SAMPLE_PROFILE } = await import('../src/llm/sampleCases.js');
 
 const sig = signatureOf(SAMPLE_PROFILE);
@@ -30,11 +30,15 @@ test('cas typiques : le mock produit 3 variantes conformes et distinctes', () =>
 });
 
 /* ---------- Signature ajoutée par le code ---------- */
-test('signature : ajoutée si absente, complétée si partielle, jamais doublée', () => {
+test('signature : ajoutée si absente, complétée si partielle, prénom en fin de corps retiré', () => {
   assert.equal(withSignature('Merci pour votre avis.', sig), `Merci pour votre avis.\n${sig}`);
   assert.equal(withSignature(`Merci pour votre avis.\nMarc`, sig), `Merci pour votre avis.\n${sig}`);
   assert.equal(withSignature(`Merci pour votre avis.\n${sig}`, sig), `Merci pour votre avis.\n${sig}`);
   assert.equal(withSignature('Merci pour votre avis.\nCordialement', sig), `Merci pour votre avis.\n${sig}`);
+  // « …, Marc » en fin de corps : le prénom du signataire est retiré, pas rejeté.
+  assert.equal(withSignature('Merci pour votre avis.\nMarc', sig), `Merci pour votre avis.\n${sig}`);
+  assert.equal(withSignature('Nous espérons vous revoir bientôt, Marc.', sig), `Nous espérons vous revoir bientôt.\n${sig}`);
+  assert.equal(withSignature('Nous espérons vous revoir bientôt.\nMarc', sig), `Nous espérons vous revoir bientôt.\n${sig}`);
   // La longueur se mesure sur le corps, pas sur la signature.
   const c = byKey('plat-froid');
   const r = checkReply(`Bonjour Paul, ${pad(36)}\n${sig}`, c.profile, c.review);
@@ -123,7 +127,7 @@ test('procédures, registres et actions internes non fournis → rejet', () => {
   assert.equal(checkReply(reg, inconnu.profile, inconnu.review).ok, true);
   assert.match(checkReply(reg, c.profile, c.review).errors.join(), /fait interne inventé/);
   // Engagement générique autorisé.
-  assert.equal(checkReply(`${good} Votre retour est transmis à l’équipe dès aujourd’hui.\n${sig}`, c.profile, c.review).ok, true);
+  assert.equal(checkReply(`${body(c, 1)} Votre retour est transmis à l’équipe dès aujourd’hui.\n${sig}`, c.profile, c.review).ok, true);
 });
 
 /* ---------- « Surpris » selon le contexte ---------- */
@@ -144,17 +148,30 @@ test('style : analyse interne, « de une », signataire 3e personne, « Bonjour 
   const c = byKey('serveur'); // Thomas
   const good = variants(c)[0];
   assert.match(checkReply(`${good} Au sujet de la nature de la critique évoquée…`, c.profile, c.review).errors.join(), /analyse interne/);
+  for (const leak of ['votre remarque porte sur', 'votre retour concerne', 'votre avis porte sur'])
+    assert.match(checkReply(`${good} À vrai dire, ${leak} le service.`, c.profile, c.review).errors.join(), /analyse interne/, leak);
   assert.match(checkReply(`${good} Votre note de une étoile nous attriste.`, c.profile, c.review).errors.join(), /de une/);
   assert.match(checkReply(`${good} Marc, le chef, vous répondra personnellement.`, c.profile, c.review).errors.join(), /3e personne/);
   assert.match(checkReply(`Bonsoir Thomas, merci de votre visite ${pad(30)}\n${sig}`, c.profile, c.review).errors.join(), /« Bonjour »/);
   assert.match(checkReply(`Bonjour, merci de votre visite ${pad(35)}\n${sig}`, c.profile, c.review).errors.join(), /prénom/);
+  // Initiale seule ou pseudo → « Bonjour » seul, sans nom ni initiale.
+  const initiale = { ...byKey('sans-texte').review }; // auteur « R. »
+  assert.equal(authorDisplayName(initiale), null);
+  assert.equal(checkReply(`Bonjour, votre note nous interroge et mérite réponse ${pad(28)}\n${sig}`, SAMPLE_PROFILE, initiale).ok, true);
+  assert.match(checkReply(`Bonjour R., votre note nous interroge ${pad(30)}\n${sig}`, SAMPLE_PROFILE, initiale).errors.join(), /« Bonjour » seul/);
+  const pseudo = { ...byKey('inconnu').review }; // auteur « Anonyme »
+  assert.equal(authorDisplayName(pseudo), null);
+  assert.equal(checkReply(`Bonjour, vos mots appellent une réponse claire et posée ${pad(28)}\n${sig}`, SAMPLE_PROFILE, pseudo).ok, true);
   // Prénom absent de l'avis → « Bonjour » seul suffit.
   const noName = { ...c.review, author_name: '' };
   assert.equal(checkReply(`Bonjour, merci de votre visite ${pad(35)}\n${sig}`, c.profile, noName).ok, true);
+  // Une seule mention de l'équipe par réponse.
+  assert.match(checkReply(`${body(c, 1)} Votre retour est transmis à l’équipe, et nous en parlons avec l’équipe.\n${sig}`, c.profile, c.review).errors.join(), /équipe répétée/);
+  assert.equal(checkReply(`${body(c, 1)} Votre retour est transmis à l’équipe dès aujourd’hui.\n${sig}`, c.profile, c.review).ok, true);
 });
 
 /* ---------- Point fort imposé par variante ---------- */
-test('point fort : le code l’attribue par variante, le modèle cite uniquement celui-là', () => {
+test('point fort : le code l’attribue par variante, facultatif selon la critique', () => {
   assert.deepEqual(assignedStrengths(SAMPLE_PROFILE, 0), [null, 'fait maison', 'produits locaux']);
   assert.deepEqual(assignedStrengths(SAMPLE_PROFILE, 1), [null, 'produits locaux', 'terrasse ombragée']);
   const u = buildUserPrompt(SAMPLE_PROFILE, byKey('positif').review, []);
@@ -167,6 +184,20 @@ test('point fort : le code l’attribue par variante, le modèle cite uniquement
   const factuelle = `Bonjour Julie, le fait maison fait notre fierté chaque jour ; ${pad(35)}\n${sig}`;
   assert.match(checkReply(factuelle, c.profile, c.review, { allowedStrength: null }).errors.join(), /non demandé/);
   assert.equal(checkReply(factuelle, c.profile, c.review, { allowedStrength: 'fait maison' }).ok, true);
+  // Attendu (positif, cuisine, prix) → rejet si non cité.
+  const sansPf = `Bonjour Julie, merci pour ce retour chaleureux et précis ; ${pad(35)}\n${sig}`;
+  assert.match(checkReply(sansPf, c.profile, c.review, { allowedStrength: 'fait maison' }).errors.join(), /non cité/);
+  // Facultatif pour service / attente avant commande / accueil / propreté.
+  assert.equal(strengthOptional(byKey('commande').review), true, 'attente avant commande + personnel → facultatif');
+  assert.equal(strengthOptional(byKey('serveur').review), true, 'serveur désagréable → facultatif');
+  assert.equal(strengthOptional(byKey('toilettes').review), true, 'propreté → facultatif');
+  assert.equal(strengthOptional(byKey('plat-froid').review), false, 'cuisine → attendu');
+  assert.equal(strengthOptional(byKey('prix').review), false, 'prix → attendu');
+  assert.equal(strengthOptional(byKey('positif').review), false, 'positif → attendu');
+  assert.match(buildUserPrompt(SAMPLE_PROFILE, byKey('commande').review, []), /variante 2 = « fait maison » \(facultatif/);
+  const sansPfServ = `Bonjour Nadia, votre retour est transmis à l’équipe ${pad(35)}\n${sig}`;
+  assert.equal(checkReply(sansPfServ, SAMPLE_PROFILE, byKey('commande').review,
+    { allowedStrength: 'fait maison', strengthOptional: true }).ok, true);
 });
 
 /* ---------- Formules interdites ---------- */
