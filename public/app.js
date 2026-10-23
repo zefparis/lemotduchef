@@ -743,14 +743,31 @@ async function loadAccount() {
     renderSessions(sessions || []);
   } catch (err) { toast(err.message, 'error'); }
 }
+function deviceLabel(ua) {
+  if (!ua) return 'Appareil inconnu';
+  const os = /iphone/i.test(ua) ? 'iPhone'
+    : /ipad/i.test(ua) ? 'iPad'
+    : /android/i.test(ua) ? 'Android'
+    : /windows/i.test(ua) ? 'Windows'
+    : /cros/i.test(ua) ? 'ChromeOS'
+    : /mac os x|macintosh/i.test(ua) ? 'Mac'
+    : /linux/i.test(ua) ? 'ordinateur Linux' : '';
+  const br = /edg\//i.test(ua) ? 'Edge'
+    : /opr\/|opera/i.test(ua) ? 'Opera'
+    : /fxios|firefox/i.test(ua) ? 'Firefox'
+    : /crios|chrome\//i.test(ua) ? 'Chrome'
+    : /safari/i.test(ua) ? 'Safari' : '';
+  if (br && os) return `${br} sur ${os}`;
+  return br || os || 'Appareil inconnu';
+}
 function renderSessions(list) {
   const mine = session?.session_id || '';
   $('#session-list').innerHTML = list.length ? list.map(s => `
     <li>
       <div>
-        <strong>${esc((s.userAgent || 'Appareil inconnu').split(')')[0].replace(/^Mozilla\/[\d.]+ \(/, '').slice(0, 60) || 'Appareil')}</strong>
+        <strong title="${esc(s.userAgent || '')}">${esc(deviceLabel(s.userAgent))}</strong>
         ${mine && s.id === mine ? ' <span class="session-here">Cette session</span>' : ''}
-        <small>Connecté le ${fmtDateTime(s.createdAt)} · expire le ${fmtDateTime(s.expiresAt)}${s.ipAddress ? ' · ' + esc(s.ipAddress) : ''}</small>
+        <small>Connecté le ${fmtDateTime(s.createdAt)} · expire le ${fmtDateTime(s.expiresAt)}${s.ipAddress ? ' · <span class="session-ip">' + esc(s.ipAddress) + '</span>' : ''}</small>
       </div>
       ${mine && s.id === mine ? '' : `<button class="btn btn-quiet btn-sm" data-revoke="${esc(s.token)}">Révoquer</button>`}
     </li>`).join('') : '<li class="subtle">Aucune autre session.</li>';

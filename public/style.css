@@ -224,18 +224,20 @@ h3 { font-size: 16px; font-weight: 650; }
 
 /* --- Compte : sessions, logo --- */
 .settings-col { display: grid; gap: 20px; align-content: start; }
-.session-list { list-style: none; display: grid; gap: 10px; }
+.session-list { list-style: none; display: grid; gap: 10px; width: 100%; }
 .session-list li {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px;
-  font-size: 13px;
+  font-size: 13px; width: 100%; box-sizing: border-box; margin-left: 0; min-width: 0;
 }
+.session-list li > div { min-width: 0; flex: 1 1 auto; }
 .session-list .session-here {
   font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   background: var(--green-soft); color: var(--green);
   padding: 3px 8px; border-radius: 5px; flex-shrink: 0;
 }
 .session-list small { display: block; color: var(--muted); font-size: 12px; }
+.session-ip { overflow-wrap: anywhere; }
 .logo-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .logo-row img {
   width: 56px; height: 56px; object-fit: contain;
@@ -683,6 +685,7 @@ td .soon-text { color: var(--amber-ink); font-weight: 600; }
 
 .danger-zone .form-intro { margin-bottom: 16px; }
 .danger-actions { display: grid; gap: 10px; justify-items: start; }
+.danger-actions .btn { white-space: normal; max-width: 100%; }
 
 /* ---------- Champs ---------- */
 .field { margin-top: 18px; }
