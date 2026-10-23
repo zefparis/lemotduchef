@@ -1,5 +1,5 @@
-import { isPositive, isHealthTopic, signatureOf, replyRange, wordCount, authorDisplayName } from './prompt.js';
-import type { PromptProfile, PromptReview } from './prompt.js';
+import { isPositive, isHealthTopic, signatureOf, replyRange, wordCount, authorDisplayName, CONTEXT_TAGS } from './prompt.js';
+import type { PromptProfile, PromptReview, ContextTag } from './prompt.js';
 
 // Vérification mécanique des réponses produites par le LLM. Une variante qui
 // viole une règle « dure » est écartée ; les avertissements sont renvoyés au
@@ -20,10 +20,14 @@ const countOccurrences = (hay: string, needle: string) => {
 const FORBIDDEN = /\b(menteur|menteuse|mensonge|mensonger|vous mentez|diffamation|diffamatoire|tribunal|avocat|plainte|poursuite|poursuivre|judiciaire|justice|proces|procès|huissier|police|gendarmerie)\b/i;
 const TUTOIEMENT = /\b(tu|t'as|t'es|toi)\b/i;
 const EMOJI = /\p{Extended_Pictographic}/u;
+// Marqueurs typographiques typiques des réponses générées : tirets cadratin et
+// demi-cadratin, caractère « … ». Nettoyés par cleanReply ; leur présence à la
+// sortie est une erreur (filet de sécurité).
+const TYPO_MARKER = /[—–…]/;
 const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
 const PHONE_RE = /(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}/g;
 const ADMISSION = /\b(notre faute|de notre fait|notre responsabilite|notre responsabilité|nous sommes responsables|nous reconnaissons|nous admettons|nous avouons|c'est de notre faute)\b/i;
-const CONTACT_INVITE = /(contact|joign|appel|ecri|écri|telephon|téléphon|email|e-mail|mail|échang|echang|vive voix|en privé|en direct)/i;
+const CONTACT_INVITE = /(contact|joign|joind|appel|ecri|écri|telephon|téléphon|email|e-mail|mail|échang|echang|vive voix|en privé|en direct)/i;
 const COMMERCIAL_GESTURE = /(rembours|offert|offr(?:ir|ons|e)\b|gratuit|geste commercial|bon d'achat|dédommag|dedommag)/i;
 // Formules trop génériques ou désinvoltes, interdites par la consigne
 // (comparées normalisées : accents et apostrophes neutralisés).
@@ -31,7 +35,11 @@ const BANNED_PHRASES = [
   'sincèrement désolés', 'sincèrement désolé', 'nous prenons votre avis au sérieux',
   'nous prenons votre message au sérieux', 'votre avis compte', 'nous sommes navrés',
   'ce ressenti', 'votre ressenti', 'nous tenons à préciser', 'en connaissance de cause',
-  "mérite d'être savouré", 'sans précipitation',
+  "mérite d'être savouré", 'sans précipitation', 'n’hésitez pas', 'n’hésite pas',
+  'merci d’avoir pris le temps', 'remercie d’avoir pris le temps', 'remercions d’avoir pris le temps',
+  'votre avis me touche', 'je comprends votre déception',
+  'j’entends votre déception', 'en toute transparence',
+  'sincèrement', 'inacceptable', 'rédhibitoire',
 ];
 // Tournures qui laissent entendre que le client est impatient ou de mauvaise foi.
 const IMPATIENCE_RE = /(impatient|impatience|mauvaise foi|mauvaise intention|malhonn[eê]t|pas de bonne foi|vous exagérez|votre exagération)/i;
@@ -56,7 +64,44 @@ const ANALYSIS_LEAK_RE = /\b(nature|cat[ée]gorie|classification|type) de (la |v
 const DE_UNE_RE = /\bde un(e)?\b/i; // « de une étoile » → « une étoile »
 // Regrets / excuses : franches uniquement si le contexte « problème réel » est
 // coché ; sinon au plus une occurrence.
-const APOLOGY_RE = /(nous (sommes |serions |vous sommes )?(sincèrement |vraiment )?désolé|nous (vous )?(présentons|adressons|offrons) nos (plus |sincères )?excuses|toutes nos excuses|nous nous excusons|veuillez (accepter|recevoir|croire à|agréer) nos (sincères |plus sincères )?(excuses|regrets)|nous (le |la |les |vous )?regrettons|nous sommes navrés|je (vous )?(regrette|m'excuse|présente mes (plus |sincères )?excuses))/gi;
+const APOLOGY_RE = /(nous (sommes |serions |vous sommes |en sommes )?(sincèrement |vraiment )?désolé|nous (vous )?(présentons|adressons|offrons) nos (plus |sincères )?excuses|toutes nos excuses|nous nous excusons|veuillez (accepter|recevoir|croire à|agréer) nos (sincères |plus sincères )?(excuses|regrets)|nous (le |la |les |vous )?regrettons|nous sommes navrés|je (suis |en suis |vous )?(sincèrement |vraiment )?(désolée?|navrée?|regrette|m'excuse|présente mes (plus |sincères )?excuses))/gi;
+// Faits affirmés non fournis : « vous aviez été prévenu », « indiqué à votre
+// arrivée », « comme convenu » — permis seulement si l'avis, la note du
+// restaurateur ou le contexte « attente annoncée » les mentionnent.
+// (Comparés sur texte normalisé : accents et apostrophes neutralisés.)
+const WARNED_RE = /(prevenu|comme (convenu|prevu|indiquee?|annoncee?)|(indiquee?|annoncee?|signalee?|informee?|precisee?)[rs]?\b[^.\n]{0,30}(a|des|avant)\s+(l'|votre|leur)\s*(arrivee|accueil|entree|commande))/;
+const FACTS_HINT_RE = /(prevenu|annonce|indique|informe|averti|convenu|prevu)/;
+// Explications d'attente ou de salle : jamais en première phrase — la réponse
+// s'ouvre sur la reconnaissance du problème du client, l'explication suit.
+const FIRST_SENT_FACT_RE = /(prevenu|annonce|indique|signale|informe|convenu|salle (complete|pleine|bondee)|complets?\b|a plein|tournait a plein|deborde)/;
+// Tournures de reproche au client — interdites même si le fait est fourni :
+// l'annonce peut être rappelée au neutre (« l'attente avait été annoncée »),
+// jamais en « je vous l'avais dit ».
+const BLAME_RE = /(vous (aviez|avez|etiez)(\s+\w+){0,3}\s+(prevenu|informe|averti)|je vous (avais|ai|l'avais|l'ai)(\s+\w+){0,2}\s+(prevenu|dit|annonce|indique|signale|explique)|comme convenu|comme (je |on )(vous )?l'(avais|a) (dit|annonce|indique))/;
+const PRICE_WORDS_RE = /(prix|tarif|cher|cout|addition|facture|euro|€)/;
+// Avis négatif : la chute doit inviter à revenir ou à reprendre contact
+// (les sujets santé relèvent d'une invitation au contact privé, déjà exigée).
+const RETURN_RE = /(reven(?:ir|ez|ons)|revoir|revienne|reviendr|retrouver|retrouv|rejoin(?:dre|dez|gnez)|seconde chance|autre chance|nouvelle chance|prochaine (visite|fois|occasion|rencontre)|a bientot|venez|venir|repasse[zr]?|accueilli[rxz]|attendons|attendre|rendez-vous|recevoir|de nouveau|une autre fois|nous reverrons|esperons vous)/i;
+// Triplette rhétorique « X, Y et Z » : trois éléments courts et sans verbe
+// conjugué dans une même phrase — mécanique typique des réponses générées.
+// Une énumération de clauses (« venez en semaine, c'est plus calme et je
+// passerai vous saluer ») n'est PAS une triplette : les segments porteurs
+// d'un sujet ou d'un verbe conjugué la disqualifient.
+const CLAUSE_MARK = /\b(je|j'|tu|t'|il|elle|on|nous|vous|ils|elles|ce|c'|ça|cela|que|qu'|qui|quand|comme|lorsque|puisque|parce|dont|où|si|mais|donc|ni|car|est|sont|suis|sommes|êtes|étais|était|étaient|sera|serai|serons|serez|seront|soit|soient|avais|avait|avaient|avons|avez|ont|aurai|aurait|faut|fallait|vais|va|vont|allons|allez|peux|peut|peuvent|dois|doit|doivent|veux|veut|veulent|viens|vient|venons|venez|viennent|venir|passe|passer|passez|reste|restons|restent|mérite|méritent|espère|espérons|aimerais|voudrais|souhaite|souhaitons|invite|invitons|attends|attendons|attendez)\b/i;
+const TRIAD_RE = /([^,.!?;:()«»\n]{2,80}?),\s*([^,.!?;:()«»\n]{2,80}?)\s+et\s+([^,.!?;:()«»\n]{2,80})/g;
+function hasTriad(text: string): boolean {
+  const item = (s: string) => { const w = s.split(/\s+/).filter(Boolean).length; return w >= 1 && w <= 8; };
+  for (const sent of text.split(/[.!?\n]+/))
+    for (const m of sent.matchAll(TRIAD_RE)) {
+      const [, a, b, c] = m;
+      // Le 3e élément peut être suivi d'une clause (« … et le service était lent ») :
+      // seule sa tête nominale compte ; un élément commençant par un sujet ou
+      // un verbe conjugué n'est pas un élément de liste.
+      const headC = c.split(CLAUSE_MARK)[0].trim();
+      if (!CLAUSE_MARK.test(a) && !CLAUSE_MARK.test(b) && headC && item(a) && item(b) && item(headC)) return true;
+    }
+  return false;
+}
 // L'avis contient des mots : prétendre le contraire est un mensonge visible.
 const NO_DETAIL_RE = /(ne (nous )?(donne|donnez|laisse|apporte) (aucun|pas de|guère de|que peu de) détails?|sans (aucun |le moindre )?détail|aucun détail|pas de détail|aucune précision|sans précision|peu (détaillé|de détails?)|manque de détails?|avis (vide|sans texte|sans commentaire)|commentaire (vide|absent)|ne détaille pas|sans explication|aucune explication)/i;
 
@@ -98,6 +143,22 @@ const foodMentions = (text: string, known: string): string[] => {
   for (const ph of FOOD_PHRASES) if (nt.includes(ph) && !known.includes(ph)) hits.add(ph);
   return [...hits];
 };
+
+// Post-traitement anti-marqueurs IA, appliqué au texte brut du modèle avant
+// l'ajout de la signature et le contrôle des règles : les tirets cadratin et
+// demi-cadratin deviennent des virgules (supprimés en début ou fin de ligne),
+// le caractère « … » devient un point.
+export function cleanReply(s: string): string {
+  return s
+    .replace(/[ \t]*[—–][ \t]*/g, ', ')
+    .replace(/…/g, '.')
+    .replace(/,[ \t]*([,.;:!?])/g, '$1')
+    .replace(/\.{2,}/g, '.')
+    .replace(/(^|\n)[ \t]*,[ \t]*/g, '$1')
+    .replace(/,[ \t]*(\n|$)/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
 
 // Signature exacte ajoutée par le code : remplace une signature partielle
 // (« Marc »), retire un prénom de signataire en fin de corps (« …, Marc »),
@@ -180,24 +241,36 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
 
   // Interdits absolus.
   if (FORBIDDEN.test(t)) errors.push('mention juridique ou accusation de mensonge');
-  if (TUTOIEMENT.test(t)) errors.push('tutoiement');
+  if (TUTOIEMENT.test(t) && p.address_form !== 'tu') errors.push('tutoiement');
   if (EMOJI.test(t)) errors.push('emoji');
+  if (TYPO_MARKER.test(t)) errors.push('tiret cadratin ou « … » résiduel');
   if (/!{2,}|\?{2,}/.test(t)) warnings.push('ponctuation en série');
 
   // Excuses : franches si « problème réel » est coché ; une excuse brève sinon
-  // (critique plausible). Jamais quand le contexte est « jamais venu » ou
-  // « prix affichés » : s'excuser y reviendrait à endosser un fait contesté.
+  // (critique plausible). Jamais quand le contexte est « jamais venu ».
   const apologies = (t.match(APOLOGY_RE) ?? []).length;
-  const noApology = r.context_tags.some(tg => tg === 'unknown_customer' || tg === 'prices_displayed');
-  if (noApology && apologies > 0) errors.push('excuse inadaptée au contexte (« jamais venu » ou « prix affichés »)');
+  if (r.context_tags.includes('unknown_customer') && apologies > 0)
+    errors.push('excuse inadaptée au contexte « jamais venu »');
   else if (!r.context_tags.includes('real_problem') && apologies > 1)
     errors.push('excuses répétées sans contexte « problème réel »');
+  // « prix affichés » : seule l'excuse PORTANT sur les prix est interdite —
+  // s'excuser de l'attente, du service ou d'un plat reste permis.
+  if (r.context_tags.includes('prices_displayed')) {
+    const apo = new RegExp(APOLOGY_RE.source, 'i');
+    for (const sent of t.split(/[.!?\n]+/))
+      if (apo.test(sent) && PRICE_WORDS_RE.test(norm(sent)))
+        { errors.push('excuse portant sur les prix (contexte « prix affichés »)'); break; }
+  }
 
-  // Formules génériques interdites par la consigne.
+  // Formules génériques interdites par la consigne, puis expressions
+  // bannies par le restaurateur (réglage « Mon style »).
   for (const b of BANNED_PHRASES)
     if (norm(t).includes(norm(b))) { errors.push(`formule interdite (${b})`); break; }
+  for (const b of p.avoid_phrases ?? [])
+    if (norm(t).includes(norm(b))) { errors.push(`expression bannie par le restaurateur (${b})`); break; }
   if (countOccurrences(t, 'au plaisir') > 1) errors.push('« au plaisir » répété dans la même réponse');
   if (IMPATIENCE_RE.test(t)) errors.push('tournure suggérant l’impatience ou la mauvaise foi du client');
+  if (hasTriad(nb.replace(GREETING_RE, ''))) errors.push('énumération de trois éléments dans une même phrase (triplette)');
 
   // Dire « l'avis ne donne pas de détail » alors qu'il en contient : faux.
   if (r.body.trim() && NO_DETAIL_RE.test(t))
@@ -214,6 +287,22 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
     errors.push(`fait interne inventé (« ${label} »)`);
     break;
   }
+  // Événements affirmés non fournis : « vous aviez été prévenu », « indiqué à
+  // votre arrivée », « comme convenu »… — permis seulement si l'avis, la note
+  // du restaurateur ou le contexte « attente annoncée » les mentionnent.
+  const factsCorpus = norm([r.body, r.context_note, ...r.context_tags.map(tg => CONTEXT_TAGS[tg as ContextTag] ?? '')].join(' '));
+  // « Salle complète » ne suffit pas : le rappel de l'attente annoncée exige la
+  // case « l'attente a été annoncée au client à son arrivée » (ou l'avis / la note).
+  if (WARNED_RE.test(nb) && !r.context_tags.includes('wait_announced') && !FACTS_HINT_RE.test(factsCorpus))
+    errors.push('fait affirmé non fourni par l’avis ou le contexte (« prévenu », « indiqué à l’arrivée », « comme convenu »)');
+  if (BLAME_RE.test(nb))
+    errors.push('tournure de reproche envers le client (« vous aviez été prévenu », « je vous l’avais dit », « comme convenu »)');
+  // On reconnaît d'abord le problème du client : aucune explication (attente
+  // annoncée, salle pleine) en première phrase.
+  const firstSent = nb.replace(GREETING_RE, '').split(/[.!?\n]+/)[0] ?? '';
+  if (FIRST_SENT_FACT_RE.test(firstSent))
+    errors.push('explication (attente annoncée, salle complète) en première phrase — commencer par reconnaître le problème du client');
+
   if (SURPRISE_RE.test(t) && !r.context_tags.some(tg => tg === 'unknown_customer' || tg === 'dish_as_described'))
     errors.push('« surpris / surprenant » réservé aux contextes « jamais venu » ou « plat conforme »');
   if (ANALYSIS_LEAK_RE.test(t)) errors.push('analyse interne recopiée (« nature de la critique »)');
@@ -260,6 +349,10 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
     if (ADMISSION.test(t)) errors.push('reconnaissance de responsabilité sur un sujet santé');
     if (!CONTACT_INVITE.test(t)) errors.push('sujet santé sans invitation à un contact privé');
   }
+  // Avis négatif : la chute invite toujours à revenir ou à reprendre contact
+  // (les sujets santé relèvent de l'invitation au contact privé ci-dessus).
+  if (!isPositive(r.rating) && !isHealthTopic(r) && !RETURN_RE.test(t))
+    errors.push('avis négatif sans invitation à revenir ou à reprendre contact');
   if (!isPositive(r.rating) && COMMERCIAL_GESTURE.test(t)) warnings.push('geste commercial ou remboursement évoqué — à vérifier');
 
   return { ok: errors.length === 0, errors, warnings, words };

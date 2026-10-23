@@ -198,13 +198,24 @@ test('profil : validation (liens Google, email, ton) et mise à jour', async () 
   assert.match(bad.json().error, /laisser un avis/i);
   const badTone = await app.inject({ method: 'POST', url: '/api/restaurants', headers: { ...H, cookie }, payload: { ...PROFILE, tone: 'agressif' } });
   assert.equal(badTone.statusCode, 400);
+  const oldTone = await app.inject({ method: 'POST', url: '/api/restaurants', headers: { ...H, cookie }, payload: { ...PROFILE, tone: 'elegant' } });
+  assert.equal(oldTone.statusCode, 400, 'les anciens tons ne sont plus acceptés');
+  const badForm = await app.inject({ method: 'POST', url: '/api/restaurants', headers: { ...H, cookie }, payload: { ...PROFILE, address_form: 'on' } });
+  assert.equal(badForm.statusCode, 400);
   await createRestaurant(cookie);
-  const upd = await app.inject({ method: 'PATCH', url: '/api/restaurant', headers: { ...H, cookie }, payload: { ...PROFILE, city: 'Villeurbanne', strengths: ['fait maison'], tone: 'elegant' } });
+  const upd = await app.inject({ method: 'PATCH', url: '/api/restaurant', headers: { ...H, cookie }, payload: { ...PROFILE, city: 'Villeurbanne', strengths: ['fait maison'], tone: 'direct', address_form: 'tu', avoid_phrases: ['cher client', 'dans les meilleurs délais'] } });
   assert.equal(upd.statusCode, 200, upd.body);
   const got = await app.inject({ method: 'GET', url: '/api/restaurant', headers: { cookie } });
   assert.equal(got.json().city, 'Villeurbanne');
-  assert.equal(got.json().tone, 'elegant');
+  assert.equal(got.json().tone, 'direct');
+  assert.equal(got.json().address_form, 'tu');
+  assert.deepEqual(got.json().avoid_phrases, ['cher client', 'dans les meilleurs délais']);
   assert.deepEqual(got.json().strengths, ['fait maison']);
+  const updDefault = await app.inject({ method: 'PATCH', url: '/api/restaurant', headers: { ...H, cookie }, payload: { ...PROFILE, tone: 'sobre' } });
+  assert.equal(updDefault.statusCode, 200, updDefault.body);
+  const got2 = await app.inject({ method: 'GET', url: '/api/restaurant', headers: { cookie } });
+  assert.equal(got2.json().address_form, 'vous', 'vouvoiement par défaut');
+  assert.deepEqual(got2.json().avoid_phrases, []);
   const badMail = await app.inject({ method: 'PATCH', url: '/api/restaurant', headers: { ...H, cookie }, payload: { ...PROFILE, contact_email: 'pas-un-email' } });
   assert.equal(badMail.statusCode, 400);
 });
@@ -274,11 +285,12 @@ const words = (n: number) => Array.from({ length: n }, (_, i) => `mot${i}`).join
 
 test('prompt système versionné : règles clés présentes', () => {
   assert.match(PROMPT_VERSION, /^\d{4}-\d{2}-\d{2}\.\d+$/);
-  for (const re of [/FUTURS clients/, /vouvoyant/, /jamais accuser l'auteur de mentir/i, /information personnelle/i, /judiciaire/, /allergie, intoxication/, /UN point fort/, /AU PLUS une fois/, /vise environ 45 mots/, /vise environ 80 mots/, /3 variantes/, /aucun point fort/i])
+  for (const re of [/FUTURS clients/, /vouvoiement ou tutoiement/, /Anti-marqueurs IA/, /jamais accuser l'auteur de mentir/i, /information personnelle/i, /judiciaire/, /allergie, intoxication/, /UN point fort/, /AU PLUS une fois/, /vise environ 45 mots/, /vise environ 80 mots/, /3 variantes/, /aucun point fort/i])
     assert.match(SYSTEM_PROMPT, re);
   const u = buildUserPrompt(RULE_PROFILE as any, NEGATIVE as any, ['Merci pour votre retour.']);
   assert.match(u, /Signature : Marc, chef et propriétaire/);
-  assert.match(u, /Service complet, attente annoncée/);
+  assert.match(u, /Service complet \/ salle pleine ce soir-là/);
+  assert.match(buildUserPrompt(RULE_PROFILE as any, { ...NEGATIVE, context_tags: ['full_house', 'wait_announced'] } as any, []), /l’attente a été annoncée au client à son arrivée/i);
   assert.match(u, /FORMULATIONS À ÉVITER/);
   assert.match(u, /<<<AVIS\n.*plat froid/s);
   assert.equal(signatureOf({ signature_name: '', signature_role: '', name: 'Chez X' }), 'Chez X');
@@ -301,9 +313,9 @@ test('règles : longueur, signature, nom/ville, interdits, données personnelles
     assert.match(checkReply(`Bonjour Paul, ${frag}. ${words(55)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).errors.join(), re);
   // Coordonnées : email du profil autorisé ; téléphone seulement si l'option est
   // activée ; tout autre email/téléphone refusé.
-  assert.equal(checkReply(`Bonjour Paul, écrivez-nous à contact@tabledaurore.fr. ${words(50)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).ok, true);
+  assert.equal(checkReply(`Bonjour Paul, écrivez-nous à contact@tabledaurore.fr. ${words(46)} Revenez nous voir quand vous voulez.\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).ok, true);
   assert.match(checkReply(`Bonjour Paul, écrivez-nous ou appelez le 04 78 00 00 00. ${words(50)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).errors.join(), /téléphone/);
-  assert.equal(checkReply(`Bonjour Paul, écrivez-nous ou appelez le 04 78 00 00 00. ${words(50)}\n${sig}`, { ...RULE_PROFILE, show_phone: true } as any, NEGATIVE as any).ok, true);
+  assert.equal(checkReply(`Bonjour Paul, écrivez-nous ou appelez le 04 78 00 00 00. ${words(46)} Revenez nous voir quand vous voulez.\n${sig}`, { ...RULE_PROFILE, show_phone: true } as any, NEGATIVE as any).ok, true);
   assert.match(checkReply(`Bonjour Paul, écrivez à paul.durand@gmail.com. ${words(50)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).errors.join(), /email étranger/);
   assert.match(checkReply(`Bonjour Paul, rappelez-nous au 06 12 34 56 78. ${words(50)}\n${sig}`, { ...RULE_PROFILE, show_phone: true } as any, NEGATIVE as any).errors.join(), /téléphone étranger/);
   // Santé : aucune reconnaissance de responsabilité, invitation au contact obligatoire.
@@ -311,7 +323,7 @@ test('règles : longueur, signature, nom/ville, interdits, données personnelles
   assert.match(checkReply(`Bonjour Paul, cela nous touche. ${words(55)}\n${sig}`, RULE_PROFILE as any, HEALTH as any).errors.join(), /contact privé/);
   assert.equal(checkReply(`Bonjour Paul, nous comprenons votre inquiétude et vous invitons à nous contacter directement. ${words(35)}\n${sig}`, RULE_PROFILE as any, HEALTH as any).ok, true);
   // Avertissement (non bloquant) : geste commercial sur un avis négatif.
-  const w = checkReply(`Bonjour Paul, nous vous offrons un verre. ${words(55)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any);
+  const w = checkReply(`Bonjour Paul, nous vous offrons un verre. ${words(51)} Revenez quand vous voulez.\n${sig}`, RULE_PROFILE as any, NEGATIVE as any);
   assert.equal(w.ok, true); assert.match(w.warnings.join(), /geste commercial/);
   assert.equal(wordCount('Bonjour, l’équipe vous remercie !'), 4);
   assert.deepEqual(parseVariants('```json\n{"variants":["a","b"]}\n```'), ['a', 'b']);

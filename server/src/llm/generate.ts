@@ -3,7 +3,7 @@ import { config } from '../config.js';
 import { llmProvider, LlmError } from './provider.js';
 import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, signatureOf, assignedStrengths } from './prompt.js';
 import type { PromptProfile, PromptReview } from './prompt.js';
-import { checkReply, parseVariants, tooSimilar, withSignature, mentionsContactEmail, mentionsReservation } from './rules.js';
+import { checkReply, parseVariants, tooSimilar, cleanReply, withSignature, mentionsContactEmail, mentionsReservation } from './rules.js';
 
 export interface GeneratedVariant { idx: number; text: string; warnings: string[]; words: number; needsReview?: boolean }
 export interface GenerationOutcome {
@@ -83,7 +83,7 @@ export async function generateReplies(
     for (const [i, raw] of queue) {
       // La signature exacte du profil est ajoutée ici : les règles contrôlent
       // le texte final assemblé, la longueur se mesure sur le corps seul.
-      const text = withSignature(raw, sig);
+      const text = withSignature(cleanReply(raw), sig);
       if (slots.some(a => a && a.text === text)) continue;
       if (slots.some(a => a && tooSimilar(a.text, text))) { rejected.push(`variante ${i + 1} : trop proche d’une autre`); continue; }
       const hasEmail = mentionsContactEmail(text, profile);

@@ -7,6 +7,7 @@ import type { PromptProfile, PromptReview } from './prompt.js';
 export const SAMPLE_PROFILE: PromptProfile = {
   name: 'La Table d’Aurore', city: 'Lyon', cuisine: 'bistronomie',
   signature_name: 'Marc', signature_role: 'chef et propriétaire', tone: 'chaleureux',
+  address_form: 'vous', avoid_phrases: [],
   strengths: ['fait maison', 'produits locaux', 'terrasse ombragée'],
   practical_info: 'Réservation conseillée le week-end',
   contact_email: 'contact@tabledaurore.fr', contact_phone: '04 78 00 00 00',

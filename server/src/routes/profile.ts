@@ -5,8 +5,8 @@ import { validateProfile } from '../validate.js';
 import type { PromptProfile } from '../llm/prompt.js';
 
 export const PROFILE_SELECT = `
-  SELECT c.id, c.name, p.city, p.cuisine, p.signature_name, p.signature_role, p.tone, p.strengths,
-         p.practical_info, p.google_maps_url, p.google_review_url, p.contact_email, p.contact_phone, p.show_phone, p.updated_at
+  SELECT c.id, c.name, p.city, p.cuisine, p.signature_name, p.signature_role, p.tone, p.address_form, p.avoid_phrases,
+         p.strengths, p.practical_info, p.google_maps_url, p.google_review_url, p.contact_email, p.contact_phone, p.show_phone, p.updated_at
   FROM companies c JOIN restaurant_profiles p ON p.company_id = c.id`;
 
 export async function loadProfile(companyId: string): Promise<(PromptProfile & { id: string; google_maps_url: string; google_review_url: string }) | null> {
@@ -40,14 +40,15 @@ export default async function profileRoutes(app: FastifyInstance) {
       await client.query('BEGIN');
       await client.query('UPDATE companies SET name=$2 WHERE id=$1', [req.companyId, p.name]);
       await client.query(
-        `INSERT INTO restaurant_profiles (company_id, city, cuisine, signature_name, signature_role, tone, strengths,
-           practical_info, google_maps_url, google_review_url, contact_email, contact_phone, show_phone)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        `INSERT INTO restaurant_profiles (company_id, city, cuisine, signature_name, signature_role, tone, address_form,
+           avoid_phrases, strengths, practical_info, google_maps_url, google_review_url, contact_email, contact_phone, show_phone)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
          ON CONFLICT (company_id) DO UPDATE SET city=$2, cuisine=$3, signature_name=$4, signature_role=$5, tone=$6,
-           strengths=$7, practical_info=$8, google_maps_url=$9, google_review_url=$10, contact_email=$11,
-           contact_phone=$12, show_phone=$13, updated_at=now()`,
-        [req.companyId, p.city, p.cuisine, p.signature_name, p.signature_role, p.tone, p.strengths,
-         p.practical_info, p.google_maps_url, p.google_review_url, p.contact_email, p.contact_phone, p.show_phone]);
+           address_form=$7, avoid_phrases=$8, strengths=$9, practical_info=$10, google_maps_url=$11,
+           google_review_url=$12, contact_email=$13, contact_phone=$14, show_phone=$15, updated_at=now()`,
+        [req.companyId, p.city, p.cuisine, p.signature_name, p.signature_role, p.tone, p.address_form,
+         p.avoid_phrases, p.strengths, p.practical_info, p.google_maps_url, p.google_review_url,
+         p.contact_email, p.contact_phone, p.show_phone]);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {});

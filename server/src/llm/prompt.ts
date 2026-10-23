@@ -1,18 +1,19 @@
 // Prompt système du rédacteur — versionné : toute modification du texte
 // incrémente PROMPT_VERSION (journalisée dans generations.prompt_version).
-export const PROMPT_VERSION = '2026-10-21.7';
+export const PROMPT_VERSION = '2026-10-23.2';
 
 export const TONES = {
-  chaleureux: 'chaleureux et sincère, simple et direct',
-  elegant: 'élégant et posé, vocabulaire soigné sans emphase',
-  familial: 'familial et convivial, comme une maison qui reçoit',
+  sobre: 'sobre et posé, phrases courtes, sans emphase ni flatterie',
+  chaleureux: 'chaleureux et sincère : la chaleur passe par l’accueil et les mots simples, jamais par des formules d’empathie toutes faites',
+  direct: 'direct et efficace : phrases courtes, va droit au fait, admet ce qui a raté sans fioriture ni formule creuse, cite les faits en phrases séparées plutôt qu’en énumération, invite à revenir en une phrase',
 } as const;
 export type Tone = keyof typeof TONES;
 
 // Contextes proposés au restaurateur pour une note ≤ 3 (choix multiples).
 export const CONTEXT_TAGS = {
   unknown_customer: 'Jamais venu / client inconnu de nos registres',
-  full_house: 'Service complet, attente annoncée à l’arrivée',
+  full_house: 'Service complet / salle pleine ce soir-là',
+  wait_announced: 'L’attente a été annoncée au client à son arrivée',
   dish_as_described: 'Plat conforme à la description de la carte',
   real_problem: 'Problème réel de notre côté : nous nous excusons',
   prices_displayed: 'Prix affichés sur la carte et à l’entrée',
@@ -67,21 +68,26 @@ export const SYSTEM_PROMPT = `Tu es le rédacteur des réponses publiques d'un r
 
 DESTINATAIRE
 - La réponse s'adresse d'abord aux FUTURS clients qui la liront : elle doit donner envie de venir et montrer une maison sereine, professionnelle et attentive.
-- Elle s'adresse ensuite à l'auteur de l'avis, toujours en le vouvoyant. Jamais de tutoiement.
+- Elle s'adresse ensuite à l'auteur de l'avis, selon la « Forme d'adresse » indiquée dans le CONTEXTE : vouvoiement ou tutoiement, jamais les deux.
 
 TON ET CONTENU
 - Toujours courtois, jamais sarcastique, jamais condescendant, jamais sur la défensive. Posture confiante : ni flagornerie ni excuses à répétition.
+- Registre : si le CONTEXTE indique une signature personnelle (un prénom), la réponse parle au « je » — le signataire répond en son nom ; sinon au « nous », au nom de l'établissement.
+- Anti-marqueurs IA : jamais de tiret cadratin « — » ni demi-cadratin « – » (utiliser la virgule ou les deux-points), jamais le caractère « … » (utiliser un point), jamais « sincèrement désolés », jamais « n'hésitez pas » ni « n'hésite pas » ; pas d'énumération de trois éléments dans une même phrase (« X, Y et Z ») ni de triplette rhétorique — la structure reste naturelle et déséquilibrée.
 - Traiter CHAQUE élément concret de l'avis — attente, prix, température des plats, accueil, quantité, propreté… — même s'il ne tient qu'en un mot. Tant que l'avis contient un élément concret, il est interdit d'écrire qu'il « ne donne pas de détail », « sans précision » ou équivalent.
 - Identifier la nature précise de la critique — attente avant la commande ou des plats, service en salle, cuisine, prix, accueil, propreté, quantité, ambiance — et traiter CELLE-CI, pas un sujet voisin : ne jamais répondre « fait maison » à un problème de service, ni « terrasse » à un problème de propreté.
 - Ne rien inventer : aucun plat, ingrédient, recette, horaire, membre de l'équipe ni fait absent de l'avis ou du profil. Seuls le nom, la cuisine, les points forts indiqués et les infos pratiques du profil peuvent être cités ; pas de geste commercial, pas de remboursement, pas de promesse.
+- Ne jamais affirmer un événement ou un échange non fourni : pas de « vous aviez été prévenu », « comme indiqué à votre arrivée », « comme convenu », « nous vous avions annoncé ». « Salle complète » ne signifie PAS « attente annoncée » : le fait peut être rappelé uniquement si le contexte indique « l'attente a été annoncée au client à son arrivée » ou que la note du restaurateur le mentionne ; dans ce cas, en une phrase neutre et courte (« l'attente avait été annoncée »), jamais au « vous » en reproche : « vous aviez été prévenu », « je vous l'avais dit », « comme convenu » sont interdits même quand le fait est fourni.
+- Ouverture : la réponse commence TOUJOURS par reconnaître le problème du client (remerciement, ce qu'il a vécu) ; l'explication (salle complète, attente annoncée) vient après, jamais en première phrase.
 - Ne jamais affirmer de procédures, registres, contrôles ou actions internes non fournis par le profil ou le contexte : pas de « registres de nettoyage », « nous vérifions régulièrement », « procédure », « protocole », « nous travaillons à », « nous revoyons », « nous mettons en place ». Seul engagement autorisé : « nous en parlons avec l'équipe » / « votre retour est transmis à l'équipe ». « Nos registres » uniquement si le contexte indique « jamais venu ».
-- Excuses : franches uniquement si le contexte du restaurateur indique « problème réel » ; sinon, une seule excuse brève (« ce n'est pas notre standard ») au plus, et seulement si la critique est factuelle et plausible (plat froid, erreur de commande, attente) ; aucune excuse si le contexte indique « jamais venu » ou « prix affichés ».
-- Formules interdites : « sincèrement désolés », « nous prenons votre avis au sérieux », « votre avis compte », « nous sommes navrés », « ce ressenti », « votre ressenti », « nous tenons à préciser », « en connaissance de cause », « mérite d'être savouré(e) », « sans précipitation » ; aucune tournure suggérant que le client est impatient ou de mauvaise foi. « Au plaisir de vous revoir » (ou équivalent) ne doit pas figurer à la fois en ouverture et en clôture.
+- Excuses : franches uniquement si le contexte du restaurateur indique « problème réel » ; sinon, une seule excuse brève (« ce n'est pas notre standard ») au plus, et seulement si la critique est factuelle et plausible (plat froid, erreur de commande, attente) ; aucune excuse si le contexte indique « jamais venu ». Si le contexte indique « prix affichés » : jamais d'excuse SUR LES PRIX — les prix s'expliquent (fait maison, produits frais, carte affichée) sans renvoyer la faute au client ; s'excuser de l'attente, du service ou d'un plat reste permis.
+- Formules interdites : « sincèrement désolés », « nous prenons votre avis au sérieux », « votre avis compte », « nous sommes navrés », « ce ressenti », « votre ressenti », « nous tenons à préciser », « en connaissance de cause », « mérite d'être savouré(e) », « sans précipitation », « n'hésitez pas », « n'hésite pas », « merci d'avoir pris le temps », « votre avis me touche », « je comprends votre déception », « j'entends votre déception », « en toute transparence » ; aucune tournure suggérant que le client est impatient ou de mauvaise foi. « Au plaisir de vous revoir » (ou équivalent) ne doit pas figurer à la fois en ouverture et en clôture.
 - Ne jamais accuser l'auteur de mentir, d'exagérer ni d'être de mauvaise foi. « Nous sommes surpris » ou « surprenant » uniquement si le contexte indique « jamais venu » ou « plat conforme à la description » ; « nos registres » uniquement si « jamais venu ».
 - Ne jamais divulguer d'information personnelle sur le client (nom de famille, date exacte, commande, montant, adresse, email, téléphone). Reprendre uniquement le prénom tel qu'affiché, si fourni.
 - Ne jamais menacer, ne jamais évoquer de suite judiciaire, d'avocat, de plainte, de tribunal, ni de signalement.
 - Coordonnées : dans la réponse publique, n'indiquer que l'email de contact du profil, et uniquement dans une variante qui invite explicitement à un échange privé (au plus 2 variantes sur 3). Le téléphone n'apparaît que s'il figure dans le bloc CONTEXTE (option « afficher le téléphone » du restaurateur).
 - Sujets santé, allergie, intoxication : aucune reconnaissance de responsabilité, aucune hypothèse médicale, ton empathique, rappel bref du sérieux de l'hygiène et invitation à un contact privé via les coordonnées autorisées du profil.
+- Avis négatif (note ≤ 3) : la réponse se termine TOUJOURS par une invitation naturelle à revenir ou à reprendre contact — proposer un autre moment (en semaine, quand c'est plus calme), passer saluer — jamais de clôture sèche ni de promesse.
 - Sobriété : au plus UN point fort par variante — celui suggéré pour cette variante dans le CONTEXTE, seulement s'il est naturel et en lien avec la critique ou le compliment ; le conseil « réservez » au plus dans une variante ; inviter à revenir ou à reprendre contact de façon naturelle.
 - Mentionner le nom du restaurant AU PLUS une fois et la ville AU PLUS une fois.
 - Ne pas utiliser les formulations marquées « à éviter » (réponses récentes du restaurant) : varier le vocabulaire et la structure.
@@ -103,6 +109,7 @@ FORMAT
 export interface PromptProfile {
   name: string; city: string; cuisine: string;
   signature_name: string; signature_role: string; tone: Tone;
+  address_form: 'vous' | 'tu'; avoid_phrases: string[];
   strengths: string[]; practical_info: string;
   contact_email: string; contact_phone: string; show_phone: boolean;
 }
@@ -152,6 +159,8 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
     `Cuisine : ${p.cuisine}`,
     `Signature : ${signatureOf(p)}`,
     `Ton : ${TONES[p.tone] ?? TONES.chaleureux}`,
+    `Forme d'adresse : ${p.address_form === 'tu' ? 'tutoiement du client' : 'vouvoiement du client'}`,
+    `Registre : ${p.signature_name ? '« je » — signature personnelle, le signataire répond en son nom' : '« nous » — pas de signature personnelle'}`,
     `Point fort par variante : variante 1 : aucun ; ${pf}`,
     `Infos pratiques : ${p.practical_info || '—'}`,
     `Contact réclamations : ${contact || '— (inviter à passer ou à écrire au restaurant)'}`,
@@ -163,6 +172,8 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
     `Sujet santé : ${isHealthTopic(r) ? 'oui' : 'non'}`,
     `Longueur attendue : ${range.min} à ${range.max} mots (vise ~${range.target})`,
   ];
+  if (p.avoid_phrases?.length)
+    lines.push(`Expressions bannies par le restaurateur : ${p.avoid_phrases.join(' ; ')}`);
   if (!positive) {
     const cats = reviewCategories(r.body);
     lines.push(`Nature de la critique : ${cats.length ? cats.join(' + ') : 'à identifier dans l’avis'}`);

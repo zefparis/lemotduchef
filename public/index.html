@@ -76,7 +76,7 @@
       <ul class="feature-list">
         <li>
           <span class="feature-icon"><svg class="icon"><use href="#i-msg"/></svg></span>
-          <div><strong>Trois réponses, votre ton</strong><p>Chaleureux, élégant ou familial : le rédacteur connaît votre maison, vos points forts et votre signature.</p></div>
+          <div><strong>Trois réponses, votre ton</strong><p>Sobre, chaleureux ou direct : le rédacteur connaît votre maison, vos points forts et votre signature.</p></div>
         </li>
         <li>
           <span class="feature-icon"><svg class="icon"><use href="#i-check"/></svg></span>
@@ -142,10 +142,11 @@
       </article>
       <article class="example-card example-after">
         <p class="example-label">Après — avec Le Mot du Chef</p>
-        <p class="example-quote">« Bonjour Kévin, merci d'avoir pris le temps de nous écrire. Nous sommes sincèrement désolés que ce samedi soir n'ait pas été à la hauteur : la salle était complète et, malgré l'attente annoncée à l'arrivée, nous comprenons que ce moment ait été long. Un plat servi tiède n'est pas acceptable chez nous, et nous en avons reparlé en cuisine dès le lendemain. Notre carte, affichée à l'entrée, repose sur des produits frais travaillés maison — nous serions heureux de vous le montrer dans de meilleures conditions, en semaine par exemple. N'hésitez pas à nous écrire directement pour en discuter.<br>Marc, chef et propriétaire »</p>
-        <p class="example-why">Les faits sont posés sans accuser, un point fort est rappelé, la porte reste ouverte. C'est ce que retiendront les prochains lecteurs.</p>
+        <p class="example-quote">« Bonjour Kévin, merci pour votre retour. Samedi soir, nous étions complets et vous avez attendu trop longtemps : vous avez raison, ce n'est pas l'accueil que nous voulons offrir. Pour le plat tiède, j'en ai parlé avec la cuisine dès le lendemain, ça ne doit pas arriver. Nos prix sont affichés à l'entrée parce que tout est fait maison, avec des produits frais. Si vous nous laissez une seconde chance, venez plutôt en semaine, c'est plus calme et je passerai vous saluer.<br>Marc, chef et propriétaire »</p>
+        <p class="example-why">Il reconnaît, il explique sans se justifier, il invite à revenir. C'est cette réponse que liront vos futurs clients.</p>
       </article>
     </div>
+    <p class="reassure"><svg class="icon"><use href="#i-check"/></svg>Vous gardez la main : chaque réponse vous est proposée, vous la relisez, l'ajustez et la publiez vous-même. Elle est écrite dans votre style, signée de votre nom.</p>
   </section>
 
   <section class="offer" id="offre">
@@ -356,12 +357,23 @@
       <label for="{p}-cuisine">Type de cuisine</label>
       <input id="{p}-cuisine" name="cuisine" maxlength="100" placeholder="Ex. bistronomie, pizzeria napolitaine…">
     </div>
+    <div class="field full style-sep">
+      <span class="label style-title">Mon style</span>
+      <p class="field-hint">Appliqué à chaque réponse : ton, forme d'adresse, signature et tournures bannies.</p>
+    </div>
     <div class="field">
-      <label for="{p}-tone">Ton des réponses <span class="opt">(vouvoiement toujours)</span></label>
+      <label for="{p}-tone">Ton des réponses</label>
       <select id="{p}-tone" name="tone">
-        <option value="chaleureux">Chaleureux</option>
-        <option value="elegant">Élégant</option>
-        <option value="familial">Familial</option>
+        <option value="sobre">Sobre</option>
+        <option value="chaleureux" selected>Chaleureux</option>
+        <option value="direct">Direct</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="{p}-addr">Forme d'adresse du client</label>
+      <select id="{p}-addr" name="address_form">
+        <option value="vous">Vouvoiement</option>
+        <option value="tu">Tutoiement</option>
       </select>
     </div>
     <div class="field">
@@ -371,6 +383,11 @@
     <div class="field">
       <label for="{p}-sigrole">Rôle dans la signature</label>
       <input id="{p}-sigrole" name="signature_role" maxlength="80" placeholder="Ex. chef et propriétaire">
+    </div>
+    <div class="field full">
+      <label for="{p}-avoid">Expressions à éviter <span class="opt">(bannies de vos réponses)</span></label>
+      <input id="{p}-avoid" name="avoid_phrases" maxlength="400" placeholder="Ex. cher client, établissement, dans les meilleurs délais">
+      <p class="field-hint">Séparez les expressions par des virgules — 20 maximum, 60 caractères chacune.</p>
     </div>
     <div class="field full">
       <span class="label">Points forts <span class="opt">(le rédacteur en rappelle un par réponse)</span></span>

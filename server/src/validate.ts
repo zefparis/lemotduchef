@@ -16,6 +16,7 @@ const str = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max + 1
 export interface ProfileInput {
   name: string; city: string; cuisine: string;
   signature_name: string; signature_role: string; tone: Tone;
+  address_form: 'vous' | 'tu'; avoid_phrases: string[];
   strengths: string[]; practical_info: string;
   google_maps_url: string; google_review_url: string;
   contact_email: string; contact_phone: string; show_phone: boolean;
@@ -43,7 +44,13 @@ export function validateProfile(body: any): { value?: ProfileInput; error?: stri
   const signature_role = str(body.signature_role, 80);
   if (signature_name.length > 80 || signature_role.length > 80) return { error: 'Signature trop longue (80 caractères par champ).' };
   const tone = String(body.tone ?? 'chaleureux');
-  if (!(tone in TONES)) return { error: 'Ton invalide.' };
+  if (!(tone in TONES)) return { error: 'Ton invalide (sobre, chaleureux ou direct).' };
+  const address_form = String(body.address_form ?? 'vous');
+  if (address_form !== 'vous' && address_form !== 'tu') return { error: 'Forme d’adresse invalide (vous ou tu).' };
+  const rawAvoid = Array.isArray(body.avoid_phrases) ? body.avoid_phrases : [];
+  const avoid_phrases = [...new Set(rawAvoid.map((s: unknown) => str(s, 60)).filter((s: string) => s.length >= 2))] as string[];
+  if (avoid_phrases.length > 20 || avoid_phrases.some(s => s.length > 60))
+    return { error: 'Expressions à éviter : 20 maximum, 60 caractères chacune.' };
   const rawStrengths = Array.isArray(body.strengths) ? body.strengths : [];
   const strengths = [...new Set(rawStrengths.map((s: unknown) => str(s, 60)).filter(Boolean))] as string[];
   if (strengths.length > 8 || strengths.some(s => s.length > 60)) return { error: 'Points forts : 8 maximum, 60 caractères chacun.' };
@@ -60,7 +67,7 @@ export function validateProfile(body: any): { value?: ProfileInput; error?: stri
   const contact_phone = str(body.contact_phone, 30);
   if (contact_phone && (contact_phone.length > 30 || !/^[+\d][\d\s().-]{5,}$/.test(contact_phone))) return { error: 'Téléphone de contact invalide.' };
   const show_phone = body.show_phone === true || body.show_phone === 'true' || body.show_phone === 'on';
-  return { value: { name, city, cuisine, signature_name, signature_role, tone: tone as Tone, strengths, practical_info, google_maps_url, google_review_url, contact_email, contact_phone, show_phone } };
+  return { value: { name, city, cuisine, signature_name, signature_role, tone: tone as Tone, address_form: address_form as 'vous' | 'tu', avoid_phrases, strengths, practical_info, google_maps_url, google_review_url, contact_email, contact_phone, show_phone } };
 }
 
 /* ---------- Avis ---------- */

@@ -159,12 +159,12 @@ export function mockVariants(user: string): string {
     variants.push(
       `${hello} votre message nous touche : le bien-être de nos clients passe avant tout, et nous lisons le vôtre avec la plus grande attention. L’hygiène est chez nous une discipline de tous les instants, partagée par toute l’équipe. Contactez-nous${reach} pour que nous comprenions ce qui s’est passé.`,
       `${hello} nous entendons votre inquiétude et elle nous tient à cœur. Chez nous, l’hygiène n’est pas un argument mais une exigence quotidienne, tenue par toute l’équipe sans relâche. Joignez-nous directement${reach} : nous prendrons tout le temps nécessaire pour comprendre ensemble ce qui s’est passé.`,
-      `${hello} la confiance de nos clients est ce que nous défendons le plus${s3 ? `, avec ${s3}` : ''} et une exigence d’hygiène de tous les instants, à chaque service — toute l’équipe y veille. Pour comprendre votre expérience, contactez-nous directement au restaurant : vous aurez une réponse personnelle et attentionnée.`,
+      `${hello} la confiance de nos clients est ce que nous défendons le plus${s3 ? `, avec ${s3}` : ''} et une exigence d’hygiène de tous les instants, à chaque service : toute l’équipe y veille. Pour comprendre votre expérience, contactez-nous directement au restaurant : vous aurez une réponse personnelle et attentionnée.`,
     );
   } else {
     variants.push(
-      `${hello} votre retour appelle une réponse claire : ce que vous décrivez n’est pas le niveau de service que nous voulons proposer. Votre retour est transmis à l’équipe, en salle comme en cuisine, et nous en parlons dès aujourd’hui pour bien mieux faire à chaque service.`,
-      `${hello} lire votre avis n’est pas un moment agréable, et nous le regardons en face. Votre soirée aurait dû être belle ; qu’elle ne l’ait pas été nous importe vraiment. ${s2 ? `${cap(s2)} n’en reste pas moins notre fierté quotidienne. ` : ''}Écrivez-nous${reach} si vous souhaitez en parler de vive voix.`,
+      `${hello} votre retour appelle une réponse claire : ce que vous décrivez n’est pas le niveau de service que nous voulons proposer. Votre retour est transmis à l’équipe, en salle comme en cuisine, et nous en parlons dès aujourd’hui pour bien mieux faire à chaque service. Nous espérons vous retrouver à une prochaine visite.`,
+      `${hello} lire votre avis n’est pas un moment agréable, et nous le regardons en face. Votre soirée aurait dû être belle ; qu’elle ne l’ait pas été nous importe vraiment. ${s2 ? `${cap(s2)} n’en reste pas moins notre fierté quotidienne. ` : ''}Écrivez-nous${reach} pour en parler ; vous êtes le bienvenu quand vous voudrez revenir.`,
       `${hello} ce que vous décrivez est l’inverse de ce que nous défendons chaque jour${s3 ? ` : ${s3} et une attention sincère portée à chaque table` : ' : une attention sincère portée à chaque table'}. Nous serions heureux de vous le prouver lors d’une prochaine visite, quand vous le souhaiterez, en toute simplicité et avec le sourire.`,
     );
   }

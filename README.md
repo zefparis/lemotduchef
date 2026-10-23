@@ -31,8 +31,8 @@ les envoyer. Le mode `mock` est refusé en production.
 
 **Répondre à un avis.** Le restaurateur colle l'avis (texte, note 1–5, prénom
 affiché, date de visite), précise le contexte pour les notes ≤ 3 (jamais venu,
-salle complète avec attente annoncée, plat conforme, problème réel, prix
-affichés, allergie/santé, autre). Le serveur génère **3 variantes** via un LLM
+salle complète, attente annoncée au client à son arrivée, plat conforme,
+problème réel, prix affichés, allergie/santé, autre). Le serveur génère **3 variantes** via un LLM
 (Anthropic, `LLM_PROVIDER`/`ANTHROPIC_API_KEY`/`LLM_MODEL`, timeout, tokens
 journalisés) sous un prompt système versionné (`server/src/llm/prompt.ts`) :
 réponse adressée aux futurs lecteurs, toujours courtoise, jamais d'accusation
@@ -53,9 +53,11 @@ texte personnalisable. Le QR mène **tous** les clients à Google : aucun filtre
 de satisfaction, aucune contrepartie — affirmé dans l'interface.
 
 **Profil restaurant** (onboarding après inscription) : nom, ville, type de
-cuisine, signature (« Marc, chef et propriétaire »), ton (chaleureux / élégant
-/ familial, vouvoiement toujours), points forts, infos pratiques, URL Google
-Maps validée, email et téléphone de contact réclamations.
+cuisine, points forts, infos pratiques, URL Google Maps validée, email et
+téléphone de contact réclamations — plus le réglage « Mon style » appliqué à
+chaque génération : ton (sobre / chaleureux / direct), vouvoiement ou
+tutoiement du client, signature (« Marc, chef et propriétaire », réponse au
+« je » si un prénom est signé) et expressions à éviter.
 
 **Offres.** Gratuit : `FREE_MONTHLY_REPLIES` générations/mois (défaut 5, sans
 carte), historique `FREE_HISTORY_DAYS` jours. Pro : générations illimitées,

@@ -283,7 +283,9 @@ function readProfileForm(f) {
   return {
     name: el.name.value.trim(), city: el.city.value.trim(), cuisine: el.cuisine.value.trim(),
     signature_name: el.signature_name.value.trim(), signature_role: el.signature_role.value.trim(),
-    tone: el.tone.value, strengths: strengths.slice(0, 8), practical_info: el.practical_info.value.trim(),
+    tone: el.tone.value, address_form: el.address_form.value === 'tu' ? 'tu' : 'vous',
+    avoid_phrases: (el.avoid_phrases.value || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 20),
+    strengths: strengths.slice(0, 8), practical_info: el.practical_info.value.trim(),
     google_maps_url: el.google_maps_url.value.trim(), google_review_url: profile?.google_review_url || '',
     contact_email: el.contact_email.value.trim(), contact_phone: el.contact_phone.value.trim(),
     show_phone: !!(el.show_phone && el.show_phone.checked),
@@ -292,8 +294,9 @@ function readProfileForm(f) {
 function fillProfileForm(f, p) {
   if (!p || document.activeElement?.form === f) return;
   const el = f.elements;
-  for (const k of ['name', 'city', 'cuisine', 'signature_name', 'signature_role', 'tone', 'practical_info', 'google_maps_url', 'contact_email', 'contact_phone'])
+  for (const k of ['name', 'city', 'cuisine', 'signature_name', 'signature_role', 'tone', 'address_form', 'practical_info', 'google_maps_url', 'contact_email', 'contact_phone'])
     if (el[k]) el[k].value = p[k] ?? '';
+  if (el.avoid_phrases) el.avoid_phrases.value = (p.avoid_phrases || []).join(', ');
   if (el.show_phone) el.show_phone.checked = !!p.show_phone;
   const known = [...f.querySelectorAll('input[name=strengths]')];
   known.forEach(i => { i.checked = (p.strengths || []).includes(i.value); });
