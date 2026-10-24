@@ -1,9 +1,13 @@
 import { pool } from '../db.js';
 import { config } from '../config.js';
 import { llmProvider, LlmError } from './provider.js';
+import { effectivePlan, FREE_MONTHLY_LIMIT } from '../stripe.js';
 import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, signatureOf, assignedStrengths } from './prompt.js';
 import type { PromptProfile, PromptReview } from './prompt.js';
 import { checkReply, parseVariants, tooSimilar, cleanReply, withSignature, mentionsContactEmail, mentionsReservation } from './rules.js';
+
+// Quota mensuel épuisé (réservation refusée dans la transaction atomique).
+export class QuotaExceededError extends Error {}
 
 export interface GeneratedVariant { idx: number; text: string; warnings: string[]; words: number; needsReview?: boolean }
 export interface GenerationOutcome {
@@ -34,6 +38,7 @@ async function recentPhrases(companyId: string, excludeReviewId: string): Promis
 
 export async function generateReplies(
   companyId: string, reviewId: string, profile: PromptProfile, review: PromptReview, log: { warn: (o: any, m?: string) => void; info: (o: any, m?: string) => void },
+  opts: { unlimited?: boolean } = {},
 ): Promise<GenerationOutcome> {
   const provider = llmProvider();
   const avoid = await recentPhrases(companyId, reviewId);
@@ -42,6 +47,44 @@ export async function generateReplies(
   const strengths = assignedStrengths(profile, avoid.length);
   const sig = signatureOf(profile);
   const started = Date.now();
+
+  // Réservation atomique du quota : une ligne `generations` = un appel LLM,
+  // insérée AVANT la requête fournisseur (chaque appel coûte, y compris les
+  // échecs — ils comptent donc aussi). FOR UPDATE sur la ligne companies
+  // sérialise les appels concurrents du même restaurant : pas de dépassement
+  // de quota par course.
+  const client = await pool.connect();
+  let generationId = '';
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT id FROM companies WHERE id=$1 FOR UPDATE', [companyId]);
+    if (!opts.unlimited) {
+      const { rows: co } = await client.query<{ plan: string; subscription_status: string }>(
+        'SELECT plan, subscription_status FROM companies WHERE id=$1', [companyId]);
+      if (effectivePlan(co[0] ?? { plan: 'free', subscription_status: 'none' }) === 'free') {
+        const { rows: n } = await client.query<{ n: string }>(
+          `SELECT count(*) AS n FROM generations
+            WHERE company_id=$1 AND created_at >= date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`,
+          [companyId]);
+        if (Number(n[0].n) >= FREE_MONTHLY_LIMIT) {
+          await client.query('ROLLBACK');
+          throw new QuotaExceededError('quota mensuel épuisé');
+        }
+      }
+    }
+    const { rows: g } = await client.query<{ id: string }>(
+      `INSERT INTO generations (review_id, company_id, provider, model, prompt_version, status)
+       VALUES ($1,$2,$3,$4,$5,'running') RETURNING id`,
+      [reviewId, companyId, provider.name, config.llm.model, PROMPT_VERSION]);
+    generationId = g[0].id;
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+
   let inputTokens = 0, outputTokens = 0, model = config.llm.model, stopReason = '';
   const slots: (GeneratedVariant | null)[] = [null, null, null];
   const rejected: string[] = [];
@@ -68,7 +111,13 @@ export async function generateReplies(
     } catch (err) {
       clearTimeout(timer);
       if (slots.some(Boolean)) break; // on garde ce qu'on a
-      if (err instanceof LlmError) { log.warn({ kind: err.kind, detail: (err as any).detail }, 'llm: échec'); throw err; }
+      if (err instanceof LlmError) {
+        // Échec fournisseur : la réservation est consommée quand même (coût réel).
+        await pool.query(`UPDATE generations SET status='failed', duration_ms=$2 WHERE id=$1`,
+          [generationId, Date.now() - started]).catch(() => {});
+        log.warn({ kind: err.kind, detail: (err as any).detail }, 'llm: échec');
+        throw err;
+      }
       throw new LlmError('Génération impossible pour le moment.', 'upstream');
     }
     clearTimeout(timer);
@@ -101,30 +150,31 @@ export async function generateReplies(
   const durationMs = Date.now() - started;
   const accepted = slots.filter((s): s is GeneratedVariant => !!s);
   if (!accepted.length) {
-    // Aucun quota consommé : pas de ligne `generations` sur un échec total.
+    // Échec total : la réservation est débitée quand même — l'appel
+    // fournisseur a eu lieu, une boucle d'échecs ne peut plus générer à l'infini.
+    await pool.query(
+      `UPDATE generations SET status='failed', model=$2, input_tokens=$3, output_tokens=$4, duration_ms=$5 WHERE id=$1`,
+      [generationId, model, inputTokens, outputTokens, durationMs]);
     log.warn({ rejected, inputTokens, outputTokens }, 'llm: aucune variante conforme');
     throw new LlmError('Le rédacteur n’a pas produit de réponse conforme aux règles. Réessayez dans un instant.', 'format');
   }
 
-  const client = await pool.connect();
-  let generationId = '';
+  const done = await pool.connect();
   try {
-    await client.query('BEGIN');
-    const { rows } = await client.query<{ id: string }>(
-      `INSERT INTO generations (review_id, company_id, provider, model, prompt_version, input_tokens, output_tokens, duration_ms)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-      [reviewId, companyId, provider.name, model, PROMPT_VERSION, inputTokens, outputTokens, durationMs]);
-    generationId = rows[0].id;
+    await done.query('BEGIN');
+    await done.query(
+      `UPDATE generations SET status='ok', model=$2, input_tokens=$3, output_tokens=$4, duration_ms=$5 WHERE id=$1`,
+      [generationId, model, inputTokens, outputTokens, durationMs]);
     for (const v of accepted) {
-      await client.query(
+      await done.query(
         `INSERT INTO reply_variants (generation_id, review_id, company_id, idx, text, warnings) VALUES ($1,$2,$3,$4,$5,$6)`,
         [generationId, reviewId, companyId, v.idx, v.text, v.warnings]);
     }
-    await client.query('COMMIT');
+    await done.query('COMMIT');
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
+    await done.query('ROLLBACK').catch(() => {});
     throw err;
-  } finally { client.release(); }
+  } finally { done.release(); }
 
   // Les positions restées non conformes reviennent marquées « à revoir ».
   const variants: GeneratedVariant[] = slots.map((s, i) => s ?? { idx: i, text: '', warnings: [], words: 0, needsReview: true });

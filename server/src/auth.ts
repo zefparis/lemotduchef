@@ -5,6 +5,23 @@ import { config } from './config.js';
 import { sendMail, EMAIL_TEMPLATES } from './mailer.js';
 import { CGV_VERSION, recordCgvAcceptance, isPublicAuthCall } from './legal.js';
 
+// Anti-bombardement par e-mail : les envois transactionnels (réinitialisation,
+// vérification) sont plafonnés par ADRESSE, en plus du rate-limit par IP de
+// Better Auth — sinon une rotation d'IP peut inonder une boîte cible.
+const MAIL_LIMIT_PATHS = new Set(['/request-password-reset', '/forget-password', '/send-verification-email']);
+const MAIL_LIMIT_MAX = 3;
+const MAIL_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const mailBuckets = new Map<string, number[]>();
+function emailThrottle(key: string): boolean {
+  const now = Date.now();
+  if (mailBuckets.size > 5000) {
+    for (const [k, hits] of mailBuckets) if (!hits.some(t => now - t < MAIL_LIMIT_WINDOW_MS)) mailBuckets.delete(k);
+  }
+  const hits = (mailBuckets.get(key) ?? []).filter(t => now - t < MAIL_LIMIT_WINDOW_MS);
+  if (hits.length >= MAIL_LIMIT_MAX) { mailBuckets.set(key, hits); return false; }
+  hits.push(now); mailBuckets.set(key, hits); return true;
+}
+
 // Authentification gérée par Better Auth (sessions serveur révocables,
 // hachage des mots de passe, cookies HttpOnly). Aucune crypto maison.
 export const auth = betterAuth({
@@ -57,6 +74,10 @@ export const auth = betterAuth({
               AND NOT EXISTS (SELECT 1 FROM memberships m2 WHERE m2.company_id = c.id AND m2.user_id <> $1)`,
           [user.id],
         );
+        // Jetons en attente (reset, confirmation de suppression) : les lignes
+        // `verification` stockent l'id utilisateur dans `value` — aucune ne
+        // doit survivre au compte (les jetons d'e-mail sont des JWT, sans ligne).
+        await pool.query(`DELETE FROM verification WHERE value=$1`, [user.id]);
       },
     },
   },
@@ -75,6 +96,10 @@ export const auth = betterAuth({
       httpOnly: true,
       ...(config.cookieDomain ? { domain: config.cookieDomain } : {}),
     },
+    // IP réelle du client : cf-connecting-ip (posé par Cloudflare, non
+    // falsifiable via le tunnel) en priorité — jamais l'entrée contrôlée par
+    // le client de X-Forwarded-For (rate-limit et session.ipAddress).
+    ipAddress: { ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'] },
     // Inscription publique bloquée aussi côté route (voir routes/auth.ts).
     disableCSRFCheck: false,
     database: {
@@ -101,15 +126,29 @@ export const auth = betterAuth({
           });
         return;
       }
-      if (ctx.path !== '/sign-in/email') return;
-      const email = String(ctx.body?.email ?? '').toLowerCase();
-      if (!email) return;
-      const { rows } = await pool.query<{ suspended_at: string | null }>(
-        'SELECT suspended_at FROM "user" WHERE lower(email)=$1', [email]);
-      if (rows[0]?.suspended_at)
-        throw new APIError('FORBIDDEN', { message: 'Compte suspendu. Contactez le support.' });
+      // Plafond par e-mail sur les envois transactionnels (reset, vérification).
+      if (MAIL_LIMIT_PATHS.has(ctx.path)) {
+        const email = String(ctx.body?.email ?? '').toLowerCase();
+        if (email && !emailThrottle(`${ctx.path}|${email}`))
+          throw new APIError('TOO_MANY_REQUESTS', { message: 'Trop de demandes sur cette adresse. Réessayez dans une heure.' });
+      }
     }),
     after: createAuthMiddleware(async (ctx) => {
+      // Suspension vérifiée APRÈS le mot de passe : répondre avant la
+      // vérification révélerait l'existence du compte à quiconque tente un mot
+      // de passe quelconque. La session créée est supprimée immédiatement.
+      if (ctx.path === '/sign-in/email') {
+        const user = (ctx.context as any)?.returned?.user;
+        if (user?.id) {
+          const { rows } = await pool.query<{ suspended_at: string | null }>(
+            'SELECT suspended_at FROM "user" WHERE id=$1', [user.id]);
+          if (rows[0]?.suspended_at) {
+            await pool.query('DELETE FROM session WHERE "userId"=$1', [user.id]);
+            throw new APIError('FORBIDDEN', { message: 'Compte suspendu. Contactez le support.' });
+          }
+        }
+        return;
+      }
       // Enregistre l'acceptation des CGV de la voie publique (version + IP).
       if (ctx.path !== '/sign-up/email' || !isPublicAuthCall(ctx.request?.headers)) return;
       const user = (ctx.context as any)?.returned?.user;

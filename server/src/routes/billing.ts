@@ -27,7 +27,14 @@ async function companyContact(companyId: string) {
   return rows[0];
 }
 
-async function applySubscription(sub: any): Promise<void> {
+// Toutes les requêtes du webhook passent par le client de la transaction de
+// « claim » : le marquage stripe_events et le traitement sont atomiques.
+type Q = { query: (text: string, params?: unknown[]) => Promise<any> };
+type AlertLog = { error: (o: any, m?: string) => void; warn: (o: any, m?: string) => void };
+
+// false = aucune entreprise résolue : l'événement est journalisé en alerte
+// par l'appelant (donnée orpheline — inutile de faire rejouer Stripe).
+async function applySubscription(client: Q, sub: any): Promise<boolean> {
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
   const priceId = sub.items?.data?.[0]?.price?.id ?? null;
   // current_period_end a migré au niveau de l'item dans les API récentes (Basil).
@@ -36,18 +43,18 @@ async function applySubscription(sub: any): Promise<void> {
   // Résolution : d'abord par customer id, sinon par metadata de l'abonnement.
   let companyId: string | null = null;
   if (customerId) {
-    const { rows } = await pool.query<{ id: string }>(
+    const { rows } = await client.query(
       'SELECT id FROM companies WHERE stripe_customer_id=$1', [customerId]);
     companyId = rows[0]?.id ?? null;
   }
   const metaId = String(sub.metadata?.company_id ?? '');
   if (!companyId && /^[0-9a-f-]{36}$/i.test(metaId)) {
-    const { rows } = await pool.query<{ id: string }>(
+    const { rows } = await client.query(
       'SELECT id FROM companies WHERE id=$1', [metaId]);
     companyId = rows[0]?.id ?? null;
   }
-  if (!companyId) return;
-  await pool.query(
+  if (!companyId) return false;
+  await client.query(
     `UPDATE companies SET
        stripe_customer_id = COALESCE($2, stripe_customer_id),
        subscription_id = $3,
@@ -61,13 +68,87 @@ async function applySubscription(sub: any): Promise<void> {
      ...(plan ? [plan] : []), priceId,
      periodEnd ? new Date(periodEnd * 1000) : null,
      !!sub.cancel_at_period_end]);
+  return true;
 }
 
-async function companyIdByCustomer(customerId: string | undefined): Promise<string | null> {
+async function companyIdByCustomer(client: Q, customerId: string | undefined): Promise<string | null> {
   if (!customerId) return null;
-  const { rows } = await pool.query<{ id: string }>(
+  const { rows } = await client.query(
     'SELECT id FROM companies WHERE stripe_customer_id=$1', [customerId]);
   return rows[0]?.id ?? null;
+}
+
+// Liaison Checkout → entreprise (checkout.session.completed ou
+// async_payment_succeeded). company_id non UUID ou entreprise inconnue :
+// alerte sans lever d'erreur (un rejeu ne changerait rien).
+async function linkCheckout(client: Q, session: any, log: AlertLog, eventId: string): Promise<void> {
+  const raw = String(session.client_reference_id || session.metadata?.company_id || '');
+  if (!/^[0-9a-f-]{36}$/i.test(raw)) {
+    log.error({ eventId }, 'stripe webhook ALERTE : checkout sans company_id exploitable — client non lié');
+    return;
+  }
+  const { rowCount } = await client.query(
+    'UPDATE companies SET stripe_customer_id=$2, subscription_id=$3 WHERE id=$1',
+    [raw, session.customer ?? null, session.subscription ?? null]);
+  if (!rowCount)
+    log.error({ eventId, companyId: raw }, 'stripe webhook ALERTE : company_id inconnu — client non lié');
+}
+
+async function handleStripeEvent(client: Q, event: any, log: AlertLog): Promise<void> {
+  const obj = event.data?.object ?? {};
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      // Ne lier le client que si le paiement est soldé : carte = 'paid',
+      // gratuit/essai = 'no_payment_required'. Les moyens de paiement
+      // asynchrones arrivent 'unpaid' — la liaison attend
+      // checkout.session.async_payment_succeeded.
+      if (obj.payment_status === 'paid' || obj.payment_status === 'no_payment_required')
+        await linkCheckout(client, obj, log, event.id);
+      break;
+    }
+    case 'checkout.session.async_payment_succeeded':
+      await linkCheckout(client, obj, log, event.id);
+      break;
+    case 'checkout.session.async_payment_failed':
+      // Paiement asynchrone échoué : rien à lier ; l'abonnement restera
+      // incomplete puis expirera (invoice.payment_failed / subscription.deleted).
+      break;
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated':
+      if (!(await applySubscription(client, obj)))
+        log.error(
+          { eventId: event.id, type: event.type, subscription: obj?.id, customer: obj?.customer },
+          'stripe webhook ALERTE : abonnement orphelin — aucune entreprise résolue (stripe_customer_id et metadata.company_id introuvables)');
+      break;
+    case 'customer.subscription.deleted': {
+      const meta = String(obj.metadata?.company_id ?? '');
+      const cid = await companyIdByCustomer(client, typeof obj.customer === 'string' ? obj.customer : obj.customer?.id)
+        ?? (/^[0-9a-f-]{36}$/i.test(meta) ? meta : null);
+      if (cid) {
+        await client.query(
+          `UPDATE companies SET plan='free', subscription_status='canceled',
+             subscription_id=NULL, subscription_price_id=NULL,
+             current_period_end=NULL, cancel_at_period_end=false WHERE id=$1`,
+          [cid]);
+      } else {
+        log.error({ eventId: event.id, type: event.type, customer: obj?.customer },
+          'stripe webhook ALERTE : résiliation orpheline — aucune entreprise résolue');
+      }
+      break;
+    }
+    case 'invoice.paid': {
+      const cid = await companyIdByCustomer(client, typeof obj.customer === 'string' ? obj.customer : obj.customer?.id);
+      if (cid) await client.query(`UPDATE companies SET subscription_status='active' WHERE id=$1 AND subscription_status <> 'none'`, [cid]);
+      break;
+    }
+    case 'invoice.payment_failed': {
+      // Accès conservé pendant la relance Stripe ; la résiliation éventuelle
+      // arrive via customer.subscription.deleted → retour Gratuit.
+      const cid = await companyIdByCustomer(client, typeof obj.customer === 'string' ? obj.customer : obj.customer?.id);
+      if (cid) await client.query(`UPDATE companies SET subscription_status='past_due' WHERE id=$1`, [cid]);
+      break;
+    }
+  }
 }
 
 export default async function billingRoutes(app: FastifyInstance) {
@@ -95,57 +176,37 @@ export default async function billingRoutes(app: FastifyInstance) {
         return reply.code(400).send({ error: 'Signature invalide.' });
       }
 
-      // Idempotence : Stripe rejoue les événements ; un event_id = un traitement.
-      const { rowCount } = await pool.query(
-        'INSERT INTO stripe_events (event_id, type) VALUES ($1,$2) ON CONFLICT DO NOTHING',
-        [event.id, event.type ?? '']);
-      if (!rowCount) return { received: true, duplicate: true };
-
-      const obj = event.data?.object ?? {};
+      // Idempotence transactionnelle : l'event_id est inséré 'processing' puis
+      // passé 'done' dans la MÊME transaction que le traitement. Erreur →
+      // rollback complet (aucune trace) + 500 → Stripe rejoue proprement.
+      const client = await pool.connect();
       try {
-        switch (event.type) {
-          case 'checkout.session.completed': {
-            const companyId = obj.client_reference_id || obj.metadata?.company_id;
-            if (companyId) {
-              await pool.query(
-                `UPDATE companies SET stripe_customer_id=$2, subscription_id=$3 WHERE id=$1`,
-                [companyId, obj.customer ?? null, obj.subscription ?? null]);
-            }
-            break;
+        await client.query('BEGIN');
+        const { rows: claimed } = await client.query(
+          `INSERT INTO stripe_events (event_id, type, status) VALUES ($1,$2,'processing')
+           ON CONFLICT (event_id) DO NOTHING RETURNING event_id`,
+          [event.id, event.type ?? '']);
+        if (!claimed.length) {
+          const { rows: cur } = await client.query(
+            'SELECT status FROM stripe_events WHERE event_id=$1', [event.id]);
+          if (cur[0]?.status === 'done') {
+            await client.query('ROLLBACK');
+            return { received: true, duplicate: true };
           }
-          case 'customer.subscription.created':
-          case 'customer.subscription.updated':
-            await applySubscription(obj);
-            break;
-          case 'customer.subscription.deleted': {
-            const cid = await companyIdByCustomer(typeof obj.customer === 'string' ? obj.customer : obj.customer?.id)
-              ?? obj.metadata?.company_id;
-            if (cid) {
-              await pool.query(
-                `UPDATE companies SET plan='free', subscription_status='canceled',
-                   subscription_id=NULL, subscription_price_id=NULL,
-                   current_period_end=NULL, cancel_at_period_end=false WHERE id=$1`,
-                [cid]);
-            }
-            break;
-          }
-          case 'invoice.paid': {
-            const cid = await companyIdByCustomer(typeof obj.customer === 'string' ? obj.customer : obj.customer?.id);
-            if (cid) await pool.query(`UPDATE companies SET subscription_status='active' WHERE id=$1 AND subscription_status <> 'none'`, [cid]);
-            break;
-          }
-          case 'invoice.payment_failed': {
-            // Accès conservé pendant la relance Stripe ; la résiliation éventuelle
-            // arrive via customer.subscription.deleted → retour Gratuit.
-            const cid = await companyIdByCustomer(typeof obj.customer === 'string' ? obj.customer : obj.customer?.id);
-            if (cid) await pool.query(`UPDATE companies SET subscription_status='past_due' WHERE id=$1`, [cid]);
-            break;
-          }
+          // Ligne restée 'processing' (reprise d'une version précédente) : retraiter.
         }
+        await handleStripeEvent(client, event, req.log);
+        await client.query(
+          `UPDATE stripe_events SET status='done', processed_at=now() WHERE event_id=$1`,
+          [event.id]);
+        await client.query('COMMIT');
       } catch (err) {
-        // Événement mal traité : Stripe réessaiera ; on laisse l'event_id
-        // consommé pour ne pas boucler indéfiniment sur une donnée invalide.
-        req.log.warn({ err, type: event.type }, 'stripe webhook handler failed');
+        await client.query('ROLLBACK').catch(() => {});
+        req.log.error({ err, type: event.type, eventId: event.id },
+          'stripe webhook ALERTE : traitement échoué — Stripe rejouera l’événement');
+        return reply.code(500).send({ error: 'Traitement de l’événement impossible pour le moment.' });
+      } finally {
+        client.release();
       }
       return { received: true };
     });
@@ -202,15 +263,25 @@ export default async function billingRoutes(app: FastifyInstance) {
     let customerId = b.stripe_customer_id;
     if (!customerId) {
       const c = await companyContact(req.companyId!);
-      let customer: Stripe.Customer;
+      const email = c?.contact_email || c?.email || undefined;
+      let customer: Stripe.Customer | undefined;
       try {
-        customer = await s.customers.create({
+        // Réutiliser le client Stripe existant pour cet email plutôt que d'en
+        // créer un doublon à chaque souscription.
+        if (email) {
+          const { data: existing } = await s.customers.list({ email, limit: 1 });
+          customer = existing[0];
+          if (customer && !(customer.metadata as any)?.company_id)
+            customer = await s.customers.update(customer.id,
+              { metadata: { company_id: req.companyId!, city: c?.city ?? '' } });
+        }
+        customer ??= await s.customers.create({
           name: c?.name ?? undefined,
-          email: c?.contact_email || c?.email || undefined,
+          email,
           metadata: { company_id: req.companyId!, city: c?.city ?? '' },
         });
       } catch (err) {
-        req.log.warn({ err }, 'stripe customers.create a échoué');
+        req.log.warn({ err }, 'stripe customers lookup/create a échoué');
         return reply.code(502).send({ error: STRIPE_DOWN });
       }
       customerId = customer.id;

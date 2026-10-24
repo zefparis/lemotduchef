@@ -344,6 +344,14 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
   if (hasContactEmail && !CONTACT_INVITE.test(t.replace(EMAIL_RE, '')))
     errors.push('email cité sans invitation à un échange privé');
 
+  // Liens : aucune URL ni nom de domaine dans une réponse publique (anti-
+  // phishing, anti-injection via le texte de l'avis). L'email du profil est
+  // retiré avant le test.
+  const sansEmail = t.replace(EMAIL_RE, '');
+  if (/https?:\/\/|www\./i.test(sansEmail)
+    || /\b[a-z0-9][a-z0-9-]*\.(?:com|fr|net|org|io|dev|co|eu|info|biz|site|online|shop|app|rest|restaurant)\b/i.test(sansEmail))
+    errors.push('lien ou nom de domaine dans la réponse');
+
   // Santé : pas d'aveu de responsabilité, invitation au contact privé.
   if (isHealthTopic(r)) {
     if (ADMISSION.test(t)) errors.push('reconnaissance de responsabilité sur un sujet santé');

@@ -1,11 +1,12 @@
 import Fastify from 'fastify';
+import pino from 'pino';
 import type { FastifyError } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
 import cors from '@fastify/cors';
 import { config } from './config.js';
 import { auth } from './auth.js';
-import { nodeHeaders, CLIENT_HEADER } from './guards.js';
+import { nodeHeaders, clientIp, CLIENT_HEADER } from './guards.js';
 import { smtpConfigured, mailDriver } from './mailer.js';
 import profileRoutes from './routes/profile.js';
 import adminRoutes from './routes/admin.js';
@@ -18,21 +19,55 @@ import collectRoutes from './routes/collect.js';
 import { llmConfigured } from './llm/provider.js';
 import { scheduleRetention } from './retention.js';
 
-export async function buildApp(opts: { retention?: boolean } = {}) {
-  const app = Fastify({
-    // Journalisation sans secrets : cookies, en-têtes d'auth et set-cookie masqués.
-    logger: {
-      level: process.env.LOG_LEVEL ?? 'info',
-      redact: {
-        paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
-        censor: '[redacted]',
-      },
+export async function buildApp(opts: { retention?: boolean; logStream?: NodeJS.WritableStream } = {}) {
+  // Journalisation sans secrets : cookies, en-têtes d'auth et set-cookie
+  // masqués ; URL journalisée SANS la query string — les liens
+  // d'authentification (vérification, réinitialisation) portent des jetons.
+  const logConfig = {
+    level: process.env.LOG_LEVEL ?? 'info',
+    serializers: {
+      req: (req: any) => ({
+        method: req.method,
+        url: String(req.url ?? '').split('?')[0],
+        hostname: req.hostname,
+        remoteAddress: clientIp(req),
+        remotePort: req.socket?.remotePort,
+      }),
     },
+    redact: {
+      paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+      censor: '[redacted]',
+    },
+  };
+  const app = Fastify({
+    ...(opts.logStream
+      ? { loggerInstance: pino(logConfig, opts.logStream as any) }
+      : { logger: logConfig }),
     trustProxy: config.trustProxy,
   });
   (app as any).signupEnabled = config.signupEnabled;
 
-  await app.register(rateLimit, { max: 300, timeWindow: '1 minute' });
+  // Rate-limit clé = IP cliente fiable (cf-connecting-ip via le tunnel, sinon
+  // socket) — X-Forwarded-For client n'est jamais une clé de confiance.
+  await app.register(rateLimit, { max: 300, timeWindow: '1 minute', keyGenerator: clientIp });
+
+  // En-têtes de sécurité sur toutes les réponses. CSP stricte sur /api
+  // (JSON), complète quand le front est servi par cette origine.
+  const CSP_API = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
+  const CSP_FRONT = [
+    "default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:", `connect-src 'self' ${config.baseUrl}`,
+    "object-src 'none'", "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'",
+  ].join('; ');
+  app.addHook('onSend', async (req, reply) => {
+    reply
+      .header('X-Content-Type-Options', 'nosniff')
+      .header('X-Frame-Options', 'DENY')
+      .header('Referrer-Policy', 'strict-origin-when-cross-origin')
+      .header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains')
+      .header('Content-Security-Policy',
+        req.url.startsWith('/api/') || req.url === '/health' ? CSP_API : CSP_FRONT);
+  });
 
   // CORS : origines frontend autorisées (CORS_ORIGINS). Cookies inclus
   // (sessions cross-site). Aucune origine configurée = même origine seule.
@@ -80,7 +115,7 @@ export async function buildApp(opts: { retention?: boolean } = {}) {
   app.route({
     method: ['GET', 'POST'],
     url: '/api/auth/*',
-    config: { rateLimit: { max: config.rateLimitAuth, timeWindow: '1 minute' } },
+    config: { rateLimit: { max: config.rateLimitAuth, timeWindow: '1 minute', keyGenerator: clientIp } },
     handler: async (req, reply) => {
       const pathname = new URL(req.raw.url ?? '/', 'http://x').pathname;
       if (pathname === '/api/auth/sign-up/email') {
@@ -137,10 +172,20 @@ export async function buildApp(opts: { retention?: boolean } = {}) {
     app.addHook('onClose', async () => stop());
   }
 
-  // Frontend statique (même origine que /api) + repli mono-page.
-  await app.register(fastifyStatic, { root: config.staticRoot });
+  // Frontend statique : servi par l'API uniquement en auto-hébergement
+  // (front et API sur la même origine). En production le front est sur Vercel
+  // (FRONT_URL ≠ BASE_URL) : toute page hors /api redirige vers le site public
+  // au lieu de servir une copie potentiellement obsolète.
+  const frontSameOrigin = (() => {
+    try { return new URL(config.frontUrl).origin === new URL(config.baseUrl).origin; }
+    catch { return true; }
+  })();
+  if (frontSameOrigin) await app.register(fastifyStatic, { root: config.staticRoot });
   app.setNotFoundHandler((req, reply) => {
-    if (req.method === 'GET' && !req.url.startsWith('/api/')) return reply.sendFile('index.html');
+    if (req.method === 'GET' && !req.url.startsWith('/api/')) {
+      if (frontSameOrigin) return reply.sendFile('index.html');
+      return reply.code(302).redirect(`${config.frontUrl}${req.raw.url ?? '/'}`);
+    }
     reply.code(404).send({ error: 'Introuvable.' });
   });
 

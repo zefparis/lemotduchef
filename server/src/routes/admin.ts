@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import { pool } from '../db.js';
-import { requireAdmin } from '../guards.js';
+import { requireAdmin, clientIp } from '../guards.js';
 import { auth } from '../auth.js';
 import { settingValue, setSetting } from '../settings.js';
 import { config } from '../config.js';
@@ -15,11 +15,11 @@ async function audit(req: FastifyRequest, action: string, targetType = '', targe
   await pool.query(
     `INSERT INTO audit_log (admin_user_id, admin_email, action, target_type, target_id, detail, ip)
      VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-    [req.userId, rows[0]?.email ?? '', action, targetType, targetId, JSON.stringify(detail), req.ip ?? '']);
+    [req.userId, rows[0]?.email ?? '', action, targetType, targetId, JSON.stringify(detail), clientIp(req)]);
 }
 
 export default async function adminRoutes(app: FastifyInstance) {
-  await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
+  await app.register(rateLimit, { max: 120, timeWindow: '1 minute', keyGenerator: clientIp });
   app.addHook('preHandler', requireAdmin);
 
   /* ---------- Tableau de bord ---------- */
@@ -163,6 +163,8 @@ export default async function adminRoutes(app: FastifyInstance) {
         `DELETE FROM companies c
           WHERE EXISTS (SELECT 1 FROM memberships m WHERE m.company_id=c.id AND m.user_id=$1)
             AND NOT EXISTS (SELECT 1 FROM memberships m2 WHERE m2.company_id=c.id AND m2.user_id<>$1)`, [u.id]);
+      // Jetons en attente (reset, confirmation) : `verification.value` = id utilisateur.
+      await client.query('DELETE FROM verification WHERE value=$1', [u.id]);
       await client.query('DELETE FROM "user" WHERE id=$1', [u.id]);
       await client.query('COMMIT');
     } catch (err) {

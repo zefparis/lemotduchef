@@ -14,6 +14,19 @@ declare module 'fastify' {
   }
 }
 
+// IP cliente de référence pour le rate-limit, l'audit et les acceptations CGV.
+// Derrière le tunnel Cloudflare (TRUST_PROXY=1), cf-connecting-ip est posé par
+// l'edge et ne peut pas être falsifié par le client ; sinon, l'IP de la socket.
+// X-Forwarded-For n'est jamais utilisé : son entrée la plus à gauche est
+// contrôlée par l'appelant (contournement du rate-limit par spoofing).
+export function clientIp(req: FastifyRequest): string {
+  if (config.trustProxy) {
+    const cf = req.headers['cf-connecting-ip'];
+    if (typeof cf === 'string' && cf.trim()) return cf.trim();
+  }
+  return req.socket?.remoteAddress ?? '';
+}
+
 export function nodeHeaders(req: FastifyRequest): Headers {
   const h = new Headers();
   for (const [k, v] of Object.entries(req.headers)) {

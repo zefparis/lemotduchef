@@ -139,7 +139,8 @@ Vérifier ensuite : `curl -s https://api.lemotduchef.fr/api/health`.
    (changement d'offre, moyen de paiement, factures, résiliation).
 3. **Webhook** : Développeurs → Webhooks → ajouter un endpoint
    `https://api.lemotduchef.fr/api/stripe/webhook` avec les événements :
-   `checkout.session.completed`, `customer.subscription.created`,
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed`, `customer.subscription.created`,
    `customer.subscription.updated`, `customer.subscription.deleted`,
    `invoice.paid`, `invoice.payment_failed`. Copier le *signing secret*
    (`whsec_…`) dans `STRIPE_WEBHOOK_SECRET`, puis `docker compose up -d api`.
@@ -194,16 +195,22 @@ compte par invitation et journal d'audit.
 ./scripts/backup.sh                    # → dumps/lemotduchef-<date>.dump
 ```
 
+Le script fait la rotation lui-même : dumps de plus de 14 jours supprimés
+(`BACKUP_KEEP_DAYS` pour changer), sans jamais effacer le dernier dump ; il
+échoue bruyamment si `pg_dump` tombe ou si le fichier produit est vide.
+
 Copie hors X3 (manuel, non planifié) :
 
 ```bash
 rsync -a unipaycongo@192.168.1.166:lemotduchef/dumps/ ~/sauvegardes/lemotduchef/
 ```
 
-Pour une sauvegarde planifiée : cron sur X3, ex.
-`0 3 * * * /home/unipaycongo/lemotduchef/scripts/backup.sh` + rétention
-(`find dumps -mtime +14 -delete`). À mettre en place explicitement —
-rien n'est configuré par défaut.
+Planification : le cron n'est pas installé par le script — à ajouter sur X3
+(les autres apps du serveur ont déjà les leurs) :
+
+```bash
+(crontab -l; echo '15 3 * * * /home/unipaycongo/lemotduchef/scripts/backup.sh >> /home/unipaycongo/lemotduchef/dumps/backup.log 2>&1') | crontab -
+```
 
 ## 8. Restauration (testée localement)
 
@@ -249,6 +256,9 @@ d'auteur et variantes effacés (note, contexte et réponse publiée conservés).
 - Un seul utilisateur par restaurant aujourd'hui ; rôles `owner`/`member`
   prêts pour la suite.
 - Pas de multi-instance : une API = une base.
+- Le domaine `api.lemotduchef.fr` ne sert pas le front : toute page hors `/api`
+  redirige (302) vers `FRONT_URL` ; le front n'est servi que si front et API
+  partagent la même origine (auto-hébergement).
 - La synchronisation Google Business Profile (lecture des avis, publication
   automatique) n'est pas implémentée : le restaurateur colle les avis et
   publie ses réponses lui-même ; l'interface `ReviewSource` est prête.

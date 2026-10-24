@@ -2,12 +2,12 @@ import type { FastifyInstance } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import { pool } from '../db.js';
 import { config } from '../config.js';
-import { requireCompany } from '../guards.js';
+import { requireCompany, clientIp } from '../guards.js';
 import { validateReview } from '../validate.js';
 import { computeFlags, reportGuide } from '../moderation.js';
 import type { Flag } from '../moderation.js';
 import { remainingGenerations, FREE_MONTHLY_LIMIT, isPro } from '../stripe.js';
-import { generateReplies } from '../llm/generate.js';
+import { generateReplies, QuotaExceededError } from '../llm/generate.js';
 import { LlmError, llmConfigured } from '../llm/provider.js';
 import { loadProfile } from './profile.js';
 
@@ -112,7 +112,7 @@ export default async function reviewRoutes(app: FastifyInstance) {
 
   // Génération des 3 variantes. Quota Gratuit appliqué ici, côté serveur.
   await app.register(async (gen) => {
-    await gen.register(rateLimit, { max: config.rateLimitGenerate, timeWindow: '1 minute' });
+    await gen.register(rateLimit, { max: config.rateLimitGenerate, timeWindow: '1 minute', keyGenerator: clientIp });
     gen.post('/api/reviews/:id/generate', async (req, reply) => {
       if (!llmConfigured()) return reply.code(503).send({ error: 'Le rédacteur n’est pas configuré sur ce serveur (LLM).' });
       const { rows } = await pool.query(
@@ -124,10 +124,10 @@ export default async function reviewRoutes(app: FastifyInstance) {
       const profile = await loadProfile(req.companyId!);
       if (!profile) return reply.code(409).send({ error: 'Complétez le profil de votre restaurant avant de générer une réponse.', code: 'NO_PROFILE' });
       const admin = await isAdminAccount(req.userId!);
-      const remaining = admin ? Number.POSITIVE_INFINITY : await remainingGenerations(req.companyId!);
-      if (remaining < 1) return reply.code(403).send(LIMIT_ERROR);
       try {
-        const out = await generateReplies(req.companyId!, review.id, profile, review, req.log);
+        // Le quota est réservé atomiquement dans generateReplies (FOR UPDATE) :
+        // pas de dépassement par appels concurrents, les échecs comptent aussi.
+        const out = await generateReplies(req.companyId!, review.id, profile, review, req.log, { unlimited: admin });
         const left = admin ? Number.POSITIVE_INFINITY : await remainingGenerations(req.companyId!);
         return {
           generationId: out.generationId,
@@ -137,6 +137,7 @@ export default async function reviewRoutes(app: FastifyInstance) {
           quota: { remaining: Number.isFinite(left) ? left : null, limit: Number.isFinite(left) ? FREE_MONTHLY_LIMIT : null },
         };
       } catch (err) {
+        if (err instanceof QuotaExceededError) return reply.code(403).send(LIMIT_ERROR);
         if (err instanceof LlmError) {
           const status = err.kind === 'config' ? 503 : err.kind === 'timeout' ? 504 : 502;
           // Jamais le détail technique du fournisseur au client (loggé côté serveur).

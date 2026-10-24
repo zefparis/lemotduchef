@@ -385,7 +385,7 @@ test('génération : 3 variantes, journalisation des tokens, variante non confor
     assert.equal(r3.statusCode, 502);
     assert.equal(r3.json().code, 'LLM_FORMAT');
     const { rows: g2 } = await pool.query('SELECT count(*) AS n FROM generations WHERE review_id=$1', [id]);
-    assert.equal(Number(g2[0].n), 2, 'l’échec total ne consomme pas le quota');
+    assert.equal(Number(g2[0].n), 3, 'l’échec total est débité du quota (coût fournisseur réel)');
     // Anti-répétition : les réponses précédentes sont transmises comme « à éviter ».
     let seen = '';
     setLlmProvider(new MockProvider(req => { seen = req.user; return mockVariants(req.user); }));
@@ -409,8 +409,9 @@ test('génération : erreurs LLM propres (timeout, upstream) et profil requis', 
     assert.equal(r.json().code, 'LLM_TIMEOUT');
     assert.equal(r.headers['access-control-allow-origin'], undefined);
   } finally { setLlmProvider(null); }
-  const { rows } = await pool.query('SELECT count(*) AS n FROM generations WHERE review_id=$1', [id]);
-  assert.equal(Number(rows[0].n), 0, 'aucun quota consommé sur échec réseau');
+  const { rows } = await pool.query('SELECT count(*) AS n, status FROM generations WHERE review_id=$1 GROUP BY status', [id]);
+  assert.equal(Number(rows[0].n), 1, 'l’échec réseau est débité du quota (l’appel a eu lieu)');
+  assert.equal(rows[0].status, 'failed');
 });
 
 test('génération : erreur LLM → 502 propre avec CORS conservés', async () => {
@@ -641,11 +642,12 @@ test('purge RGPD : texte, prénom et variantes effacés après la durée de cons
   const { id: fresh } = await addReview(cookie, { author_name: 'Fraîche' });
   await generate(cookie, old);
   await app.inject({ method: 'POST', url: `/api/reviews/${old}/publish`, headers: { ...H, cookie }, payload: { text: 'Merci.\n' + sig } });
-  await pool.query(`UPDATE reviews SET created_at = now() - interval '13 months' WHERE id=$1`, [old]);
+  await pool.query(`UPDATE reviews SET created_at = now() - interval '13 months', context_tags='{health,other}' WHERE id=$1`, [old]);
   const n = await purgeExpiredReviews(12);
   assert.equal(n, 1);
-  const { rows } = await pool.query('SELECT author_name, body, rating, published_reply, body_purged_at FROM reviews WHERE id=$1', [old]);
+  const { rows } = await pool.query('SELECT author_name, body, context_tags, rating, published_reply, body_purged_at FROM reviews WHERE id=$1', [old]);
   assert.equal(rows[0].body, ''); assert.equal(rows[0].author_name, '');
+  assert.deepEqual(rows[0].context_tags, [], 'le contexte (étiquettes) est effacé aussi');
   assert.equal(rows[0].rating, 5); assert.ok(rows[0].published_reply); assert.ok(rows[0].body_purged_at);
   const { rows: v } = await pool.query('SELECT count(*) AS n FROM reply_variants WHERE review_id=$1', [old]);
   assert.equal(Number(v[0].n), 0);
@@ -816,8 +818,8 @@ test('stripe : erreur Stripe → 502 propre, sans propagation de statut ni d\'en
   const cookie = await signup('stripe-down@x.fr'); const cid = await createRestaurant(cookie, { name: 'StripeDown' });
   const s = stripe()!;
   const fail = async () => { throw new Stripe.errors.StripeAuthenticationError({ message: 'Invalid API Key provided', statusCode: 401, headers: { 'access-control-allow-origin': '*' }, requestId: 'req_test' } as any); };
-  const orig = [s.customers.create, s.checkout.sessions.create, s.billingPortal.sessions.create];
-  s.customers.create = fail as any; s.checkout.sessions.create = fail as any; s.billingPortal.sessions.create = fail as any;
+  const orig = [s.customers.list, s.customers.create, s.checkout.sessions.create, s.billingPortal.sessions.create];
+  s.customers.list = fail as any; s.customers.create = fail as any; s.checkout.sessions.create = fail as any; s.billingPortal.sessions.create = fail as any;
   try {
     const r1 = await app.inject({ method: 'POST', url: '/api/billing/checkout', headers: { ...H, cookie, origin: 'https://lemotduchef.test' }, payload: { priceId: 'price_pro_m' } });
     assert.equal(r1.statusCode, 502);
@@ -830,7 +832,7 @@ test('stripe : erreur Stripe → 502 propre, sans propagation de statut ni d\'en
     assert.equal(r3.statusCode, 502);
     assert.notEqual(r3.headers['access-control-allow-origin'], '*');
   } finally {
-    [s.customers.create, s.checkout.sessions.create, s.billingPortal.sessions.create] = orig as any;
+    [s.customers.list, s.customers.create, s.checkout.sessions.create, s.billingPortal.sessions.create] = orig as any;
   }
 });
 
@@ -849,10 +851,97 @@ test('cgv : inscription refusée sans acceptation ; ré-acceptation exigée apr�
   assert.equal((await app.inject({ method: 'GET', url: '/api/me', headers: { cookie } })).json().cgv_current, true);
 });
 
-test('pages légales publiques servies par la SPA', async () => {
-  for (const p of ['/mentions-legales', '/cgv', '/confidentialite']) {
+test('pages hors /api : redirigées vers le front public quand front ≠ API', async () => {
+  // CORS_ORIGINS est renseigné dans ce fichier : FRONT_URL ≠ BASE_URL, donc
+  // l'API ne sert pas le statique mais redirige vers le front (Vercel).
+  for (const p of ['/mentions-legales', '/cgv', '/confidentialite', '/reinitialiser?token=x']) {
     const r = await app.inject({ method: 'GET', url: p });
-    assert.equal(r.statusCode, 200, p);
-    assert.match(r.body, /Le Mot du Chef/);
+    assert.equal(r.statusCode, 302, p);
+    assert.equal(r.headers.location, `https://lemotduchef.test${p}`);
+  }
+});
+
+/* ====================== Webhook Stripe : état de traitement ====================== */
+test('webhook : unpaid ne lie pas, async_payment_succeeded lie ; échec → 500 + rejeu possible', async () => {
+  const cookie = await signup('wh2@x.fr'); const cid = await createRestaurant(cookie);
+
+  // checkout.session.completed 'unpaid' (paiement asynchrone) → aucune liaison.
+  const unpaid = { id: 'evt_wh2_unpaid', type: 'checkout.session.completed',
+    data: { object: { client_reference_id: cid, customer: 'cus_wh2', subscription: 'sub_wh2', payment_status: 'unpaid' } } };
+  const w0 = await app.inject({ method: 'POST', url: '/api/stripe/webhook', ...whReq(unpaid) });
+  assert.equal(w0.statusCode, 200, w0.body);
+  let { rows } = await pool.query('SELECT stripe_customer_id FROM companies WHERE id=$1', [cid]);
+  assert.equal(rows[0].stripe_customer_id, null, 'pas de liaison tant que le paiement n\'est pas soldé');
+
+  // checkout.session.async_payment_succeeded → liaison.
+  const paid = { id: 'evt_wh2_paid', type: 'checkout.session.async_payment_succeeded',
+    data: { object: { client_reference_id: cid, customer: 'cus_wh2', subscription: 'sub_wh2', payment_status: 'paid' } } };
+  const w1 = await app.inject({ method: 'POST', url: '/api/stripe/webhook', ...whReq(paid) });
+  assert.equal(w1.statusCode, 200, w1.body);
+  ({ rows } = await pool.query('SELECT stripe_customer_id FROM companies WHERE id=$1', [cid]));
+  assert.equal(rows[0].stripe_customer_id, 'cus_wh2');
+
+  // Erreur de traitement → 500 et l'événement n'est PAS marqué : Stripe peut rejouer.
+  const bad = { id: 'evt_wh2_bad', type: 'customer.subscription.updated',
+    data: { object: { id: 'sub_wh2', customer: 'cus_wh2', status: 'active', cancel_at_period_end: false,
+      metadata: {}, items: { data: [{ price: { id: 'price_pro_m' }, current_period_end: 'pas-un-timestamp' }] } } } };
+  const w2 = await app.inject({ method: 'POST', url: '/api/stripe/webhook', ...whReq(bad) });
+  assert.equal(w2.statusCode, 500);
+  const { rows: ev } = await pool.query('SELECT count(*) AS n FROM stripe_events WHERE event_id=$1', ['evt_wh2_bad']);
+  assert.equal(Number(ev[0].n), 0, 'événement non consommé après échec → rejeu possible');
+
+  // Rejeu avec des données valides → traité, plan appliqué.
+  const good = { id: 'evt_wh2_good', type: 'customer.subscription.updated',
+    data: { object: { ...bad.data.object, items: { data: [{ price: { id: 'price_pro_m' } }] } } } };
+  const w3 = await app.inject({ method: 'POST', url: '/api/stripe/webhook', ...whReq(good) });
+  assert.equal(w3.statusCode, 200, w3.body);
+  const { rows: co } = await pool.query('SELECT plan FROM companies WHERE id=$1', [cid]);
+  assert.equal(co[0].plan, 'pro');
+  const w4 = await app.inject({ method: 'POST', url: '/api/stripe/webhook', ...whReq(good) });
+  assert.equal(w4.json().duplicate, true, 'un événement done reste idempotent');
+});
+
+test('webhook : une ligne restée « processing » est retraitée, pas ignorée', async () => {
+  const cookie = await signup('wh3@x.fr'); await createRestaurant(cookie, { name: 'Stuck' });
+  await pool.query(`INSERT INTO stripe_events (event_id, type, status) VALUES ('evt_wh3_stuck','customer.subscription.updated','processing')`);
+  const ev = { id: 'evt_wh3_stuck', type: 'customer.subscription.updated',
+    data: { object: { id: 'sub_stuck', customer: 'cus_none_wh3', status: 'active', metadata: {}, items: { data: [{ price: { id: 'price_pro_m' } }] } } } };
+  const w = await app.inject({ method: 'POST', url: '/api/stripe/webhook', ...whReq(ev) });
+  assert.equal(w.statusCode, 200, w.body);
+  const { rows } = await pool.query(`SELECT status FROM stripe_events WHERE event_id='evt_wh3_stuck'`);
+  assert.equal(rows[0].status, 'done');
+});
+
+/* ====================== Quota LLM : réservation atomique ====================== */
+test('quota : deux générations concurrentes ne dépassent pas la limite', async () => {
+  const cookie = await signup('race@x.fr'); const cid = await createRestaurant(cookie, { name: 'Race' });
+  const { id } = await addReview(cookie);
+  await generate(cookie, id); await generate(cookie, id); // 2/3 consommés
+  const [a, b] = await Promise.all([generate(cookie, id), generate(cookie, id)]);
+  assert.deepEqual([a.statusCode, b.statusCode].sort(), [200, 403],
+    `une seule passe quand il reste 1 génération : ${a.statusCode},${b.statusCode}`);
+  const { rows } = await pool.query('SELECT count(*) AS n FROM generations WHERE company_id=$1', [cid]);
+  assert.equal(Number(rows[0].n), 3);
+});
+
+/* ====================== Stripe : réutilisation du customer ====================== */
+test('billing : réutilise le customer Stripe existant pour l\'email (pas de doublon)', async () => {
+  const cookie = await signup('reuse@x.fr'); const cid = await createRestaurant(cookie, { name: 'Reuse' });
+  const s = stripe()!;
+  const orig = [s.customers.list, s.customers.create, s.customers.update, s.checkout.sessions.create];
+  let created = false, updated = false;
+  s.customers.list = async () => ({ data: [{ id: 'cus_existing', metadata: {} }] }) as any;
+  s.customers.create = async () => { created = true; return { id: 'cus_never' } as any; };
+  s.customers.update = async () => { updated = true; return { id: 'cus_existing' } as any; };
+  s.checkout.sessions.create = async () => ({ url: 'https://checkout.stripe.com/fake' }) as any;
+  try {
+    const r = await app.inject({ method: 'POST', url: '/api/billing/checkout', headers: { ...H, cookie }, payload: { priceId: 'price_pro_m' } });
+    assert.equal(r.statusCode, 200, r.body);
+    assert.equal(created, false, 'aucun customer recréé');
+    assert.equal(updated, true, 'metadata.company_id renseignée sur le customer existant');
+    const { rows } = await pool.query('SELECT stripe_customer_id FROM companies WHERE id=$1', [cid]);
+    assert.equal(rows[0].stripe_customer_id, 'cus_existing');
+  } finally {
+    [s.customers.list, s.customers.create, s.customers.update, s.checkout.sessions.create] = orig as any;
   }
 });

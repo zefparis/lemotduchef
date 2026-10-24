@@ -353,3 +353,17 @@ test('tooSimilar : même ouverture ou >40 % de mots communs → rejet', () => {
   const other = `Bonjour Paul, votre soirée n'a pas été à la hauteur et nous le regrettons sincèrement.\n${sig}`;
   assert.equal(tooSimilar(a, other), false, 'angles distincts');
 });
+
+/* ---------- Liens ---------- */
+test('aucune URL ni nom de domaine dans une réponse publique (anti-injection)', () => {
+  const c = byKey('plat-froid');
+  assert.match(
+    checkReply(`${body(c)} Visitez https://exemple-restaurant.fr pour découvrir le menu.\n${sig}`, c.profile, c.review).errors.join(),
+    /lien ou nom de domaine/, 'URL explicite rejetée');
+  assert.match(
+    checkReply(`${body(c)} Rejoignez-nous sur booking.com pour votre prochain repas.\n${sig}`, c.profile, c.review).errors.join(),
+    /lien ou nom de domaine/, 'domaine nu rejeté');
+  // L'email de contact déclaré du profil n'est pas un « lien ».
+  const mail = checkReply(`${body(c)} Écrivez à contact@tabledaurore.fr.\n${sig}`, c.profile, c.review);
+  assert.ok(!mail.errors.some(e => /lien ou nom de domaine/.test(e)), 'email du profil non rejeté');
+});

@@ -4,7 +4,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function req(name: string, fallback?: string): string {
-  const v = process.env[name] ?? fallback;
+  // Chaîne vide traitée comme absente (un `VAR=` laissé vide dans .env est une
+  // erreur fréquente). En production, aucun repli codé n'est toléré.
+  const raw = process.env[name];
+  const v = raw || (isProd ? undefined : fallback);
   if (v === undefined) throw new Error(`Variable d'environnement manquante : ${name}`);
   return v;
 }
@@ -96,3 +99,16 @@ export const config = {
     maxOutputTokens: positiveInt('LLM_MAX_OUTPUT_TOKENS', 1200),
   },
 };
+
+// Garde-fous production : le serveur refuse de démarrer plutôt que tourner sur
+// une configuration silencieusement fausse (secrets de repli, clés de test,
+// mock LLM, webhook non vérifiable).
+if (config.isProd) {
+  const key = config.stripe.secretKey;
+  if (/^(sk|rk)_test_/.test(key))
+    throw new Error('STRIPE_SECRET_KEY est une clé de test (sk_test_/rk_test_) — interdite en production.');
+  if (key && !config.stripe.webhookSecret)
+    throw new Error('STRIPE_WEBHOOK_SECRET manquante alors que STRIPE_SECRET_KEY est définie.');
+  if (config.llm.provider === 'mock')
+    throw new Error('LLM_PROVIDER=mock est interdit en production.');
+}
