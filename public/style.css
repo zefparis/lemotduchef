@@ -19,6 +19,7 @@
   --line-strong: #d9cdc0;
   --nav-ink: #4a403a;
   /* Accent terre cuite */
+  --logo-ink: #8b3a1f;
   --accent: #8a3b1f;
   --accent-strong: #8a3b1f;
   --accent-strong-hover: #a04725;
@@ -80,6 +81,7 @@ html[data-theme="dark"] {
   --line: #382e26;
   --line-strong: #4d3f34;
   --nav-ink: #d9cdc2;
+  --logo-ink: #f7f2ea;
   --accent: #e0815c;
   --accent-strong: #b0512f;
   --accent-strong-hover: #c05e38;
@@ -198,12 +200,8 @@ a { color: inherit; text-decoration: none; }
   display: inline-flex; align-items: center; gap: 10px;
   font-size: 21px; font-weight: 750; letter-spacing: -.02em;
 }
-.logo {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 10px;
-  background: var(--accent-strong); color: var(--lime);
-}
-.logo .icon { width: 18px; height: 18px; stroke-width: 2.4; }
+.logo { display: inline-flex; align-items: center; color: var(--logo-ink); }
+.mark { display: block; width: 38px; height: 38px; fill: currentColor; stroke: none; }
 .brand-id { display: inline-flex; flex-direction: column; line-height: 1.1; }
 .brand-id small { font-size: 11px; font-weight: 600; letter-spacing: .01em; opacity: .6; }
 .avatar {

@@ -38,7 +38,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, token }: { user: { email: string }; token: string }) => {
       // Le lien pointe vers le FRONT (SPA), qui poste ensuite le nouveau mot de passe.
       const url = `${config.frontUrl}/reinitialiser?token=${encodeURIComponent(token)}`;
-      await sendMail({ to: user.email, subject: 'Le Mot du Chef — réinitialisation du mot de passe', text: EMAIL_TEMPLATES.resetPassword(url) });
+      await sendMail({ to: user.email, subject: 'Le Mot du Chef — réinitialisation du mot de passe', ...EMAIL_TEMPLATES.resetPassword(url) });
     },
     resetPasswordTokenExpiresIn: 60 * 60, // 1 h, usage unique géré par Better Auth
   },
@@ -51,7 +51,7 @@ export const auth = betterAuth({
       // renvoie vers le front après succès.
       const u = new URL(url);
       u.searchParams.set('callbackURL', config.frontUrl + '/?verifie=1');
-      await sendMail({ to: user.email, subject: 'Le Mot du Chef — confirmez votre email', text: EMAIL_TEMPLATES.verify(u.toString()) });
+      await sendMail({ to: user.email, subject: 'Le Mot du Chef — confirmez votre email', ...EMAIL_TEMPLATES.verify(u.toString()) });
     },
   },
   user: {
@@ -60,7 +60,7 @@ export const auth = betterAuth({
       sendChangeEmailVerification: async ({ newEmail, url }: { newEmail: string; url: string }) => {
         const u = new URL(url);
         u.searchParams.set('callbackURL', config.frontUrl + '/?verifie=1');
-        await sendMail({ to: newEmail, subject: 'Le Mot du Chef — confirmez votre nouvelle adresse', text: EMAIL_TEMPLATES.changeEmail(u.toString()) });
+        await sendMail({ to: newEmail, subject: 'Le Mot du Chef — confirmez votre nouvelle adresse', ...EMAIL_TEMPLATES.changeEmail(u.toString()) });
       },
     },
     deleteUser: {

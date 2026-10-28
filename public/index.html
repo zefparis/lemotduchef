@@ -5,7 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#8a3b1f">
 <meta name="description" content="Le Mot du Chef rédige avec vous des réponses posées et professionnelles à vos avis Google. Ne laissez plus un avis injuste parler à votre place.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%238a3b1f'/%3E%3Cpath d='M9 21c0-4 3-7 7-7s7 3 7 7M8 21h16M16 9v2' stroke='%23f3c45a' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Le Mot du Chef — répondez à vos avis Google avec justesse">
+<meta property="og:description" content="Le Mot du Chef rédige avec vous des réponses posées et professionnelles à vos avis Google. Ne laissez plus un avis injuste parler à votre place.">
+<meta property="og:image" content="https://lemotduchef.fr/og.png">
+<meta name="twitter:card" content="summary_large_image">
 <title>Le Mot du Chef — répondez à vos avis Google avec justesse</title>
 <script id="theme-init">(function(){var t=null;try{t=localStorage.getItem('lmc-theme')}catch(e){}var d=t?t==='dark':(window.matchMedia?matchMedia('(prefers-color-scheme: dark)').matches:false);document.documentElement.setAttribute('data-theme',d?'dark':'light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d?'#1a1512':'#8a3b1f');})();</script>
 <link rel="stylesheet" href="style.css">
@@ -14,7 +22,7 @@
 
 <svg aria-hidden="true" style="display:none">
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M8.5 7H17v8.5"/></symbol>
-  <symbol id="i-cloche" viewBox="0 0 24 24"><path d="M4.5 16c0-4.4 3.4-8 7.5-8s7.5 3.6 7.5 8M3.5 16h17M12 5.5v2.5"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 48 48"><path fill-rule="evenodd" d="M 6.5 26.1 A 17.4 13.2 0 0 1 41.3 26.1 Z M 23.1 14.2 V 11.5 H 20.4 A 3.6 2.8 0 0 1 27.6 11.5 H 24.9 V 14.2 Z M 9.2 24.5 C 9.8 18.4 16 13.9 28.4 14.9 C 20.6 16.4 13.4 20.6 9.2 24.5 Z M 7.25 28.3 A 3.25 3.25 0 0 0 4 31.55 A 3.25 3.25 0 0 0 7.25 34.8 H 10.8 L 11.6 40.5 L 19.5 34.8 H 40.75 A 3.25 3.25 0 0 0 44 31.55 A 3.25 3.25 0 0 0 40.75 28.3 Z M 7.25 30.55 A 1 1 0 0 0 6.25 31.55 A 1 1 0 0 0 7.25 32.55 H 12.7 L 13.4 35.1 L 17.1 32.55 H 40.75 A 1 1 0 0 0 41.75 31.55 A 1 1 0 0 0 40.75 30.55 Z"/></symbol>
   <symbol id="i-msg" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.8-.3-4-.9L3.5 20.5l1-4.3A8.5 8.5 0 1 1 20.5 12Z"/></symbol>
   <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 3.5V8h4.5"/><path d="M12 7.5V12l3.3 2"/></symbol>
   <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"/><path d="M13.5 13.5h3v3h-3zM18.5 13.5h2M20.5 16.5v4M13.5 18.5v2h3"/></symbol>
@@ -43,7 +51,7 @@
 <!-- ==================== PAGE COMMERCIALE ==================== -->
 <header class="site-header">
   <a class="brand" href="#" aria-label="Le Mot du Chef, retour en haut">
-    <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+    <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
     <span class="brand-id">Le Mot du Chef<small>réponses aux avis Google</small></span>
   </a>
   <nav class="site-nav" aria-label="Navigation principale">
@@ -62,7 +70,7 @@
     <div class="hero-copy">
       <p class="eyebrow"><i></i>Pour les restaurateurs indépendants</p>
       <h1>Ne laissez plus un avis injuste <em>parler à votre place.</em></h1>
-      <p class="lead">Le Mot du Chef rédige avec vous, en quelques secondes, une réponse posée et professionnelle à chaque avis Google — pour les clients qui la liront demain. Vous relisez, vous ajustez, vous publiez.</p>
+      <p class="lead">Le Mot du Chef rédige avec vous, en quelques secondes, une réponse posée et professionnelle à chaque avis Google pour les clients qui la liront demain. Vous relisez, vous ajustez, vous publiez.</p>
       <div class="actions">
         <button class="btn btn-primary" data-open>Essayer gratuitement<svg class="icon"><use href="#i-arrow"/></svg></button>
         <button class="btn btn-outline" data-auth>Se connecter</button>
@@ -217,7 +225,7 @@
 
   <footer class="site-footer">
     <a class="brand" href="#">
-      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+      <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
       Le Mot du Chef
     </a>
     <span>Le Mot du Chef — réponses aux avis Google pour les restaurateurs</span>
@@ -235,7 +243,7 @@
   <div class="auth-wrap">
     <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
     <a class="brand" href="#" id="auth-home">
-      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+      <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
       <span class="brand-id">Le Mot du Chef<small>réponses aux avis Google</small></span>
     </a>
     <div class="auth-card">
@@ -334,7 +342,7 @@
   <div class="auth-wrap wide">
     <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
     <a class="brand" href="#">
-      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+      <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
       Le Mot du Chef
     </a>
     <div class="auth-card">
@@ -441,7 +449,7 @@
 
   <aside class="sidebar">
     <a href="#" class="brand" id="brand-home">
-      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+      <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
       Le Mot du Chef
     </a>
     <div class="workspace">
@@ -882,7 +890,7 @@
   <div class="legal-wrap">
     <div class="legal-head">
       <a class="brand" href="/">
-        <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+        <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
         Le Mot du Chef
       </a>
       <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
