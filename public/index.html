@@ -7,6 +7,7 @@
 <meta name="description" content="Le Mot du Chef rédige avec vous des réponses posées et professionnelles à vos avis Google. Ne laissez plus un avis injuste parler à votre place.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%238a3b1f'/%3E%3Cpath d='M9 21c0-4 3-7 7-7s7 3 7 7M8 21h16M16 9v2' stroke='%23f3c45a' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <title>Le Mot du Chef — répondez à vos avis Google avec justesse</title>
+<script id="theme-init">(function(){var t=null;try{t=localStorage.getItem('lmc-theme')}catch(e){}var d=t?t==='dark':(window.matchMedia?matchMedia('(prefers-color-scheme: dark)').matches:false);document.documentElement.setAttribute('data-theme',d?'dark':'light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d?'#1a1512':'#8a3b1f');})();</script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -35,6 +36,8 @@
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9.5 6 6 6-6"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4M6 6l2.8 2.8M15.2 15.2 18 18M6 18l2.8-2.8M15.2 8.8 18 6"/></symbol>
   <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 8V3.5h10V8M7 16H4.5v-6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v6H17"/><rect x="7" y="13" width="10" height="7.5" rx="1"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1Z"/></symbol>
 </svg>
 
 <!-- ==================== PAGE COMMERCIALE ==================== -->
@@ -48,6 +51,7 @@
     <a href="#exemple">Exemple</a>
     <a href="#offre">Offres</a>
     <a href="#faq">Questions</a>
+    <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
     <button class="btn btn-quiet btn-sm" data-auth>Se connecter</button>
     <button class="btn btn-dark btn-sm" data-open>Créer un compte</button>
   </nav>
@@ -229,6 +233,7 @@
 <!-- ==================== CONNEXION / INSCRIPTION ==================== -->
 <section id="auth" hidden aria-label="Connexion à votre espace">
   <div class="auth-wrap">
+    <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
     <a class="brand" href="#" id="auth-home">
       <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
       <span class="brand-id">Le Mot du Chef<small>réponses aux avis Google</small></span>
@@ -327,6 +332,7 @@
 <!-- ==================== ONBOARDING : PROFIL DU RESTAURANT ==================== -->
 <section id="onboard" hidden aria-label="Profil de votre restaurant">
   <div class="auth-wrap wide">
+    <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
     <a class="brand" href="#">
       <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
       Le Mot du Chef
@@ -472,6 +478,7 @@
     <div class="app-top">
       <span class="crumb">Votre espace <span aria-hidden="true">/</span> <b id="breadcrumb">Répondre à un avis</b></span>
       <div class="app-top-right">
+        <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
         <span class="quota-pill" id="quota-pill" hidden></span>
         <div class="user-menu">
           <button class="avatar avatar-btn" id="top-avatar" aria-label="Menu du compte" aria-haspopup="menu" aria-expanded="false">–</button>
@@ -803,6 +810,7 @@
     <div class="app-top">
       <span class="crumb">Le Mot du Chef <span aria-hidden="true">/</span> <b>Administration</b></span>
       <div class="app-top-right">
+        <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
         <button class="btn btn-quiet btn-sm" id="admin-back">← Espace restaurateur</button>
       </div>
     </div>
@@ -872,10 +880,13 @@
 <!-- ==================== PAGES LÉGALES ==================== -->
 <section id="legal" hidden aria-label="Pages légales">
   <div class="legal-wrap">
-    <a class="brand" href="/">
-      <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
-      Le Mot du Chef
-    </a>
+    <div class="legal-head">
+      <a class="brand" href="/">
+        <span class="logo" aria-hidden="true"><svg class="icon"><use href="#i-cloche"/></svg></span>
+        Le Mot du Chef
+      </a>
+      <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
+    </div>
     <div class="legal-card panel">
       <nav class="legal-nav" aria-label="Navigation des pages légales">
         <a href="/mentions-legales" data-legal-page="mentions">Mentions légales</a>

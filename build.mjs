@@ -2,6 +2,7 @@
 // avec l'URL de l'API (VITE_API_URL ou API_URL). Sans dépendance.
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -30,6 +31,24 @@ const legal = {
   vatMention: process.env.LEGAL_VAT_MENTION ?? '',
   publisher: process.env.LEGAL_PUBLISHER ?? '',
 };
+
+// Le script inline « data-theme » (index.html) est couvert par la CSP via un
+// hash sha256 déclaré dans vercel.json et server/src/app.ts. Si le script est
+// modifié sans mettre à jour ces fichiers, le build échoue ici (prod) ou
+// avertit (dev) — sinon le navigateur bloquerait le script en silence.
+const themeMatch = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8')
+  .match(/<script id="theme-init">([\s\S]*?)<\/script>/);
+if (themeMatch) {
+  const hash = 'sha256-' + crypto.createHash('sha256').update(themeMatch[1], 'utf8').digest('base64');
+  for (const rel of ['vercel.json', 'server/src/app.ts']) {
+    const file = path.join(root, rel);
+    if (!fs.existsSync(file) || !fs.readFileSync(file, 'utf8').includes(`'${hash}'`)) {
+      const msg = `Le script #theme-init d'index.html n'est pas autorisé par la CSP de ${rel} (attendu : '${hash}').`;
+      if (strict) { console.error(msg); process.exit(1); }
+      console.warn(msg);
+    }
+  }
+}
 
 const out = path.join(root, 'dist');
 fs.rmSync(out, { recursive: true, force: true });

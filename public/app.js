@@ -65,6 +65,35 @@ $$('dialog').forEach(d => d.addEventListener('click', e => {
   if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
 }));
 
+/* ---------- Thème clair / sombre ----------
+   data-theme est posé avant le rendu par le script inline du <head>.
+   Ici : bascule forcée par l'utilisateur (mémorisée), sinon suivi du
+   réglage système. */
+function storedTheme() {
+  try { const t = localStorage.getItem('lmc-theme'); return t === 'dark' || t === 'light' ? t : null; }
+  catch { return null; }
+}
+function setTheme(theme, persist) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', theme === 'dark' ? '#1a1512' : '#8a3b1f');
+  if (persist) { try { localStorage.setItem('lmc-theme', theme); } catch { /* stockage indisponible */ } }
+  const dark = theme === 'dark';
+  $$('.theme-toggle').forEach(b => {
+    b.innerHTML = icon(dark ? 'i-sun' : 'i-moon');
+    const label = dark ? 'Passer au thème clair' : 'Passer au thème sombre';
+    b.setAttribute('aria-label', label); b.title = label;
+  });
+}
+$$('.theme-toggle').forEach(b => b.onclick = () =>
+  setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true));
+try {
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!storedTheme()) setTheme(e.matches ? 'dark' : 'light', false);
+  });
+} catch { /* matchMedia indisponible */ }
+setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light', false);
+
 /* ---------- Couche API ---------- */
 async function api(path, { method = 'GET', body } = {}) {
   const r = await fetch(API_BASE + '/api' + path, {

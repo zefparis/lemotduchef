@@ -54,8 +54,10 @@ export async function buildApp(opts: { retention?: boolean; logStream?: NodeJS.W
   // En-têtes de sécurité sur toutes les réponses. CSP stricte sur /api
   // (JSON), complète quand le front est servi par cette origine.
   const CSP_API = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
+  // Le sha256 autorise le script inline « data-theme » du <head> (anti-flash
+  // de thème) ; build.mjs vérifie qu'il correspond au contenu d'index.html.
   const CSP_FRONT = [
-    "default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline'",
+    "default-src 'self'", "script-src 'self' 'sha256-INvJATyzdDWfk2hI44VBZvfLcUkppxFRtDscxJ/HZRk='", "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:", `connect-src 'self' ${config.baseUrl}`,
     "object-src 'none'", "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'",
   ].join('; ');
