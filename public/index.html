@@ -702,6 +702,31 @@
               <button class="btn btn-primary" type="submit" id="collect-btn">Enregistrer le texte</button>
             </div>
           </form>
+          <div class="panel form-panel" id="ingest-panel">
+            <h3>Vos avis sans copier-coller</h3>
+            <p class="form-intro">Transférez automatiquement les emails « nouvel avis » de Google vers votre adresse dédiée : l'avis arrive ici tout seul et les réponses sont rédigées d'avance.</p>
+            <div class="field">
+              <label for="ingest-address">Votre adresse de transfert</label>
+              <div class="copy-row">
+                <input id="ingest-address" readonly value="">
+                <button class="btn btn-outline btn-sm" id="ingest-copy" type="button"><svg class="icon"><use href="#i-copy"/></svg>Copier</button>
+              </div>
+            </div>
+            <div class="notice local" id="ingest-confirm" hidden>
+              <span class="notice-label">Gmail</span>
+              <p>Votre règle de transfert attend une validation. <span id="ingest-confirm-code"></span><a id="ingest-confirm-link" href="#" target="_blank" rel="noopener">Valider sur Gmail</a></p>
+            </div>
+            <details class="ingest-guide">
+              <summary>Créer la règle de transfert</summary>
+              <ol class="help-steps">
+                <li><b>Gmail</b> — Paramètres › Filtres › Créer un filtre : expéditeur <code>google.com</code>, objet contient « avis » → « Transférer à » votre adresse ci-dessus.</li>
+                <li><b>Outlook / Microsoft 365</b> — Paramètres › Courrier › Règles : « Si l'expéditeur contient google.com » → « Transférer vers ».</li>
+                <li><b>Orange, Free, autre webmail</b> — « Règles » ou « Filtres » : rediriger les messages de <code>@google.com</code> vers votre adresse.</li>
+                <li>Dans tous les cas : conservez l'email dans votre boîte (option « garder une copie ») — le transfert ne supprime rien.</li>
+              </ol>
+            </details>
+            <p class="field-hint">Seuls les emails signés Google (SPF/DKIM vérifiés) alimentent vos avis : un faux avis transféré à la main est rejeté.</p>
+          </div>
         </div>
         <div class="settings-col">
           <div class="panel form-panel qr-panel">

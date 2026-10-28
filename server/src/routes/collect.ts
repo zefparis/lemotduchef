@@ -1,4 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
+import { randomBytes } from 'node:crypto';
+import { config } from '../config.js';
 import { pool } from '../db.js';
 import { requireCompany } from '../guards.js';
 import { isPro } from '../stripe.js';
@@ -12,6 +14,21 @@ const DEFAULT_MESSAGE = 'Un instant pour partager votre expérience sur Google n
 // Engagement affiché dans l'interface et respecté par le code : le QR mène
 // directement à Google, pour tous les clients, sans tri ni contrepartie.
 const PLEDGE = 'Le QR code mène directement à la page d’avis Google, pour tous vos clients. Nous ne proposons ni page « êtes-vous satisfait ? » qui ne redirigerait que les clients contents, ni récompense en échange d’un avis : ces pratiques sont interdites par les règles de Google et constituent une pratique commerciale trompeuse.';
+
+// Code d'ingestion email : généré à la première demande, stable ensuite.
+// Unique par restaurant (index partiel en base), insensible à la casse.
+async function ingestAddress(companyId: string): Promise<string | null> {
+  const { rows } = await pool.query<{ ingest_code: string | null }>('SELECT ingest_code FROM companies WHERE id=$1', [companyId]);
+  let code = rows[0]?.ingest_code;
+  for (let i = 0; !code && i < 5; i++) {
+    const cand = randomBytes(5).toString('hex').slice(0, Math.max(4, Math.min(16, config.mailIngest.codeLength)));
+    const r = await pool.query<{ ingest_code: string }>(
+      'UPDATE companies SET ingest_code=$2 WHERE id=$1 AND ingest_code IS NULL RETURNING ingest_code', [companyId, cand]);
+    code = r.rows[0]?.ingest_code ?? code;
+    if (!code) { const again = await pool.query<{ ingest_code: string | null }>('SELECT ingest_code FROM companies WHERE id=$1', [companyId]); code = again.rows[0]?.ingest_code; }
+  }
+  return code ? `${config.mailIngest.address.split('@')[0]}+${code}@${config.mailIngest.address.split('@')[1]}` : null;
+}
 
 const HELP_STEPS = [
   'Ouvrez Google Maps ou la recherche Google, connecté avec le compte qui gère votre fiche.',
@@ -43,6 +60,12 @@ export default async function collectRoutes(app: FastifyInstance) {
       google_maps_url: profile?.google_maps_url ?? '',
       pro: await isPro(req.companyId!),
       pledge: PLEDGE, helpSteps: HELP_STEPS,
+      // Adresse de transfert des notifications d'avis : avis+<code>@…
+      // Le code est généré une fois par restaurant et ne change plus.
+      ingest_email: await ingestAddress(req.companyId!),
+      // Confirmation Gmail en attente (règle de transfert à valider à la main).
+      ingest_confirmation: (await pool.query<{ code: string; link: string; created_at: string }>(
+        `SELECT code, link, created_at FROM ingest_confirmations WHERE company_id=$1 ORDER BY created_at DESC LIMIT 1`, [req.companyId!])).rows[0] ?? null,
     };
   });
 

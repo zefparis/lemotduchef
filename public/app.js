@@ -158,6 +158,10 @@ async function logout() {
 $('#logout').onclick = logout;
 $('#menu-logout').onclick = () => { hideMenu(); logout(); };
 $('#menu-admin').onclick = () => { hideMenu(); enterAdmin(); };
+$('#ingest-copy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('#ingest-address').value); toast('Adresse copiée — collez-la dans votre règle de transfert.'); }
+  catch { $('#ingest-address').select(); }
+};
 $('#admin-back').onclick = () => { history.replaceState(null, '', '/'); enterLive(); };
 
 const menuPop = $('#user-menu');
@@ -644,6 +648,15 @@ async function loadCollect() {
     const cf = $('#collect-form');
     if (document.activeElement?.form !== cf) { cf.elements.title.value = c.title; cf.elements.message.value = c.message; }
     $('#pdf-pro-note').hidden = c.pro;
+    $('#ingest-panel').hidden = !c.ingest_email;
+    if (c.ingest_email) $('#ingest-address').value = c.ingest_email;
+    const conf = c.ingest_confirmation;
+    $('#ingest-confirm').hidden = !conf;
+    if (conf) {
+      $('#ingest-confirm-code').textContent = conf.code ? `Code : ${conf.code} — ` : '';
+      const l = $('#ingest-confirm-link');
+      if (conf.link) l.href = conf.link; else l.hidden = true;
+    }
     $$('[data-pdf]').forEach(b => { b.disabled = !c.pro || !c.google_review_url; });
     const prev = $('#qr-preview');
     if (c.google_review_url) {

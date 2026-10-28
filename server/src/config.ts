@@ -76,6 +76,21 @@ export const config = {
     vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? '',
     subject: process.env.VAPID_SUBJECT ?? 'mailto:contact@lemotduchef.fr',
   },
+  // Ingestion des avis par email (relève IMAP de la boîte avis@…).
+  // MAIL_INGEST_ENABLED=false par défaut : tout le pipeline est dormant.
+  mailIngest: {
+    enabled: (process.env.MAIL_INGEST_ENABLED ?? '') === 'true',
+    host: process.env.IMAP_HOST ?? 'imap.mail.ovh.net',
+    port: Number(process.env.IMAP_PORT ?? 993),
+    user: process.env.IMAP_USER ?? '',
+    pass: process.env.IMAP_PASS ?? '',
+    tls: (process.env.IMAP_TLS ?? 'true') !== 'false',
+    pollIntervalSec: Number(process.env.IMAP_POLL_INTERVAL_SEC ?? 120),
+    address: (process.env.REVIEW_MAIL_ADDRESS ?? 'avis@lemotduchef.fr').toLowerCase(),
+    codeLength: Number(process.env.REVIEW_MAIL_CODE_LENGTH ?? 8),
+    // Dossier où ranger les mails traités (vide = simple marquage « lu »).
+    processedFolder: process.env.IMAP_PROCESSED_FOLDER ?? '',
+  },
   // Abonnement Stripe (mode test ou live selon la clé). Sans clé, la
   // facturation est désactivée et /api/billing renvoie enabled:false.
   // Les montants affichés sont relus depuis l'API Stripe — jamais codés en dur.

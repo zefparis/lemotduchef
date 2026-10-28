@@ -7,6 +7,8 @@ if (applied.length) console.log(`Migrations appliquées : ${applied.join(', ')}`
 
 const app = await buildApp();
 await app.listen({ host: config.host, port: config.port });
+const { startIngestLoop } = await import('./ingest/mail.js');
+startIngestLoop(app.log);
 
 const shutdown = async () => {
   await app.close();
