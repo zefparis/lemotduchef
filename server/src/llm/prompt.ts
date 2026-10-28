@@ -1,6 +1,13 @@
 // Prompt système du rédacteur — versionné : toute modification du texte
 // incrémente PROMPT_VERSION (journalisée dans generations.prompt_version).
-export const PROMPT_VERSION = '2026-10-23.2';
+export const PROMPT_VERSION = '2026-10-28.1';
+// AI Act art. 50 / code de bonnes pratiques : exemption filigrane sous 200
+// tokens. Plafond appliqué à chaque réponse avec marge (contrôle dans
+// generate.ts via le tokenizer du fournisseur).
+export const REPLY_TOKEN_MAX = 180;
+// Marqueur neutre remplaçant le prénom de l'auteur dans ce qui est envoyé au
+// modèle (minimisation RGPD) — réinséré après génération si souhaité.
+export const AUTHOR_MARKER = '[PRÉNOM]';
 
 export const TONES = {
   sobre: 'sobre et posé, phrases courtes, sans emphase ni flatterie',
@@ -22,8 +29,8 @@ export const CONTEXT_TAGS = {
 } as const;
 export type ContextTag = keyof typeof CONTEXT_TAGS;
 
-export const POSITIVE_WORDS = { min: 40, max: 120 } as const;
-export const NEGATIVE_WORDS = { min: 50, max: 120 } as const;
+export const POSITIVE_WORDS = { min: 35, max: 65 } as const;
+export const NEGATIVE_WORDS = { min: 45, max: 70 } as const;
 export const isPositive = (rating: number) => rating >= 4;
 
 export const wordCount = (s: string) => (s.trim().match(/[\p{L}\p{N}’'-]+/gu) ?? []).length;
@@ -32,10 +39,10 @@ export const wordCount = (s: string) => (s.trim().match(/[\p{L}\p{N}’'-]+/gu) 
 // que soit la note ; un avis détaillé peut monter jusqu'à la fourchette pleine.
 // La consigne donne une CIBLE (~45 mots / ~80 mots), la fourchette le cadre.
 export const SHORT_REVIEW_WORDS = 15;
-export const SHORT_REPLY_WORDS = { min: 35, max: 60, target: 45 } as const;
+export const SHORT_REPLY_WORDS = { min: 35, max: 55, target: 45 } as const;
 export const replyRange = (r: Pick<PromptReview, 'rating' | 'body'>) =>
   wordCount(r.body) < SHORT_REVIEW_WORDS ? SHORT_REPLY_WORDS
-    : { ...(isPositive(r.rating) ? POSITIVE_WORDS : NEGATIVE_WORDS), target: 80 };
+    : { ...(isPositive(r.rating) ? POSITIVE_WORDS : NEGATIVE_WORDS), target: 55 };
 
 // Répartition des points forts décidée PAR LE CODE (rotation sur l'historique) :
 // la variante 1 (factuelle) n'en cite aucun, les variantes 2 et 3 en citent
@@ -92,12 +99,12 @@ TON ET CONTENU
 - Mentionner le nom du restaurant AU PLUS une fois et la ville AU PLUS une fois.
 - Ne pas utiliser les formulations marquées « à éviter » (réponses récentes du restaurant) : varier le vocabulaire et la structure.
 - Pas d'emoji, pas de majuscules criées, pas de point d'exclamation en série, pas de hashtag.
-- Ouvrir par « Bonjour {prénom} » si un prénom d'au moins 2 lettres est affiché, sinon « Bonjour » seul. Écrire « une étoile », jamais « de une étoile ». Ne jamais parler du signataire à la 3e personne (prénom ou rôle de la signature) : la réponse est écrite à la première personne.
+- Ouvrir par « Bonjour [PRÉNOM] » si la ligne « Auteur » indique le marqueur [PRÉNOM] (à écrire tel quel, sans le remplacer), sinon « Bonjour » seul. Écrire « une étoile », jamais « de une étoile ». Ne jamais parler du signataire à la 3e personne (prénom ou rôle de la signature) : la réponse est écrite à la première personne.
 - Au plus UNE mention de l'équipe par réponse (« transmis à l'équipe » OU « nous en parlons avec l'équipe », jamais les deux).
 - Ne jamais recopier dans la réponse les éléments du CONTEXTE : « nature de la critique », catégories, longueur attendue — ce sont des consignes internes, pas du texte à publier. Pas de « votre remarque porte sur », « votre retour concerne », « votre avis porte sur ».
 
 FORMAT
-- Longueur proportionnelle à l'avis, cible exacte rappelée dans le CONTEXTE : avis court (moins de 15 mots) → vise environ 45 mots (jusqu'à 60 acceptés) ; avis détaillé → vise environ 80 mots (jusqu'à 120 acceptés).
+- Longueur proportionnelle à l'avis, cible exacte rappelée dans le CONTEXTE : avis court (moins de 15 mots) → vise environ 45 mots (jusqu'à 55 acceptés) ; avis détaillé → vise environ 55 mots (jusqu'à 70 acceptés). Jamais de dépassement : une réponse trop longue est refusée.
 - Avis positif (4 ou 5 étoiles) : remercier en reprenant un détail précis de l'avis quand il en contient un (plat, personne, ambiance).
 - NE PAS écrire de signature ni de formule de clôture (« Cordialement », prénom, rôle) : la signature exacte du profil est ajoutée automatiquement après génération.
 - Renvoyer les 3 variantes via l'outil submit_replies — aucun autre texte, pas de préambule.
@@ -166,7 +173,7 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
     `Contact réclamations : ${contact || '— (inviter à passer ou à écrire au restaurant)'}`,
     '',
     'AVIS À TRAITER',
-    `Auteur : ${authorDisplayName(r) ?? 'non communiqué'}`,
+    `Auteur : ${authorDisplayName(r) ? AUTHOR_MARKER : 'non communiqué'}`,
     `Note : ${r.rating}/5`,
     `Date de visite : ${r.visited_on ?? 'inconnue'}`,
     `Sujet santé : ${isHealthTopic(r) ? 'oui' : 'non'}`,

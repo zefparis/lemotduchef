@@ -96,7 +96,8 @@ export const config = {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
     model: process.env.LLM_MODEL ?? 'claude-sonnet-4-5-20250929',
     timeoutMs: positiveInt('LLM_TIMEOUT_MS', 40_000),
-    maxOutputTokens: positiveInt('LLM_MAX_OUTPUT_TOKENS', 1200),
+    // 3 réponses ≤ 180 jetons chacune (plafond AI Act) + overhead outil.
+    maxOutputTokens: positiveInt('LLM_MAX_OUTPUT_TOKENS', 700),
   },
 };
 

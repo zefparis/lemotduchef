@@ -215,6 +215,10 @@
         <p>Non, et nous ne le proposerons pas. Le QR code mène directement à votre page d'avis Google, pour tous vos clients. Les pages « êtes-vous satisfait ? » qui ne redirigent vers Google que les contents, comme les cadeaux contre un avis, sont interdits par Google et constituent une pratique commerciale trompeuse.</p>
       </details>
       <details>
+        <summary>Dois-je signaler que ma réponse est rédigée avec une IA ?<svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p>En pratique, non. Le règlement européen sur l'IA (article 50) exige le marquage des contenus synthétiques surtout pour les textes publiés à des fins d'information du public — et prévoit une exception lorsque le contenu est relu et validé par une personne qui en assume la responsabilité éditoriale : c'est exactement votre cas, vous relisez, modifiez et publiez chaque réponse en votre nom. De plus, les réponses générées sont volontairement courtes (moins de 180 jetons), ce qui les place dans la catégorie des « très courts textes » exemptés de filigrane par le code de bonnes pratiques européen. Ce n'est pas un avis juridique : si votre situation est particulière, vérifiez auprès de votre conseil.</p>
+      </details>
+      <details>
         <summary>Comment se passe le paiement ?<svg class="icon"><use href="#i-chev"/></svg></summary>
         <p>Vous souscrivez sur une page de paiement hébergée par Stripe (code promo accepté), puis tout se gère depuis votre espace : changement d'offre, carte, factures, résiliation. L'offre Gratuit ne demande aucune carte.</p>
       </details>
@@ -539,6 +543,10 @@
             <div class="field">
               <label for="rv-author">Prénom de l'auteur <span class="opt">(tel qu'affiché)</span></label>
               <input id="rv-author" name="author_name" maxlength="80" placeholder="Ex. Kévin">
+              <label class="check-row" id="rv-name-row" for="rv-include-name" hidden>
+                <input type="checkbox" id="rv-include-name" checked>
+                <span>Inclure ce prénom dans les réponses <span class="opt">(non envoyé au rédacteur, réinséré après génération)</span></span>
+              </label>
             </div>
             <div class="field">
               <label for="rv-date">Date de visite <span class="opt">(si connue)</span></label>
@@ -960,6 +968,8 @@
         <p>Le Mot du Chef traite&nbsp;: les données de compte (nom, email, mot de passe chiffré), le profil de votre restaurant (nom, ville, cuisine, signature, points forts, coordonnées de contact, liens Google), et les avis que vous saisissez (prénom de l'auteur tel qu'affiché publiquement, note, texte, date de visite, contexte que vous indiquez) ainsi que les réponses générées et publiées. Ces données servent exclusivement à fournir le service&nbsp;: authentification, rédaction assistée des réponses, historique, supports de collecte, facturation et obligations légales comptables.</p>
         <h2>Rédaction assistée</h2>
         <p>Pour produire les propositions de réponse, le profil du restaurant et le contenu de l'avis (prénom affiché, note, texte, contexte) sont transmis à notre fournisseur de modèle de langage, Anthropic PBC (États-Unis), encadré par des clauses contractuelles types de la Commission européenne. Ce fournisseur n'utilise pas ces données pour entraîner ses modèles. Nous journalisons le volume de texte traité (tokens) pour le suivi des coûts, jamais le contenu.</p>
+        <h2>Intelligence artificielle</h2>
+        <p>Les propositions de réponse sont produites par un modèle de langage d'Anthropic PBC (États-Unis), qui agit en qualité de sous-traitant encadré par des clauses contractuelles types de la Commission européenne. Anthropic n'utilise pas les données transmises via son API pour entraîner ses modèles et les conserve brièvement pour des raisons de sécurité avant suppression. Pour limiter les données envoyées, le prénom de l'auteur de l'avis est remplacé par un marqueur neutre avant transmission au modèle : il n'est réinséré dans la réponse que si vous le demandez (case « Inclure ce prénom »), côté serveur, après génération. Chaque proposition est limitée à moins de 180 jetons, vous est présentée comme un brouillon rédigé par une IA et n'est jamais publiée sans votre validation.</p>
         <h2>Bases légales</h2>
         <p>L'exécution du contrat (fourniture du service), l'intérêt légitime (sécurité, statistiques internes) et les obligations légales (conservation comptable des éléments de facturation).</p>
         <h2>Durées de conservation</h2>

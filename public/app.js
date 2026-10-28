@@ -423,6 +423,7 @@ function updateContextVisibility() {
   $('#rv-note').hidden = !(other?.checked);
 }
 form.addEventListener('change', e => { if (e.target.name === 'rating' || e.target.name === 'context_tags') updateContextVisibility(); });
+form.elements.author_name.addEventListener('input', e => { $('#rv-name-row').hidden = !e.target.value.trim(); });
 updateContextVisibility();
 
 function readReviewForm() {
@@ -464,7 +465,7 @@ form.onsubmit = async e => {
     else { created = await api('/reviews', { method: 'POST', body: r }); id = created.id; form.elements.id.value = id; }
     currentReview = { id, flags: created.flags, report: created.report, variants: [] };
     renderSuspicion(created.report);
-    const g = await api(`/reviews/${id}/generate`, { method: 'POST', body: {} });
+    const g = await api(`/reviews/${id}/generate`, { method: 'POST', body: { include_author_name: $('#rv-include-name').checked } });
     currentReview.variants = g.variants;
     if (g.quota.remaining != null) usage = { ...usage, remaining: g.quota.remaining, limit: g.quota.limit };
     renderVariants(g);
@@ -513,6 +514,7 @@ function renderVariants(g) {
       </div>
       ${v.needsReview ? '<p class="variant-flag warn">à revoir — écartée par les règles, rédigez ou régénérez</p>' : ''}
       <textarea rows="8" data-variant${v.needsReview ? ' placeholder="Variante non conforme — écrivez votre réponse ou régénérez."' : ''}>${esc(v.text)}</textarea>
+      <p class="ai-note">${icon('i-info')}Réponse proposée par une IA — relisez-la avant de la publier</p>
       <div class="variant-actions">
         <button class="btn btn-primary btn-sm" data-copy="${i}">${icon('i-copy')}Copier</button>
         <button class="btn btn-outline btn-sm" data-publish="${i}">${icon('i-check')}Marquer comme publiée</button>
@@ -591,6 +593,7 @@ async function reopenReview(id) {
     const el = form.elements;
     el.id.value = review.id; el.body.value = review.body || ''; el.author_name.value = review.author_name || '';
     el.visited_on.value = review.visited_on || '';
+    $('#rv-name-row').hidden = !el.author_name.value.trim();
     form.querySelector(`input[name=rating][value="${review.rating}"]`).checked = true;
     form.querySelectorAll('input[name=context_tags]').forEach(i => { i.checked = (review.context_tags || []).includes(i.value); });
     el.context_note.value = review.context_note || '';

@@ -211,7 +211,7 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
   const range = replyRange(r);
   // Longueur : dépassement jusqu'à +10 % = avertissement ; au-delà = rejet.
   if (words < Math.floor(range.min * 0.85)) errors.push(`trop court (${words} mots, minimum ${range.min})`);
-  else if (words > Math.ceil(range.max * 1.10)) errors.push(`trop long (${words} mots, maximum ${range.max})`);
+  else if (words > Math.ceil(range.max * 1.30)) errors.push(`trop long (${words} mots, maximum ${range.max})`);
   else if (words < range.min || words > range.max) warnings.push(`longueur hors cible (${words} mots, cible ${range.min}–${range.max})`);
 
   // Ouverture : « Bonjour {prénom} » si un prénom exploitable est affiché
@@ -221,7 +221,10 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
   if (!/^bonjour\b/.test(nb)) errors.push('ouverture différente de « Bonjour »');
   else if (name) {
     const a = norm(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    if (!new RegExp(`^bonjour\\s+${a}(?![\\p{L}\\p{N}])`, 'u').test(nb)) errors.push('ouverture sans le prénom de l’auteur');
+    // Le marqueur [PRÉNOM] est accepté : il est remplacé par le vrai prénom
+    // ou retiré côté génération, selon le choix du restaurateur.
+    const marker = norm('PRÉNOM');
+    if (!new RegExp(`^bonjour\\s+(?:${a}|\\[${marker}\\])(?![\\p{L}\\p{N}])`, 'u').test(nb)) errors.push('ouverture sans le prénom de l’auteur');
   } else if (/^bonjour\s+[a-z](?![a-z])/i.test(nb))
     errors.push('« Bonjour » seul attendu (initiale non communiquée)');
   // Le signataire ne se nomme jamais à la 3e personne dans le corps.

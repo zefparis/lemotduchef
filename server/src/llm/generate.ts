@@ -2,7 +2,7 @@ import { pool } from '../db.js';
 import { config } from '../config.js';
 import { llmProvider, LlmError } from './provider.js';
 import { effectivePlan, FREE_MONTHLY_LIMIT } from '../stripe.js';
-import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, signatureOf, assignedStrengths } from './prompt.js';
+import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, signatureOf, assignedStrengths, authorDisplayName, AUTHOR_MARKER, REPLY_TOKEN_MAX } from './prompt.js';
 import type { PromptProfile, PromptReview } from './prompt.js';
 import { checkReply, parseVariants, tooSimilar, cleanReply, withSignature, mentionsContactEmail, mentionsReservation } from './rules.js';
 
@@ -38,10 +38,23 @@ async function recentPhrases(companyId: string, excludeReviewId: string): Promis
 
 export async function generateReplies(
   companyId: string, reviewId: string, profile: PromptProfile, review: PromptReview, log: { warn: (o: any, m?: string) => void; info: (o: any, m?: string) => void },
-  opts: { unlimited?: boolean } = {},
+  opts: { unlimited?: boolean; includeAuthorName?: boolean } = {},
 ): Promise<GenerationOutcome> {
   const provider = llmProvider();
   const avoid = await recentPhrases(companyId, reviewId);
+  // Minimisation RGPD : le modèle reçoit le marqueur [PRÉNOM], jamais le nom.
+  // Réinséré ici uniquement si le restaurateur l'a demandé ; sinon retiré.
+  const author = authorDisplayName(review);
+  const includeName = opts.includeAuthorName !== false && !!author;
+  const applyAuthor = (text: string): string => {
+    if (includeName && author) return text.replaceAll(AUTHOR_MARKER, author);
+    // Marqueur retiré : « Bonjour [PRÉNOM], » → « Bonjour, » (et ailleurs).
+    return text.replace(new RegExp(`\\s*${AUTHOR_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'g'),
+      (m, off, s: string) => (off === 0 || /[,;.!?»]$/.test(s.slice(0, off)) ? ' ' : ''))
+      .replace(/\bBonjour\s*,/g, 'Bonjour,').replace(/,\s*,/g, ',');
+  };
+  // Référentiel des règles : sans le nom quand il n'est pas réinséré.
+  const effectiveReview: PromptReview = includeName ? review : { ...review, author_name: '' };
   // Point fort imposé par variante, décidé par le code (rotation historique) :
   // variante 1 factuelle → aucun ; variantes 2 et 3 → chacune le sien.
   const strengths = assignedStrengths(profile, avoid.length);
@@ -105,7 +118,7 @@ export async function generateReplies(
     try {
       res = await provider.complete({
         system: SYSTEM_PROMPT,
-        user: attempt === 0 ? user : user + '\n\nRAPPEL : respecte la longueur cible, les formules interdites, les faits fournis uniquement, l’ouverture « Bonjour {prénom} » et les points forts imposés par variante.',
+        user: attempt === 0 ? user : user + '\n\nRAPPEL : 70 mots maximum par réponse, les formules interdites, les faits fournis uniquement, l’ouverture et les points forts imposés par variante.',
         maxTokens: config.llm.maxOutputTokens,
       }, ctrl.signal);
     } catch (err) {
@@ -132,15 +145,19 @@ export async function generateReplies(
     for (const [i, raw] of queue) {
       // La signature exacte du profil est ajoutée ici : les règles contrôlent
       // le texte final assemblé, la longueur se mesure sur le corps seul.
-      const text = withSignature(cleanReply(raw), sig);
+      const text = withSignature(applyAuthor(cleanReply(raw)), sig);
       if (slots.some(a => a && a.text === text)) continue;
       if (slots.some(a => a && tooSimilar(a.text, text))) { rejected.push(`variante ${i + 1} : trop proche d’une autre`); continue; }
       const hasEmail = mentionsContactEmail(text, profile);
       if (hasEmail && emailVariants >= 2) { rejected.push(`variante ${i + 1} : email dans trop de variantes`); continue; }
       const hasReservation = mentionsReservation(text);
       if (hasReservation && reservationUsed) { rejected.push(`variante ${i + 1} : « réservez » déjà utilisé`); continue; }
-      const c = checkReply(text, profile, review, { allowedStrength: strengths[i] });
+      const c = checkReply(text, profile, effectiveReview, { allowedStrength: strengths[i] });
       if (c.ok) {
+        // Plafond AI Act : chaque réponse reste sous 180 jetons (exemption
+        // « très courts textes » à 200) — dépassement → variante régénérée.
+        const tokens = await provider.countTokens(text);
+        if (tokens >= REPLY_TOKEN_MAX) { rejected.push(`variante ${i + 1} : trop longue (${tokens} jetons)`); continue; }
         slots[i] = { idx: i, text, warnings: c.warnings, words: c.words };
         if (hasEmail) emailVariants++;
         if (hasReservation) reservationUsed = true;

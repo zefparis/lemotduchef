@@ -127,7 +127,8 @@ export default async function reviewRoutes(app: FastifyInstance) {
       try {
         // Le quota est réservé atomiquement dans generateReplies (FOR UPDATE) :
         // pas de dépassement par appels concurrents, les échecs comptent aussi.
-        const out = await generateReplies(req.companyId!, review.id, profile, review, req.log, { unlimited: admin });
+        const includeAuthorName = (req.body as any)?.include_author_name !== false;
+        const out = await generateReplies(req.companyId!, review.id, profile, review, req.log, { unlimited: admin, includeAuthorName });
         const left = admin ? Number.POSITIVE_INFINITY : await remainingGenerations(req.companyId!);
         return {
           generationId: out.generationId,

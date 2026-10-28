@@ -285,7 +285,7 @@ const words = (n: number) => Array.from({ length: n }, (_, i) => `mot${i}`).join
 
 test('prompt système versionné : règles clés présentes', () => {
   assert.match(PROMPT_VERSION, /^\d{4}-\d{2}-\d{2}\.\d+$/);
-  for (const re of [/FUTURS clients/, /vouvoiement ou tutoiement/, /Anti-marqueurs IA/, /jamais accuser l'auteur de mentir/i, /information personnelle/i, /judiciaire/, /allergie, intoxication/, /UN point fort/, /AU PLUS une fois/, /vise environ 45 mots/, /vise environ 80 mots/, /3 variantes/, /aucun point fort/i])
+  for (const re of [/FUTURS clients/, /vouvoiement ou tutoiement/, /Anti-marqueurs IA/, /jamais accuser l'auteur de mentir/i, /information personnelle/i, /judiciaire/, /allergie, intoxication/, /UN point fort/, /AU PLUS une fois/, /vise environ 45 mots/, /vise environ 55 mots/, /3 variantes/, /aucun point fort/i])
     assert.match(SYSTEM_PROMPT, re);
   const u = buildUserPrompt(RULE_PROFILE as any, NEGATIVE as any, ['Merci pour votre retour.']);
   assert.match(u, /Signature : Marc, chef et propriétaire/);
@@ -367,8 +367,8 @@ test('génération : 3 variantes, journalisation des tokens, variante non confor
   setLlmProvider(new MockProvider(req => {
     calls++;
     const good = parseVariants(mockVariants(req.user))[2]; // variante « point fort » : conforme à son slot
-    const bad1 = good.replace('Bonjour Julie,', 'Salut Julie, tu');
-    const bad2 = good.replace('Bonjour Julie,', 'Bonjour Julie (julie.martin@gmail.com),');
+    const bad1 = good.replace('Bonjour [PRÉNOM],', 'Salut Julie, tu');
+    const bad2 = good.replace('Bonjour [PRÉNOM],', 'Bonjour Julie (julie.martin@gmail.com),');
     return JSON.stringify({ variants: [bad1, bad2, good] });
   }));
   try {
@@ -394,6 +394,42 @@ test('génération : 3 variantes, journalisation des tokens, variante non confor
     await generate(cookie, id2);
     assert.match(seen, /FORMULATIONS À ÉVITER/);
     assert.match(seen, /merci pour ce retour chaleureux/);
+  } finally { setLlmProvider(null); }
+});
+
+test('génération : prénom pseudonymisé et plafond 180 jetons', async () => {
+  const cookie = await signup('pseudo@x.fr'); const cid = await createRestaurant(cookie);
+  await makePro(cid);
+  const { id } = await addReview(cookie);
+  try {
+    // Minimisation RGPD : le modèle reçoit [PRÉNOM], jamais le nom réel.
+    let seen = '';
+    setLlmProvider(new MockProvider(req => { seen = req.user; return mockVariants(req.user); }));
+    const r = await generate(cookie, id);
+    assert.equal(r.statusCode, 200, r.body);
+    assert.match(seen, /Auteur : \[PRÉNOM\]/);
+    assert.ok(!seen.includes('Julie'), 'prénom absent du prompt envoyé au modèle');
+    assert.ok(r.json().variants.every((v: any) => v.text.includes('Julie')), 'prénom réinséré après génération');
+    // Sans le souhait du restaurateur, le prénom n'est pas réinséré.
+    const { id: id2 } = await addReview(cookie);
+    const rn = await app.inject({ method: 'POST', url: `/api/reviews/${id2}/generate`, headers: { ...H, cookie }, payload: { include_author_name: false } });
+    assert.equal(rn.statusCode, 200, rn.body);
+    assert.ok(rn.json().variants.every((v: any) => !v.text.includes('Julie')), 'prénom absent des réponses');
+    // Plafond AI Act : une variante conforme aux règles mais au-delà de 180
+    // jetons est écartée (le contrôle jetons se place après les règles).
+    setLlmProvider(new MockProvider(req => {
+      const v = JSON.parse(mockVariants(req.user)).variants;
+      const pad = 'chaque détail de votre retour est relu avec attention en salle comme en cuisine chaque soir ';
+      const long = v[0].replace(/([^.!?]+[.!?]\s*)$/, `${pad}${pad}${pad}$1`);
+      return JSON.stringify({ variants: [long, v[1], v[2]] });
+    }));
+    // Avis détaillé (≥ 15 mots) : la fourchette longue laisse passer une
+    // variante conforme en mots mais au-delà du plafond en jetons.
+    const { id: id3 } = await addReview(cookie, { body: 'Service un peu lent ce soir, plat froid aussi, salle bruyante et serveur très distrait.' });
+    const r2 = await generate(cookie, id3);
+    const j = r2.json();
+    assert.ok(j.rejected.some((m: string) => /trop longue/.test(m)), 'variante trop longue écartée : ' + JSON.stringify(j.rejected));
+    assert.equal(j.variants[0].needsReview, true, 'position écartée marquée à revoir');
   } finally { setLlmProvider(null); }
 });
 

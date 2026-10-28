@@ -1138,6 +1138,11 @@ dialog[open] { animation: dialog-in .22s ease; }
 }
 .variant textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
 .variant-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+.ai-note {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--faint); line-height: 1.4;
+}
+.ai-note .icon { width: 13px; height: 13px; flex-shrink: 0; }
 .variant-actions .is-published { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .published-note { margin-top: 14px; font-size: 13.5px; color: var(--accent); font-weight: 600; }
 #generate-hint { font-size: 12.5px; }
