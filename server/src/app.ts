@@ -16,6 +16,7 @@ import billingRoutes from './routes/billing.js';
 import legalRoutes from './routes/legal.js';
 import reviewRoutes from './routes/reviews.js';
 import collectRoutes from './routes/collect.js';
+import pushRoutes from './routes/push.js';
 import { llmConfigured } from './llm/provider.js';
 import { scheduleRetention } from './retention.js';
 
@@ -164,6 +165,7 @@ export async function buildApp(opts: { retention?: boolean; logStream?: NodeJS.W
   await app.register(profileRoutes);
   await app.register(reviewRoutes);
   await app.register(collectRoutes);
+  await app.register(pushRoutes);
   await app.register(adminRoutes);
   await app.register(billingRoutes);
   await app.register(legalRoutes);

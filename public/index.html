@@ -61,7 +61,7 @@
     <a href="#faq">Questions</a>
     <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
     <button class="btn btn-quiet btn-sm" data-auth>Se connecter</button>
-    <button class="btn btn-dark btn-sm" data-open><span class="cta-full">Créer un compte</span><span class="cta-short">Essai gratuit</span></button>
+    <button class="btn btn-dark btn-sm" data-open><span class="cta-full"></span>Créer un compte</span><span class="cta-short">Essai gratuit</span></button>
   </nav>
 </header>
 
@@ -613,6 +613,13 @@
         </div>
         <div class="variants" id="variants"></div>
         <p class="published-note" id="published-note" hidden></p>
+        <div class="publish-gate" id="publish-gate" hidden>
+          <div class="publish-gate-card" role="alertdialog" aria-live="assertive">
+            <h3>Publication dans <b id="gate-count">10</b> s…</h3>
+            <p>La réponse est copiée dans le presse-papier : collez-la sur votre fiche Google. Sans action, elle sera marquée comme publiée.</p>
+            <button class="btn btn-quiet" id="gate-cancel">Annuler la publication</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -788,6 +795,51 @@
             <ul class="session-list" id="session-list"><li class="subtle">Chargement…</li></ul>
             <div class="form-actions">
               <button class="btn btn-outline btn-sm" id="revoke-others">Déconnecter les autres appareils</button>
+            </div>
+          </div>
+          <div class="panel form-panel" id="push-panel">
+            <h3>Notifications</h3>
+            <p class="form-intro">Soyez alerté sur votre téléphone dès que des réponses sont prêtes. L'application est installable comme une appli : depuis le navigateur, « Ajouter à l'écran d'accueil ».</p>
+            <div id="push-unavailable" hidden>
+              <p class="field-hint">Les notifications push ne sont pas prises en charge par ce navigateur.</p>
+            </div>
+            <div id="push-body" hidden>
+              <div class="field">
+                <button class="btn btn-primary btn-sm" id="push-enable">Activer les notifications sur cet appareil</button>
+                <p class="field-hint" id="push-status"></p>
+              </div>
+              <div id="push-opts" hidden>
+                <div class="field">
+                  <label for="push-rating">Avis concernés</label>
+                  <select id="push-rating">
+                    <option value="3">Avis négatifs uniquement (≤ 3★)</option>
+                    <option value="2">Sévères uniquement (≤ 2★)</option>
+                    <option value="5">Tous les avis</option>
+                  </select>
+                </div>
+                <div class="field field-row">
+                  <div>
+                    <label for="push-quiet-start">Silence, de</label>
+                    <input id="push-quiet-start" type="time">
+                  </div>
+                  <div>
+                    <label for="push-quiet-end">à</label>
+                    <input id="push-quiet-end" type="time">
+                  </div>
+                </div>
+                <label class="check-row" for="push-hide">
+                  <input type="checkbox" id="push-hide">
+                  <span>Masquer le contenu de l'avis sur l'écran verrouillé <span class="opt">(titre générique, sans extrait ni nom)</span></span>
+                </label>
+                <div class="field">
+                  <label>Appareils enregistrés</label>
+                  <ul class="session-list" id="push-devices"></ul>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-primary btn-sm" id="push-save">Enregistrer</button>
+                  <button class="btn btn-outline btn-sm" id="push-test">Notification test</button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="panel form-panel danger-zone">

@@ -69,6 +69,13 @@ export const config = {
     pass: process.env.SMTP_PASS ?? '',
     from: process.env.MAIL_FROM ?? 'Le Mot du Chef <noreply@localhost>',
   },
+  // Notifications Web Push (VAPID). Sans clés, /api/push renvoie enabled:false
+  // et aucun envoi n'est tenté. Générer : npx web-push generate-vapid-keys.
+  push: {
+    vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? '',
+    vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? '',
+    subject: process.env.VAPID_SUBJECT ?? 'mailto:contact@lemotduchef.fr',
+  },
   // Abonnement Stripe (mode test ou live selon la clé). Sans clé, la
   // facturation est désactivée et /api/billing renvoie enabled:false.
   // Les montants affichés sont relus depuis l'API Stripe — jamais codés en dur.

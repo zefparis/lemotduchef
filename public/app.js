@@ -538,13 +538,28 @@ async function copyVariant(i) {
 async function publishVariant(i, btn) {
   const text = $$('#variants [data-variant]')[i].value.trim();
   if (!text || !currentReview) return;
+  // Copie immédiate (encore dans le geste utilisateur), puis délai
+  // d'annulation de 10 s avant d'enregistrer la publication.
+  try { await navigator.clipboard.writeText(text); } catch { /* copie optionnelle */ }
+  const gate = $('#publish-gate'), count = $('#gate-count');
+  gate.hidden = false;
+  let left = 10; count.textContent = String(left);
+  const cancelled = await new Promise(resolve => {
+    const tick = setInterval(() => {
+      count.textContent = String(--left);
+      if (left <= 0) { clearInterval(tick); resolve(false); }
+    }, 1000);
+    $('#gate-cancel').onclick = () => { clearInterval(tick); resolve(true); };
+  });
+  gate.hidden = true;
+  if (cancelled) { toast('Publication annulée — rien n’a été enregistré.', 'info'); return; }
   const unbusy = busy(btn);
   try {
     await api(`/reviews/${currentReview.id}/publish`, { method: 'POST', body: { text } });
     $$('#variants [data-publish]').forEach(b => { b.innerHTML = icon('i-check') + 'Marquer comme publiée'; b.classList.remove('is-published'); });
     btn.innerHTML = icon('i-check') + 'Publiée sur Google'; btn.classList.add('is-published');
     const note = $('#published-note');
-    note.hidden = false; note.textContent = 'Réponse enregistrée comme publiée. Retrouvez-la dans l’historique.';
+    note.hidden = false; note.textContent = 'Réponse copiée et marquée comme publiée — collez-la sur votre fiche Google. Retrouvez-la dans l’historique.';
     toast('Réponse marquée comme publiée.');
   } catch (err) { toast(err.message, 'error'); }
   finally { unbusy(); }
@@ -774,6 +789,7 @@ async function loadAccount() {
     $('#p-email').value = me.user?.email || '';
     renderSessions(sessions || []);
   } catch (err) { toast(err.message, 'error'); }
+  loadPushState();
 }
 function deviceLabel(ua) {
   if (!ua) return 'Appareil inconnu';
@@ -1014,6 +1030,9 @@ $('#admin-delete-confirm').onclick = async () => {
         mode = 'live'; await refresh(); show('app'); render();
         if (location.pathname === '/admin' && me.admin) { enterAdmin(); return; }
         if (location.pathname === '/admin') history.replaceState(null, '', '/');
+        // Lien ouvert depuis une notification push : /?avis=<id>.
+        const avisId = params.get('avis');
+        if (avisId) { history.replaceState(null, '', '/'); reopenReview(avisId); }
         if (billingResult === 'success') { history.replaceState(null, '', '/'); toast('Abonnement activé, merci !'); await refresh(); render(); }
         else if (billingResult === 'cancel') { history.replaceState(null, '', '/'); toast('Souscription annulée — rien n\'a été débité.', 'info'); }
         return;
@@ -1024,3 +1043,105 @@ $('#admin-delete-confirm').onclick = async () => {
   } catch { /* pas de session : page commerciale */ }
   if (justVerified) { history.replaceState(null, '', '/'); showAuth('login', 'Email confirmé. Connectez-vous pour accéder à votre espace.'); }
 })();
+
+/* ---------- Notifications push (PWA + Web Push VAPID) ---------- */
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const b64ToU8 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+let swReg = null, pushCurrentEndpoint = '';
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(r => { swReg = r; }).catch(() => {});
+  // Clic de notification alors qu'un onglet de l'app est ouvert : ouvrir l'avis.
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type !== 'push-open' || mode !== 'live') return;
+    const id = new URL(e.data.url, location.origin).searchParams.get('avis');
+    if (id) reopenReview(id);
+  });
+}
+
+async function loadPushState() {
+  const unsupported = !pushSupported();
+  $('#push-unavailable').hidden = !unsupported;
+  $('#push-body').hidden = unsupported;
+  if (unsupported) return;
+  try {
+    const reg = swReg || await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    pushCurrentEndpoint = sub?.endpoint ?? '';
+    const st = await api('/push/state'), s = st.settings;
+    $('#push-opts').hidden = !s.enabled && !sub;
+    $('#push-enable').textContent = sub ? 'Notifications activées sur cet appareil' : 'Activer les notifications sur cet appareil';
+    $('#push-enable').classList.toggle('btn-outline', !!sub);
+    $('#push-enable').classList.toggle('btn-primary', !sub);
+    $('#push-status').textContent = st.count ? `${st.count} appareil(s) reçoivent les notifications.` : 'Aucun appareil enregistré.';
+    $('#push-rating').value = String(s.rating_max);
+    $('#push-quiet-start').value = (s.quiet_start ?? '').slice(0, 5);
+    $('#push-quiet-end').value = (s.quiet_end ?? '').slice(0, 5);
+    $('#push-hide').checked = !!s.hide_content;
+    $('#push-devices').innerHTML = st.subscriptions.length
+      ? st.subscriptions.map(d => `<li><span>${esc(d.user_agent || 'Appareil inconnu').slice(0, 70)}${d.endpoint === pushCurrentEndpoint ? ' <small class="subtle">(cet appareil)</small>' : ''}</span><button class="btn btn-quiet btn-sm" data-unsub="${esc(d.endpoint)}">Retirer</button></li>`).join('')
+      : '<li class="subtle">Aucun appareil enregistré.</li>';
+  } catch { /* panneau informatif seulement */ }
+}
+
+$('#push-enable').onclick = async () => {
+  try {
+    const reg = swReg || await navigator.serviceWorker.ready;
+    if (pushCurrentEndpoint) {
+      // Déjà abonné ici : retirer cet appareil.
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await api('/push/subscribe', { method: 'DELETE', body: { endpoint: sub.endpoint } });
+        await sub.unsubscribe(); pushCurrentEndpoint = '';
+        toast('Notifications désactivées sur cet appareil.', 'info');
+      }
+      loadPushState(); return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { toast('Notifications refusées — autorisez-les dans les réglages du navigateur.', 'error'); return; }
+    const { publicKey } = await api('/push/vapid');
+    if (!publicKey) { toast('Notifications non configurées côté serveur.', 'error'); return; }
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(publicKey) });
+    const j = sub.toJSON();
+    await api('/push/subscribe', { method: 'POST', body: { endpoint: j.endpoint, keys: j.keys } });
+    pushCurrentEndpoint = j.endpoint;
+    const st = await api('/push/state');
+    if (!st.settings.enabled) await api('/push/settings', {
+      method: 'PUT',
+      body: { enabled: true, rating_max: st.settings.rating_max, quiet_start: st.settings.quiet_start, quiet_end: st.settings.quiet_end, hide_content: st.settings.hide_content },
+    });
+    toast('Notifications activées sur cet appareil.');
+    loadPushState();
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+$('#push-save').onclick = async () => {
+  try {
+    await api('/push/settings', {
+      method: 'PUT',
+      body: {
+        enabled: true,
+        rating_max: Number($('#push-rating').value),
+        quiet_start: $('#push-quiet-start').value || null,
+        quiet_end: $('#push-quiet-end').value || null,
+        hide_content: $('#push-hide').checked,
+      },
+    });
+    toast('Réglages enregistrés.');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+$('#push-test').onclick = async () => {
+  try {
+    const r = await api('/push/test', { method: 'POST', body: {} });
+    toast(`Notification test envoyée (${r.sent} appareil(s)).`);
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+$('#push-devices').addEventListener('click', async e => {
+  const b = e.target.closest('[data-unsub]');
+  if (!b) return;
+  try {
+    await api('/push/subscribe', { method: 'DELETE', body: { endpoint: b.dataset.unsub } });
+    toast('Appareil retiré.', 'info'); loadPushState();
+  } catch (err) { toast(err.message, 'error'); }
+});
