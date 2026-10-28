@@ -42,7 +42,9 @@ if (themeMatch) {
   const hash = 'sha256-' + crypto.createHash('sha256').update(themeMatch[1], 'utf8').digest('base64');
   for (const rel of ['vercel.json', 'server/src/app.ts']) {
     const file = path.join(root, rel);
-    if (!fs.existsSync(file) || !fs.readFileSync(file, 'utf8').includes(`'${hash}'`)) {
+    // Fichier absent du contexte de build (server/ ignoré par .vercelignore) : rien à vérifier.
+    if (!fs.existsSync(file)) continue;
+    if (!fs.readFileSync(file, 'utf8').includes(`'${hash}'`)) {
       const msg = `Le script #theme-init d'index.html n'est pas autorisé par la CSP de ${rel} (attendu : '${hash}').`;
       if (strict) { console.error(msg); process.exit(1); }
       console.warn(msg);
