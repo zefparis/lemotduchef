@@ -43,6 +43,9 @@ const REPLY_TOOL = {
     type: 'object',
     properties: {
       variants: { type: 'array', minItems: 1, maxItems: 3, items: { type: 'string' } },
+      // Traduction de chaque variante dans la langue de l'interface,
+      // demandée seulement quand l'avis n'est pas dans cette langue.
+      translations: { type: 'array', minItems: 0, maxItems: 3, items: { type: 'string' } },
     },
     required: ['variants'],
     additionalProperties: false,
@@ -90,8 +93,9 @@ export class AnthropicProvider implements LlmProvider {
     const data: any = await res.json();
     const blocks = (data?.content ?? []) as any[];
     const toolUse = blocks.find(c => c?.type === 'tool_use' && Array.isArray(c?.input?.variants));
+    const trs = (toolUse?.input?.translations ?? []).filter((t: unknown) => typeof t === 'string' && t.trim());
     const text = toolUse
-      ? JSON.stringify({ variants: toolUse.input.variants })
+      ? JSON.stringify(trs.length ? { variants: toolUse.input.variants, translations: trs } : { variants: toolUse.input.variants })
       : blocks.filter(c => c?.type === 'text').map(c => c.text).join('\n');
     return {
       text,
@@ -128,7 +132,133 @@ function field(user: string, key: string): string {
 // fourchettes court/long. Angles distincts (factuel / chaleureux / point
 // fort imposé), un seul point fort cité par variante (celui du CONTEXTE),
 // email dans 2 variantes max, aucun fait interne inventé.
+// Gabarits de test par langue : ~45-55 mots, angles distincts (factuel /
+// chaleureux / point fort), ouverture + invitation conformes aux packs.
+const MOCK_STUBS: Record<string, { greet: string; pos: string[]; neg: string[]; reach: string; healthPos: string[] }> = {
+  en: {
+    greet: 'Hello',
+    pos: [
+      'thank you for this precise and generous feedback: we are glad your moment with us pleased you. This is exactly the experience the whole team strives to offer every day, with care, at every table.',
+      'what a pleasure to read you this morning. Your words made the whole house smile, and we thank you for taking the time to share them. We hope to see you again very soon around a table.',
+      'your message lights up our entire day. Knowing that this moment touched you is the finest reward for our whole team. See you very soon, with pleasure.',
+    ],
+    neg: [
+      'your feedback calls for a clear answer: what you describe is not the level of service we want to offer. Your feedback is passed on to the team, and we discuss it today to do much better at every service. We hope to welcome you back on a next visit.',
+      'reading your review is not a pleasant moment, and we face it honestly. Your evening should have been beautiful; that it was not truly matters to us. Write to us at {reach} to talk about it; you are welcome whenever you wish to return.',
+      'what you describe is the opposite of what we stand for every day: sincere attention brought to every table. We would be glad to prove it on a next visit, whenever you wish, simply and with a smile.',
+    ],
+    healthPos: [
+      'your message touches us: our customers\u2019 wellbeing comes first, and we read yours with the greatest attention. Hygiene is for us a discipline of every instant, shared by the whole team. Contact us at {reach} so we can understand what happened.',
+      'we hear your concern and it matters to us. With us, hygiene is not an argument but a daily requirement, upheld by the whole team. Reach us directly at {reach}: we will take all the time needed to understand together.',
+      'our customers\u2019 trust is what we defend most, with a hygiene requirement of every instant at each service. To understand your experience, contact us directly at the restaurant: you will get a personal, attentive answer.',
+    ],
+    reach: 'the restaurant',
+  },
+  af: {
+    greet: 'Goeiedag',
+    pos: [
+      'dankie vir hierdie presiese en vrygewige terugvoer: ons is bly jou oomblik by ons het jou behaag. Dis presies die ervaring wat die hele span elke dag met sorg aan elke tafel wil bied.',
+      'watter plesier om jou vanoggend te lees. Jou woorde het die hele huis laat glimlag, en ons bedank jou dat jy die tyd geneem het om hulle te deel. Ons hoop om jou gou weer om \u2018n tafel te sien.',
+      'jou boodskap verlig ons hele dag. Om te weet hierdie oomblik het jou geraak is die mooiste beloning vir die hele span. Tot baie gou, met plesier.',
+    ],
+    neg: [
+      'jou terugvoer vra \u2018n duidelike antwoord: wat jy beskryf is nie die diensvlak wat ons wil bied nie. Jou terugvoer word aan die span oorgedra, en ons praat vandag daaroor om by elke diens veel beter te doen. Ons hoop om jou by \u2018n volgende besoek te verwelkom.',
+      'om jou resensie te lees is nie \u2018n aangename oomblik nie, en ons kyk dit eerlik in die gesig. Jou aand mooi moes gewees het; dat dit nie was nie raak ons werklik. Skryf aan ons by {reach} om daaroor te praat; jy is welkom wanneer jy wil terugkeer.',
+      'wat jy beskryf is die teenoorgestelde van waarvoor ons elke dag staan: opregte aandag aan elke tafel. Ons sal dit graag by \u2018n volgende besoek bewys, wanneer jy wil, eenvoudig en met \u2018n glimlag.',
+    ],
+    healthPos: [
+      'jou boodskap raak ons: ons klante se welsyn kom eerste, en ons lees joune met die grootste aandag. Higiene is by ons \u2018n dissipline van elke oomblik, deur die hele span gedeel. Kontak ons by {reach} sodat ons kan verstaan wat gebeur het.',
+      'ons hoor jou kommer en dit raak ons. By ons is higiene nie \u2018n argument nie maar \u2018n daaglikse vereiste, deur die hele span gehandhaaf. Bereik ons direk by {reach}: ons sal al die tyd neem om saam te verstaan.',
+      'ons klante se vertroue is wat ons die meeste verdedig, met \u2018n higienevereiste van elke oomblik by elke diens. Om jou ervaring te verstaan, kontak ons direk by die restaurant: jy sal \u2018n persoonlike, aandagtige antwoord kry.',
+    ],
+    reach: 'die restaurant',
+  },
+  de: {
+    greet: 'Guten Tag',
+    pos: [
+      'vielen Dank für diese präzise und großzügige Rückmeldung: wir freuen uns, dass Ihr Moment bei uns Ihnen gefallen hat. Genau dieses Erlebnis will das ganze Team jeden Tag mit Sorgfalt an jedem Tisch bieten.',
+      'was für ein Vergnügen, Sie heute Morgen zu lesen. Ihre Worte haben das ganze Haus zum Lächeln gebracht, und wir danken Ihnen, dass Sie sich die Zeit zum Teilen genommen haben. Wir hoffen, Sie bald wieder an einem Tisch zu sehen.',
+      'Ihre Nachricht erhellt unseren ganzen Tag. Zu wissen, dass dieser Moment Sie berührt hat, ist die schönste Belohnung für unser ganzes Team. Bis bald, mit Freude.',
+    ],
+    neg: [
+      'Ihre Rückmeldung verlangt eine klare Antwort: was Sie beschreiben ist nicht das Serviceniveau, das wir bieten wollen. Ihre Rückmeldung wird an das Team weitergegeben, und wir besprechen sie heute, um bei jedem Service viel besser zu werden. Wir hoffen, Sie bei einem nächsten Besuch zu begrüßen.',
+      'Ihre Bewertung zu lesen ist kein angenehmer Moment, und wir sehen ihr ehrlich ins Auge. Ihr Abend hätte schön sein sollen; dass er es nicht war, berührt uns wirklich. Schreiben Sie uns unter {reach}, um darüber zu sprechen; Sie sind willkommen, wann immer Sie wiederkommen möchten.',
+      'was Sie beschreiben ist das Gegenteil dessen, wofür wir jeden Tag stehen: aufrichtige Aufmerksamkeit an jedem Tisch. Wir würden es gern bei einem nächsten Besuch beweisen, wann immer Sie möchten, schlicht und mit einem Lächeln.',
+    ],
+    healthPos: [
+      'Ihre Nachricht berührt uns: das Wohlbefinden unserer Gäste steht an erster Stelle, und wir lesen Ihre mit größter Aufmerksamkeit. Hygiene ist bei uns eine Disziplin jedes Augenblicks, geteilt vom ganzen Team. Kontaktieren Sie uns unter {reach}, damit wir verstehen, was passiert ist.',
+      'wir hören Ihre Sorge und sie bewegt uns. Bei uns ist Hygiene kein Argument, sondern eine tägliche Anforderung, die das ganze Team hochhält. Erreichen Sie uns direkt unter {reach}: wir nehmen uns alle Zeit, um gemeinsam zu verstehen.',
+      'das Vertrauen unserer Gäste verteidigen wir am meisten, mit einer Hygieneanforderung jedes Augenblicks bei jedem Service. Um Ihre Erfahrung zu verstehen, kontaktieren Sie uns direkt im Restaurant: Sie bekommen eine persönliche, aufmerksame Antwort.',
+    ],
+    reach: 'im Restaurant',
+  },
+  nl: {
+    greet: 'Beste',
+    pos: [
+      'bedankt voor deze precieze en gulle terugkoppeling: we zijn blij dat uw moment bij ons u bevallen is. Dit is precies de ervaring die het hele team elke dag met zorg aan elke tafel wil bieden.',
+      'wat een plezier om u vanochtend te lezen. Uw woorden brachten het hele huis aan het glimlachen, en we danken u dat u de tijd nam ze te delen. We hopen u snel weer aan een tafel te zien.',
+      'uw bericht verlicht onze hele dag. Weten dat dit moment u raakte is de mooiste beloning voor ons hele team. Tot snel, met plezier.',
+    ],
+    neg: [
+      'uw terugkoppeling vraagt een duidelijk antwoord: wat u beschrijft is niet het serviceniveau dat we willen bieden. Uw terugkoppeling wordt aan het team doorgegeven, en we bespreken het vandaag om bij elke dienst veel beter te doen. We hopen u bij een volgend bezoek te verwelkomen.',
+      'uw recensie lezen is geen aangenaam moment, en we kijken het eerlijk aan. Uw avond had mooi moeten zijn; dat hij het niet was raakt ons echt. Schrijf ons via {reach} om erover te praten; u bent welkom wanneer u wilt terugkeren.',
+      'wat u beschrijft is het tegenovergestelde van waar we elke dag voor staan: oprechte aandacht aan elke tafel. We zouden het graag bij een volgend bezoek bewijzen, wanneer u wilt, eenvoudig en met een glimlach.',
+    ],
+    healthPos: [
+      'uw bericht raakt ons: het welzijn van onze gasten staat voorop, en we lezen het uwe met de grootste aandacht. Hygiëne is bij ons een discipline van elk ogenblik, gedeeld door het hele team. Neem contact op via {reach} zodat we begrijpen wat er gebeurde.',
+      'we horen uw bezorgdheid en die raakt ons. Bij ons is hygiëne geen argument maar een dagelijkse eis, hooggehouden door het hele team. Bereik ons direct via {reach}: we nemen alle tijd om samen te begrijpen.',
+      'het vertrouwen van onze gasten verdedigen we het meest, met een hygiëne-eis van elk ogenblik bij elke dienst. Om uw ervaring te begrijpen, neem direct contact op met het restaurant: u krijgt een persoonlijk, attent antwoord.',
+    ],
+    reach: 'het restaurant',
+  },
+  es: {
+    greet: 'Hola',
+    pos: [
+      'gracias por esta valoración precisa y generosa: nos alegra que su momento con nosotros le haya gustado. Esta es exactamente la experiencia que todo el equipo se esfuerza por ofrecer cada día, con cuidado, en cada mesa.',
+      'qué placer leerle esta mañana. Sus palabras hicieron sonreír a toda la casa, y le agradecemos que se tomara el tiempo de compartirlas. Esperamos verle muy pronto alrededor de una mesa.',
+      'su mensaje ilumina todo nuestro día. Saber que este momento le conmovió es la más bella recompensa para todo nuestro equipo. Hasta muy pronto, con gusto.',
+    ],
+    neg: [
+      'su valoración pide una respuesta clara: lo que describe no es el nivel de servicio que queremos ofrecer. Su comentario se transmite al equipo, y lo discutimos hoy para hacerlo mucho mejor en cada servicio. Esperamos darle la bienvenida en una próxima visita.',
+      'leer su reseña no es un momento agradable, y lo miramos con honestidad. Su velada debió ser bonita; que no lo fuera nos importa de verdad. Escríbanos a {reach} para hablar de ello; es bienvenido cuando desee volver.',
+      'lo que describe es lo contrario de lo que defendemos cada día: atención sincera en cada mesa. Nos encantaría demostrarlo en una próxima visita, cuando lo desee, con sencillez y una sonrisa.',
+    ],
+    healthPos: [
+      'su mensaje nos conmueve: el bienestar de nuestros clientes es lo primero, y leemos el suyo con la mayor atención. La higiene es para nosotros una disciplina de cada instante, compartida por todo el equipo. Contáctenos en {reach} para que podamos entender lo que ocurrió.',
+      'escuchamos su preocupación y nos importa. Con nosotros, la higiene no es un argumento sino una exigencia diaria, sostenida por todo el equipo. Escríbanos directamente a {reach}: nos tomaremos todo el tiempo necesario para entender juntos.',
+      'la confianza de nuestros clientes es lo que más defendemos, con una exigencia de higiene de cada instante en cada servicio. Para entender su experiencia, contáctenos directamente en el restaurante: tendrá una respuesta personal y atenta.',
+    ],
+    reach: 'el restaurante',
+  },
+  it: {
+    greet: 'Buongiorno',
+    pos: [
+      'grazie per questo riscontro preciso e generoso: siamo felici che il vostro momento da noi vi sia piaciuto. Questa è esattamente l\u2019esperienza che tutta la squadra si impegna a offrire ogni giorno, con cura, a ogni tavolo.',
+      'che piacere leggervi stamattina. Le vostre parole hanno fatto sorridere tutta la casa, e vi ringraziamo per aver dedicato il tempo a condividerle. Speriamo di rivedervi prestissimo attorno a un tavolo.',
+      'il vostro messaggio illumina tutta la nostra giornata. Sapere che questo momento vi ha toccato è la più bella ricompensa per tutta la squadra. A prestissimo, con piacere.',
+    ],
+    neg: [
+      'il vostro riscontro chiede una risposta chiara: ciò che descrivete non è il livello di servizio che vogliamo offrire. Il vostro commento viene trasmesso alla squadra, e ne parliamo oggi per fare molto meglio a ogni servizio. Speriamo di darvi il benvenuto a una prossima visita.',
+      'leggere la vostra recensione non è un momento piacevole, e la guardiamo con onestà. La vostra serata doveva essere bella; che non lo sia stata ci importa davvero. Scriveteci a {reach} per parlarne; siete i benvenuti quando vorrete tornare.',
+      'ciò che descrivete è il contrario di ciò per cui lavoriamo ogni giorno: attenzione sincera a ogni tavolo. Saremmo felici di dimostrarvelo a una prossima visita, quando vorrete, con semplicità e un sorriso.',
+    ],
+    healthPos: [
+      'il vostro messaggio ci tocca: il benessere dei nostri clienti viene prima di tutto, e leggiamo il vostro con la massima attenzione. L\u2019igiene è per noi una disciplina di ogni istante, condivisa da tutta la squadra. Contattateci a {reach} per capire cosa è successo.',
+      'sentiamo la vostra preoccupazione e ci sta a cuore. Da noi l\u2019igiene non è un argomento ma un\u2019esigenza quotidiana, sostenuta da tutta la squadra. Scriveteci direttamente a {reach}: prenderemo tutto il tempo necessario per capire insieme.',
+      'la fiducia dei nostri clienti è ciò che difendiamo di più, con un\u2019esigenza di igiene di ogni istante a ogni servizio. Per capire la vostra esperienza, contattateci direttamente al ristorante: avrete una risposta personale e attenta.',
+    ],
+    reach: 'il ristorante',
+  },
+};
+
+function mockLang(user: string): string | null {
+  const m = /^Reply language\s*:\s*(\S+)/m.exec(user)?.[1]?.toLowerCase() ?? '';
+  return ({ anglais: 'en', afrikaans: 'af', allemand: 'de', néerlandais: 'nl', espagnol: 'es', italien: 'it' } as any)[m] ?? null;
+}
+
 export function mockVariants(user: string): string {
+  const l = mockLang(user);
+  if (l && MOCK_STUBS[l]) return mockVariantsLang(user, l);
   const restaurant = field(user, 'Restaurant') || 'notre restaurant';
   const rawAuthor = field(user, 'Auteur') || field(user, 'Prénom affiché') || '';
   const author = /^(—|non communiqué)/i.test(rawAuthor)
@@ -169,6 +299,28 @@ export function mockVariants(user: string): string {
     );
   }
   return JSON.stringify({ variants });
+}
+
+function mockVariantsLang(user: string, lang: string): string {
+  const S = MOCK_STUBS[lang];
+  const restaurant = field(user, 'Restaurant') || 'our restaurant';
+  const rawAuthor = field(user, 'Author') || '';
+  const author = /^(—|not provided|non communiqué)/i.test(rawAuthor)
+    || rawAuthor.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/gi, '').length < 2
+    ? '' : rawAuthor;
+  const rating = parseInt(field(user, 'Rating') || '5', 10);
+  const s2 = /variant 2 may cite « ([^»]+) »/.exec(user)?.[1] ?? '';
+  const s3 = /variant 3 may cite « ([^»]+) »/.exec(user)?.[1] ?? '';
+  const rawContact = field(user, 'Complaints contact');
+  const contact = rawContact.startsWith('—') ? S.reach : rawContact;
+  const health = /yes/i.test(field(user, 'Health topic'));
+  const hello = author ? `${S.greet} ${author},` : `${S.greet},`;
+  const fill = (s: string) => hello + ' ' + s.replaceAll('{reach}', contact).replaceAll('{name}', restaurant);
+  const variants = rating >= 4 ? S.pos.map(fill)
+    : health ? S.healthPos.map(fill)
+    : S.neg.map((v, i) => fill(i === 1 && s2 ? v.replace('Write to us', `we value ${s2}; write to us`) : v));
+  if (lang === 'en' && s3) variants[2] = variants[2].replace('sincere attention', `${s3}, with sincere attention`);
+  return JSON.stringify({ variants, translations: variants.map(v => `[translation:${lang}] ` + v) });
 }
 
 /* ---------- Sélection ---------- */

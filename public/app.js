@@ -528,6 +528,7 @@ function renderVariants(g) {
         <small data-meta${v.text ? '' : ' hidden'}><span data-words>${words(v.text)}</span> mots</small>
       </div>
       <textarea rows="8" data-variant${v.needsReview ? ' placeholder="Écrivez votre réponse ou régénérez."' : ''}>${esc(v.text)}</textarea>
+      ${v.translation ? `<details class="variant-translation"><summary>Traduction</summary><p>${esc(v.translation)}</p></details>` : ''}
       ${v.needsReview ? `<p class="variant-tip">${esc(v.text ? tipFor(v.warnings) : 'Pas de proposition pour cette carte — écrivez la vôtre ou régénérez.')}</p>` : ''}
       <p class="ai-note">${icon('i-info')}Réponse proposée par une IA — relisez-la avant de la publier</p>
       <div class="variant-actions">

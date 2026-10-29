@@ -10,6 +10,8 @@ import { remainingGenerations, FREE_MONTHLY_LIMIT, isPro } from '../stripe.js';
 import { generateReplies, QuotaExceededError } from '../llm/generate.js';
 import { LlmError, llmConfigured } from '../llm/provider.js';
 import { loadProfile } from './profile.js';
+import { userLang } from '../markets.js';
+import type { ReplyLang } from '../llm/langdetect.js';
 
 const LIMIT_ERROR = {
   error: `Limite de l'offre Gratuit atteinte : ${FREE_MONTHLY_LIMIT} réponses générées ce mois-ci. Passez en Pro pour continuer sans limite.`,
@@ -32,7 +34,7 @@ async function isAdminAccount(userId: string): Promise<boolean> {
 
 async function variantsOf(reviewId: string, companyId: string) {
   const { rows } = await pool.query(
-    `SELECT v.id, v.generation_id, v.idx, v.text, v.warnings, v.needs_review AS "needsReview", v.created_at
+    `SELECT v.id, v.generation_id, v.idx, v.text, v.translation, v.warnings, v.needs_review AS "needsReview", v.created_at
        FROM reply_variants v
       WHERE v.review_id=$1 AND v.company_id=$2
       ORDER BY v.created_at DESC, v.idx ASC LIMIT 9`, [reviewId, companyId]);
@@ -128,7 +130,8 @@ export default async function reviewRoutes(app: FastifyInstance) {
         // Le quota est réservé atomiquement dans generateReplies (FOR UPDATE) :
         // pas de dépassement par appels concurrents, les échecs comptent aussi.
         const includeAuthorName = (req.body as any)?.include_author_name !== false;
-        const out = await generateReplies(req.companyId!, review.id, profile, review, req.log, { unlimited: admin, includeAuthorName });
+        const uiLang = await userLang(req.userId!);
+        const out = await generateReplies(req.companyId!, review.id, profile, review, req.log, { unlimited: admin, includeAuthorName, uiLang: uiLang as ReplyLang });
         const left = admin ? Number.POSITIVE_INFINITY : await remainingGenerations(req.companyId!);
         return {
           generationId: out.generationId,

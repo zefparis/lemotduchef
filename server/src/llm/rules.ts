@@ -383,8 +383,9 @@ const firstSentence = (s: string) => {
   return norm(bare.split(/[.!?\n]/)[0] ?? '');
 };
 const tokenSet = (s: string) => new Set(norm(s).match(/[a-z0-9]+/g) ?? []);
-export function tooSimilar(a: string, b: string): boolean {
-  const fa = firstSentence(a), fb = firstSentence(b);
+export function tooSimilar(a: string, b: string, greetingRe: RegExp = GREETING_RE): boolean {
+  const strip = (s: string) => norm(s.trim().replace(greetingRe, ''));
+  const fa = strip(a).split(/[.!?\n]/)[0] ?? '', fb = strip(b).split(/[.!?\n]/)[0] ?? '';
   if (fa && fa === fb) return true;
   const A = tokenSet(a), B = tokenSet(b);
   const inter = [...A].filter(w => B.has(w)).length;
@@ -402,4 +403,21 @@ export function parseVariants(raw: string): string[] {
     const arr = Array.isArray(obj?.variants) ? obj.variants : [];
     return arr.filter((v: unknown) => typeof v === 'string' && v.trim()).map((v: string) => v.trim());
   } catch { return []; }
+}
+
+// Variantes + traductions parallèles (interface du restaurateur). Les
+// traductions ne suivent que l'index — elles ne sont jamais soumises aux
+// règles de la réponse publique.
+export function parseVariantsFull(raw: string): { texts: string[]; translations: string[] } {
+  const cleaned = raw.replace(/```(?:json)?/gi, '').trim();
+  const start = cleaned.indexOf('{'), end = cleaned.lastIndexOf('}');
+  if (start === -1 || end <= start) return { texts: [], translations: [] };
+  try {
+    const obj = JSON.parse(cleaned.slice(start, end + 1));
+    const texts = (Array.isArray(obj?.variants) ? obj.variants : [])
+      .filter((v: unknown) => typeof v === 'string' && v.trim()).map((v: string) => v.trim());
+    const translations = (Array.isArray(obj?.translations) ? obj.translations : [])
+      .filter((v: unknown) => typeof v === 'string').map((v: string) => v.trim());
+    return { texts, translations };
+  } catch { return { texts: [], translations: [] }; }
 }

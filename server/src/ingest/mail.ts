@@ -7,6 +7,8 @@ import { pool } from '../db.js';
 import { generateReplies, QuotaExceededError } from '../llm/generate.js';
 import { loadProfile } from '../routes/profile.js';
 import { notifyRepliesReady } from '../push.js';
+import { companyMarket, marketConfig } from '../markets.js';
+import type { ReplyLang } from '../llm/langdetect.js';
 
 // Ingestion des avis par email : le restaurateur transfère automatiquement
 // les notifications « nouvel avis » de Google vers avis+<code>@lemotduchef.fr.
@@ -171,7 +173,8 @@ export async function ingestRawEmail(raw: string, log: Log): Promise<IngestResul
   const profile = await loadProfile(companyId);
   if (profile) {
     try {
-      await generateReplies(companyId, reviewId, profile, review, log as never);
+      await generateReplies(companyId, reviewId, profile, review, log as never,
+        { uiLang: marketConfig(await companyMarket(companyId)).lang as ReplyLang });
       const excerpt = parsed.body.slice(0, 90).replace(/\s+/g, ' ').trim();
       const sent = await notifyRepliesReady(companyId, { reviewId, rating: parsed.rating, author: parsed.author, excerpt }, log as never);
       log.info({ companyId, reviewId, rating: parsed.rating, pushed: sent }, 'ingest: avis + réponses prêtes');

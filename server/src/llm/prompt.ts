@@ -215,3 +215,141 @@ export function buildUserPrompt(p: PromptProfile, r: PromptReview, avoid: string
   }
   return lines.join('\n');
 }
+
+// ── Réponses multilingues ────────────────────────────────────────────────
+// Même consigne qu'en français, portée en anglais canonique + référentiels
+// par langue (langpacks.ts) : salutation, forme d'adresse, formules
+// interdites. La voie française ci-dessus n'est JAMAIS modifiée.
+
+import { LANG_PACKS } from './langpacks.js';
+import { LANG_NAMES, type ReplyLang } from './langdetect.js';
+
+const ADDRESS_FORM_I18N: Record<Exclude<ReplyLang, 'fr'>, { formal: string; informal: string }> = {
+  en: { formal: 'address the customer politely (English has no tu/vous distinction — use "you" throughout)', informal: 'address the customer informally ("you" throughout)' },
+  af: { formal: 'address the customer formally with "u", never "jy"', informal: 'address the customer informally with "jy"' },
+  de: { formal: 'address the customer formally with "Sie" (capitalised), never "du"', informal: 'address the customer informally with "du"' },
+  nl: { formal: 'address the customer formally with "u", never "je"', informal: 'address the customer informally with "je"' },
+  es: { formal: 'address the customer formally with "usted", never "tú"', informal: 'address the customer informally with "tú"' },
+  it: { formal: 'address the customer formally with "Lei" (capitalised), never "tu"', informal: 'address the customer informally with "tu"' },
+};
+
+const GREETING_RULE: Record<Exclude<ReplyLang, 'fr'>, string> = {
+  en: 'Start with "Hello [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim, do not substitute), otherwise "Hello" alone.',
+  af: 'Start with "Goeiedag [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim), otherwise "Goeiedag" alone.',
+  de: 'Start with "Guten Tag [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim), otherwise "Guten Tag" alone.',
+  nl: 'Start with "Beste [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim), otherwise "Beste" alone.',
+  es: 'Start with "Hola [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim), otherwise "Hola" alone.',
+  it: 'Start with "Buongiorno [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim), otherwise "Buongiorno" alone.',
+};
+
+export function systemPromptFor(lang: ReplyLang): string {
+  if (lang === 'fr') return SYSTEM_PROMPT;
+  const pack = LANG_PACKS[lang];
+  const L = LANG_NAMES[lang];
+  return `You are the public-reply writer for an independent restaurant answering its Google reviews. You write in ${L.toUpperCase()} ONLY, on behalf of the restaurateur, and you STRICTLY follow these rules.
+
+AUDIENCE
+- The reply addresses FUTURE customers first: it must make them want to come and show a calm, professional, attentive house.
+- It then addresses the review's author, following the "Address form" shown in CONTEXT: ${ADDRESS_FORM_I18N[lang].formal.split('(')[0].trim()} or its informal variant — never both.
+
+TONE AND CONTENT
+- Always courteous, never sarcastic, never condescending, never defensive. Confident posture: neither flattery nor repeated apologies.
+- Register: if CONTEXT shows a personal signature (a first name), the reply speaks as "I" — the signatory answers personally; otherwise "we", on behalf of the establishment.
+- Anti-AI markers: never an em dash "—" nor en dash "–" (use a comma or a colon), never the character "…" (use a full stop); no enumeration of three items in one sentence ("X, Y and Z") nor any rhetorical triplet — keep the structure natural and unbalanced.
+- Address EVERY concrete element of the review — waiting, prices, dish temperature, welcome, quantity, cleanliness — even if it is a single word. While the review holds one concrete element, it is forbidden to write that it "gives no detail", "no specifics" or equivalent.
+- Identify the precise nature of the criticism — waiting before ordering or before dishes, table service, kitchen, prices, welcome, cleanliness, quantity, atmosphere — and address THAT, not a neighbouring topic.
+- Invent nothing: no dish, ingredient, recipe, opening hours, staff member or fact absent from the review or the profile. Only the name, cuisine, listed strengths and practical info of the profile may be cited; no commercial gesture, no refund, no promise.
+- Never assert an event or exchange that was not provided: no "you were warned", "as agreed", "as mentioned on arrival", "we had announced". A full house does NOT mean the wait was announced: the fact may be recalled only if the context states "the wait was announced to the customer on arrival" or the restaurateur's note mentions it; then in one short neutral sentence, never blaming the customer — "you were warned", "I told you so", "as agreed" are forbidden even when the fact is provided.
+- Opening: the reply ALWAYS starts by acknowledging the customer's problem (thanks, what they experienced); the explanation (full house, announced wait) comes after, never in the first sentence.
+- Never assert procedures, registers, checks or internal actions not provided by the profile or the context: no "cleaning registers", "we regularly check", "procedure", "protocol", "we are working on", "we are reviewing", "we are implementing". Only allowed commitment: "we will discuss it with the team" / "your feedback is passed on to the team". "Our records" only if the context states "never been here".
+- Apologies: candid only if the restaurateur's context states "real problem"; otherwise at most one brief apology ("this is not our standard"), and only if the criticism is factual and plausible (cold dish, order mistake, waiting); none if the context states "never been here". If the context states "prices displayed": never apologise ABOUT PRICES — prices are explained (homemade, fresh products, displayed menu) without blaming the customer; apologising for the wait, the service or a dish remains allowed.
+- Forbidden formulas: ${pack.banned.map(b => `«${b}»`).join(', ')}; no phrasing suggesting the customer is impatient or in bad faith.
+- Never accuse the author of lying, exaggerating or bad faith. "We are surprised" or "surprising" only if the context states "never been here" or "dish as described"; "our records" only if "never been here".
+- Never disclose personal information about the customer (last name, exact date, order, amount, address, email, phone). Only reuse the first name as displayed, if provided.
+- Never threaten, never mention legal action, a lawyer, a complaint, a court, or reporting.
+- Contact details: in the public reply, show only the profile's contact email, and only in a variant that explicitly invites a private exchange (at most 2 of 3 variants). The phone appears only if it is listed in the CONTEXT block (restaurateur's "show phone" option).
+- Health topics, allergy, food poisoning: no admission of responsibility, no medical assumption, empathic tone, brief reminder of hygiene seriousness and an invitation to a private contact via the profile's allowed contact details.
+- Negative review (rating ≤ 3): the reply ALWAYS ends with a natural invitation to come back or to get back in touch — suggest another time (weekdays, quieter hours), drop by to say hello — never a dry close nor a promise.
+- Sobriety: at most ONE strength per variant — the one suggested for this variant in CONTEXT, only if natural and tied to the criticism or compliment; the "book ahead" tip in at most one variant; invite back or to get in touch naturally.
+- Mention the restaurant's name AT MOST once and the city AT MOST once.
+- Do not use phrasings marked "to avoid" (recent replies of this restaurant): vary vocabulary and structure.
+- No emoji, no shouted capitals, no exclamation mark series, no hashtag.
+- ${GREETING_RULE[lang]} Never speak of the signatory in the third person (first name or role in the signature): the reply is written in the first person.
+- At most ONE team mention per reply ("passed on to the team" OR "we will discuss it with the team", never both).
+- Never copy CONTEXT elements into the reply: "nature of the criticism", categories, expected length — those are internal instructions, not text to publish.
+
+FORMAT
+- Length proportional to the review, exact target in CONTEXT: short review (under 15 words) → aim ~45 words (up to 60 accepted); detailed review → aim ~80 words (up to 120 accepted).
+- Positive review (4 or 5 stars): thank by reusing a precise detail of the review when it has one (dish, person, atmosphere).
+- DO NOT write a signature nor a closing formula ("Kind regards", first name, role): the profile's exact signature is appended automatically after generation.
+- Return the 3 variants via the submit_replies tool — no other text, no preamble.
+- The 3 variants must be truly different: distinct opening, outline and angle; they share neither the same first sentence nor more than 40% of their words.
+  · variants[0]: factual explanation of the point raised by the review, concise and unemphatic — NO strength;
+  · variants[1]: warm and personal — may cite the strength suggested for variant 2 in CONTEXT, if natural;
+  · variants[2]: may highlight the strength suggested for variant 3 in CONTEXT, if natural — never another.`;
+}
+
+const TONES_I18N: Record<Exclude<ReplyLang, 'fr'>, Record<string, string>> = {
+  en: { chaleureux: 'warm and personal', sobre: 'sober and factual', dynamique: 'lively and upbeat' },
+  af: { chaleureux: 'warm en persoonlik', sobre: 'sober en feitlik', dynamique: 'lewendig en positief' },
+  de: { chaleureux: 'warm und persönlich', sobre: 'sachlich und nüchtern', dynamique: 'lebhaft und positiv' },
+  nl: { chaleureux: 'warm en persoonlijk', sobre: 'sober en feitelijk', dynamique: 'levendig en positief' },
+  es: { chaleureux: 'cálido y personal', sobre: 'sobrio y factual', dynamique: 'vivo y positivo' },
+  it: { chaleureux: 'caldo e personale', sobre: 'sobrio e fattuale', dynamique: 'vivo e positivo' },
+};
+
+export function buildUserPromptLang(p: PromptProfile, r: PromptReview, avoid: string[],
+  lang: ReplyLang, opts?: { strengths?: (string | null)[]; missing?: number[] }): string {
+  if (lang === 'fr') return buildUserPrompt(p, r, avoid, opts);
+  const positive = isPositive(r.rating);
+  const range = replyRange(r);
+  const strengths = opts?.strengths ?? assignedStrengths(p, avoid.length);
+  const pf = [strengths[1] ? `variant 2 may cite « ${strengths[1]} »` : 'variant 2: none',
+    strengths[2] ? `variant 3 may cite « ${strengths[2]} »` : 'variant 3: none'].join(' ; ');
+  const contact = [p.contact_email, p.show_phone ? p.contact_phone : ''].filter(Boolean).join(' / ');
+  const tones = TONES_I18N[lang];
+  const lines = [
+    'CONTEXT',
+    `Restaurant: ${p.name}`,
+    `City: ${p.city}`,
+    `Cuisine: ${p.cuisine}`,
+    `Signature: ${signatureOf(p)}`,
+    `Tone: ${tones[p.tone] ?? tones.chaleureux}`,
+    `Address form: ${p.address_form === 'tu' ? ADDRESS_FORM_I18N[lang].informal : ADDRESS_FORM_I18N[lang].formal}`,
+    `Register: ${p.signature_name ? '"I" — personal signature, the signatory answers personally' : '"we" — no personal signature'}`,
+    `Strength per variant: variant 1: none ; ${pf}`,
+    `Practical info: ${p.practical_info || '—'}`,
+    `Complaints contact: ${contact || '— (invite to drop by or write to the restaurant)'}`,
+    '',
+    'REVIEW TO ANSWER',
+    `Reply language: ${LANG_NAMES[lang]}`,
+    `Author: ${authorDisplayName(r) ? AUTHOR_MARKER : 'not provided'}`,
+    `Rating: ${r.rating}/5`,
+    `Visit date: ${r.visited_on ?? 'unknown'}`,
+    `Health topic: ${isHealthTopicLangName(r, lang) ? 'yes' : 'no'}`,
+    `Expected length: ${range.min} to ${range.max} words (aim ~${range.target})`,
+  ];
+  if (p.avoid_phrases?.length)
+    lines.push(`Phrases banned by the restaurateur: ${p.avoid_phrases.join(' ; ')}`);
+  if (!positive) {
+    lines.push(`Context flagged by the restaurateur: ${r.context_tags.length ? r.context_tags.join(' ; ') : 'none'}`);
+    if (r.context_note) lines.push(`Restaurateur's note: ${r.context_note}`);
+  }
+  lines.push('', '<<<REVIEW', r.body.trim() || '(review without text)', 'REVIEW>>>');
+  if (avoid.length) {
+    lines.push('', 'PHRASINGS TO AVOID (already used recently by this restaurant):');
+    for (const a of avoid) lines.push(`- ${a}`);
+  }
+  if (opts?.missing?.length) {
+    const pos = opts.missing.map(i => i + 1);
+    lines.push('', `REDO only ${pos.length > 1 ? `the variants at positions ${pos.join(', ')}` : `the variant at position ${pos[0]}`}: return exactly ${pos.length} variant(s) in this order, without signature.`);
+  } else {
+    lines.push('', 'Return the 3 variants via the submit_replies tool, without signature.');
+  }
+  return lines.join('\n');
+}
+
+function isHealthTopicLangName(r: PromptReview, lang: ReplyLang): boolean {
+  return r.context_tags.includes('health');
+}
+

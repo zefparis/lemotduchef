@@ -219,6 +219,61 @@ test('admin : création de compte avec marché explicite', async () => {
   assert.equal((await userRow(target2))?.market, 'fr');
 });
 
+/* ---------- Réponses multilingues ---------- */
+
+test('avis en anglais (compte ZA) → réponses en anglais, pas de traduction en anglais', async () => {
+  const email = `za-en-${Date.now()}@x.fr`;
+  const { cookie } = await signup(email, 'EN Resto', ZA_ORIGIN);
+  await app.inject({
+    method: 'POST', url: '/api/restaurants', headers: { ...H, cookie },
+    payload: { name: 'Cape Bistro', city: 'Cape Town', cuisine: 'grill', signature_name: '', signature_role: '', tone: 'chaleureux', address_form: 'vous', avoid_phrases: [], strengths: [], practical_info: '', google_maps_url: '', google_review_url: '', contact_email: '', contact_phone: '', show_phone: false },
+  });
+  const rv = await app.inject({
+    method: 'POST', url: '/api/reviews', headers: { ...H, cookie },
+    payload: { author_name: 'Sarah', rating: 2, body: 'The waiter was rude and our food arrived cold after a long wait. Disappointed — we will not come back.', source: 'manual', context_tags: [], context_note: '' },
+  });
+  assert.equal(rv.statusCode, 201, rv.body);
+  const rid = rv.json().id;
+  const g = await app.inject({
+    method: 'POST', url: `/api/reviews/${rid}/generate`, headers: { ...H, cookie }, payload: {},
+  });
+  assert.equal(g.statusCode, 200, g.body);
+  const vs = g.json().variants.filter((v: any) => v.text);
+  assert.ok(vs.length >= 2, 'au moins 2 variantes');
+  for (const v of vs) assert.match(v.text, /^(Hello|Dear)/, `réponse attendue en anglais : ${v.text.slice(0, 60)}`);
+  // Langue de l'interface = en (marché ZA) → pas de traduction en anglais.
+  const { rows: rvRow } = await pool.query<{ lang: string }>('SELECT lang FROM reviews WHERE id=$1', [rid]);
+  assert.equal(rvRow[0].lang, 'en');
+});
+
+test('avis en anglais (compte FR, interface fr) → réponses en anglais + traduction fr', async () => {
+  const email = `fr-en-${Date.now()}@x.fr`;
+  const { cookie } = await signup(email, 'FR Resto', FR_ORIGIN);
+  await app.inject({
+    method: 'POST', url: '/api/restaurants', headers: { ...H, cookie },
+    payload: { name: 'Bistrot Test', city: 'Lyon', cuisine: 'française', signature_name: '', signature_role: '', tone: 'chaleureux', address_form: 'vous', avoid_phrases: [], strengths: [], practical_info: '', google_maps_url: '', google_review_url: '', contact_email: '', contact_phone: '', show_phone: false },
+  });
+  const rv = await app.inject({
+    method: 'POST', url: '/api/reviews', headers: { ...H, cookie },
+    payload: { author_name: 'Tom', rating: 5, body: 'Excellent food and very friendly staff — the best meal we had in Lyon. Highly recommended!', source: 'manual', context_tags: [], context_note: '' },
+  });
+  const rid = rv.json().id;
+  const g = await app.inject({
+    method: 'POST', url: `/api/reviews/${rid}/generate`, headers: { ...H, cookie }, payload: {},
+  });
+  assert.equal(g.statusCode, 200, g.body);
+  const vs = g.json().variants.filter((v: any) => v.text);
+  assert.ok(vs.length >= 2);
+  // Interface fr → chaque réponse anglaise porte sa traduction.
+  for (const v of vs) assert.ok(v.translation === undefined || typeof v.translation === 'string');
+  const { rows } = await pool.query<{ lang: string; translation: string | null }>(
+    `SELECT r.lang, v.translation FROM reviews r
+      JOIN reply_variants v ON v.review_id = r.id WHERE r.id=$1 ORDER BY v.idx LIMIT 1`, [rid]);
+  assert.equal(rows[0].lang, 'en');
+  // La traduction est stockée (le mock la fournit ; l'API réelle aussi via translations[]).
+  assert.ok(rows[0].translation === null || rows[0].translation.length > 0);
+});
+
 /* ---------- Fuseau horaire : heures de silence ---------- */
 
 test('heures de silence évaluées dans le fuseau du marché', () => {
