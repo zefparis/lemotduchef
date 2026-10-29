@@ -92,7 +92,7 @@ function setErr(el, msg) { el.hidden = !msg; el.textContent = msg || ''; }
 /* ---------- Dialogue de confirmation ---------- */
 let confirmResolve = null;
 const confirmDlg = $('#confirm');
-function askConfirm(title, text, okLabel = 'Confirmer') {
+function askConfirm(title, text, okLabel = t('msg.confirm')) {
   $('#confirm-title').textContent = title;
   $('#confirm-text').textContent = text;
   $('#confirm-ok').textContent = okLabel;
@@ -196,13 +196,13 @@ async function logout() {
   try { await api('/auth/sign-out', { method: 'POST', body: {} }); } catch { /* déjà close */ }
   session = null; mode = 'landing'; profile = null; usage = null; currentReview = null;
   show('landing');
-  toast('Vous êtes déconnecté.', 'info');
+  toast(t('msg.logout'), 'info');
 }
 $('#logout').onclick = logout;
 $('#menu-logout').onclick = () => { hideMenu(); logout(); };
 $('#menu-admin').onclick = () => { hideMenu(); enterAdmin(); };
 $('#ingest-copy').onclick = async () => {
-  try { await navigator.clipboard.writeText($('#ingest-address').value); toast('Adresse copiée — collez-la dans votre règle de transfert.'); }
+  try { await navigator.clipboard.writeText($('#ingest-address').value); toast(t('msg.addr_copied')); }
   catch { $('#ingest-address').select(); }
 };
 $('#admin-back').onclick = () => { history.replaceState(null, '', '/'); enterLive(); };
@@ -212,11 +212,11 @@ function hideMenu() { menuPop.hidden = true; $('#top-avatar').setAttribute('aria
 $('#top-avatar').onclick = e => { e.stopPropagation(); menuPop.hidden = !menuPop.hidden; $('#top-avatar').setAttribute('aria-expanded', String(!menuPop.hidden)); };
 document.addEventListener('click', e => { if (!e.target.closest('.user-menu')) hideMenu(); });
 
-const tabNames = { reply: 'Répondre à un avis', history: 'Historique', collect: "Collecte d'avis", restaurant: 'Mon restaurant', account: 'Compte' };
+const tabNames = () => ({ reply: t('nav.reviews'), history: t('nav.history'), collect: t('nav.collect'), restaurant: t('nav.restaurant'), account: t('nav.account') });
 function tab(id) {
   $$('.tab').forEach(el => { el.hidden = el.id !== id; });
   $$('.nav-item[data-tab], .mobile-item[data-tab], .user-menu-item[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === id));
-  $('#breadcrumb').textContent = tabNames[id];
+  $('#breadcrumb').textContent = tabNames()[id];
   if (id === 'account') loadAccount();
   if (id === 'restaurant') { loadBilling(); fillProfileForm($('#restaurant-form'), profile); }
   if (id === 'history') loadHistory();
@@ -225,15 +225,26 @@ function tab(id) {
 }
 
 /* ---------- Pages légales (publiques) ---------- */
-const LEGAL_PATHS = { '/mentions-legales': 'legal-mentions', '/cgv': 'legal-cgv', '/confidentialite': 'legal-privacy' };
+const LEGAL_PATHS = { '/mentions-legales': 'legal-mentions', '/cgv': 'legal-cgv', '/confidentialite': 'legal-privacy',
+  '/legal-notice': 'legal-mentions-za', '/terms': 'legal-cgv-za', '/privacy': 'legal-privacy-za' };
+// Liens légaux du pied de page : routes propres au marché (ZA → /legal-notice…).
+function applyLegalRoutes() {
+  const routes = MARKET.legalRoutes || {};
+  const map = { 'footer.legal.mentions': routes.mentions, 'footer.legal.cgv': routes.cgv, 'footer.legal.privacy': routes.privacy };
+  $$('a[data-i18n]').forEach(el => { const r = map[el.dataset.i18n]; if (r) el.href = r; });
+}
 function showLegal(path) {
   const article = LEGAL_PATHS[path];
   if (!article) return false;
   show('legal');
   for (const id of Object.values(LEGAL_PATHS)) $('#' + id).hidden = id !== article;
   $$('.legal-nav a').forEach(a => a.classList.toggle('active', a.getAttribute('href') === path));
+  // Société éditrice du marché sur les pages ZA (contenu fourni plus tard).
+  $$('[data-legal-za]').forEach(el => { el.textContent = (MARKET.company || {})[el.dataset.legalZa] || '—'; });
   if (location.pathname !== path) history.pushState(null, '', path);
-  document.title = 'Le Mot du Chef — ' + ({ '/mentions-legales': 'Mentions légales', '/cgv': 'CGV', '/confidentialite': 'Confidentialité' })[path];
+  const titles = { '/mentions-legales': 'Mentions légales', '/cgv': 'CGV', '/confidentialite': 'Confidentialité',
+    '/legal-notice': 'Legal notice', '/terms': 'Terms', '/privacy': 'Privacy' };
+  document.title = 'Le Mot du Chef — ' + (titles[path] || '');
   return true;
 }
 function fillLegal() {
@@ -287,11 +298,11 @@ $('#login-form').onsubmit = async e => {
   } catch (err2) {
     err.hidden = false;
     if (err2.status === 403 || /vérifi|verif/i.test(err2.message || '')) {
-      err.textContent = 'Email non confirmé. Cliquez sur le lien reçu par email, ou ';
+      err.textContent = t('msg.email_unconfirmed');
       const a = document.createElement('button');
       a.className = 'btn btn-quiet btn-sm'; a.type = 'button'; a.textContent = 'renvoyez-le';
       a.onclick = async () => {
-        try { await api('/auth/send-verification-email', { method: 'POST', body: { email, callbackURL: location.origin + '/?verifie=1' } }); toast('Email de confirmation renvoyé.', 'info'); }
+        try { await api('/auth/send-verification-email', { method: 'POST', body: { email, callbackURL: location.origin + '/?verifie=1' } }); toast(t('msg.verify_resent'), 'info'); }
         catch (e3) { toast(e3.message, 'error'); }
       };
       err.appendChild(a);
@@ -305,8 +316,8 @@ $('#signup-form').onsubmit = async e => {
   err.hidden = true;
   const payload = { name: f.elements.name.value.trim(), email: f.elements.email.value.trim(), password: f.elements.password.value, cgvAccepted: true, cgvVersion };
   const cgvErr = $('#err-cgv'); cgvErr.hidden = true;
-  if (!$('#s-cgv').checked) { setErr(cgvErr, 'Acceptez les CGV pour créer votre compte.'); unbusy(); return; }
-  if (payload.password.length < 12) { setErr(err, 'Mot de passe : 12 caractères minimum.'); unbusy(); return; }
+  if (!$('#s-cgv').checked) { setErr(cgvErr, t('msg.cgv_required')); unbusy(); return; }
+  if (payload.password.length < 12) { setErr(err, t('msg.pw_min')); unbusy(); return; }
   try {
     await api('/auth/sign-up/email', { method: 'POST', body: payload });
     sessionStorage.setItem('lmc-pending-restaurant', f.elements.company.value.trim());
@@ -314,7 +325,7 @@ $('#signup-form').onsubmit = async e => {
     f.reset();
     showAuthForm('verify-note');
   } catch (err2) {
-    setErr(err, err2.status === 422 ? 'Cet email est déjà utilisé.' : (err2.message || 'Inscription impossible.'));
+    setErr(err, err2.status === 422 ? t('msg.email_used') : (err2.message || t('msg.signup_fail')));
   } finally { unbusy(); }
 };
 
@@ -324,9 +335,9 @@ $('#forgot-form').onsubmit = async e => {
   err.hidden = ok.hidden = true;
   try {
     await api('/auth/request-password-reset', { method: 'POST', body: { email: f.elements.email.value.trim(), redirectTo: location.origin + '/reinitialiser' } });
-    ok.hidden = false; ok.textContent = 'Si un compte correspond à cet email, un lien de réinitialisation vient de partir (valable 1 h).';
+    ok.hidden = false; ok.textContent = t('msg.forgot_sent');
     f.reset();
-  } catch (err2) { setErr(err, err2.message || 'Demande impossible.'); }
+  } catch (err2) { setErr(err, err2.message || t('msg.request_fail')); }
   finally { unbusy(); }
 };
 
@@ -336,14 +347,14 @@ $('#reset-form').onsubmit = async e => {
   err.hidden = true;
   const p1 = f.elements.password.value, p2 = f.elements.password2.value;
   if (p1.length < 12) { setErr(err, 'Mot de passe : 12 caractères minimum.'); unbusy(); return; }
-  if (p1 !== p2) { setErr(err, 'Les deux mots de passe ne correspondent pas.'); unbusy(); return; }
+  if (p1 !== p2) { setErr(err, t('msg.pw_mismatch')); unbusy(); return; }
   const token = new URLSearchParams(location.search).get('token') || '';
   try {
     await api('/auth/reset-password', { method: 'POST', body: { newPassword: p1, token } });
     history.replaceState(null, '', '/');
     f.reset(); $('#tab-login').click();
-    toast('Mot de passe mis à jour. Connectez-vous.', 'success');
-  } catch { setErr(err, 'Lien expiré ou déjà utilisé. Redemandez un lien de réinitialisation.'); }
+    toast(t('msg.pw_updated'), 'success');
+  } catch { setErr(err, t('msg.reset_expired')); }
   finally { unbusy(); }
 };
 
@@ -396,14 +407,14 @@ $('#onboard-form').onsubmit = async e => {
   const f = e.target, unbusy = busy($('#onboard-btn')), err = $('#err-onboard');
   err.hidden = true;
   const p = readProfileForm(f);
-  if (!p.name) { setErr(err, 'Indiquez le nom de votre restaurant.'); unbusy(); return; }
+  if (!p.name) { setErr(err, t('msg.resto_name_required')); unbusy(); return; }
   try {
     const r = await api('/restaurants', { method: 'POST', body: p });
     session.restaurant = r;
     sessionStorage.removeItem('lmc-pending-restaurant');
     mode = 'live';
     await enterLive();
-    toast('Votre espace est prêt. Collez votre premier avis !');
+    toast(t('msg.space_ready'));
   } catch (err2) { setErr(err, err2.message); }
   finally { unbusy(); }
 };
@@ -417,7 +428,7 @@ $('#restaurant-form').onsubmit = async e => {
   try {
     await api('/restaurant', { method: 'PATCH', body: p });
     await refresh(); render();
-    toast('Profil enregistré.');
+    toast(t('msg.profile_saved'));
   } catch (err2) { setErr(err, err2.message); }
   finally { unbusy(); }
 };
@@ -502,8 +513,8 @@ form.onsubmit = async e => {
   const unbusy = busy($('#generate-btn')), err = $('#err-review');
   err.hidden = true; $('#plan-limit-note').hidden = true;
   const r = readReviewForm();
-  if (!r.rating) { setErr(err, 'Choisissez la note de l’avis.'); unbusy(); return; }
-  if (!profile?.signature_name && !profile?.name) { setErr(err, 'Complétez d’abord le profil de votre restaurant.'); unbusy(); return; }
+  if (!r.rating) { setErr(err, t('msg.rating_required')); unbusy(); return; }
+  if (!profile?.signature_name && !profile?.name) { setErr(err, t('msg.profile_required')); unbusy(); return; }
   $('#generate-btn').innerHTML = icon('i-sparkle') + 'Rédaction en cours…';
   try {
     let id = form.elements.id.value;
@@ -522,7 +533,7 @@ form.onsubmit = async e => {
   } catch (err2) {
     $('#generate-btn').innerHTML = icon('i-sparkle') + 'Rédiger 3 réponses';
     if (err2.code === 'PLAN_LIMIT') { $('#plan-limit-text').textContent = err2.message; $('#plan-limit-note').hidden = false; }
-    else setErr(err, err2.message || 'Génération impossible.');
+    else setErr(err, err2.message || t('msg.gen_fail'));
     if (form.elements.id.value) $('#reply-new').hidden = false;
   } finally { unbusy(); }
 };
@@ -540,8 +551,8 @@ function renderSuspicion(report) {
   $('#report-help').href = report.helpUrl;
 }
 $('#report-copy').onclick = async () => {
-  try { await navigator.clipboard.writeText($('#report-text').value); toast('Texte de signalement copié.'); }
-  catch { $('#report-text').select(); toast('Sélectionnez puis copiez le texte.', 'info'); }
+  try { await navigator.clipboard.writeText($('#report-text').value); toast(t('msg.report_copied')); }
+  catch { $('#report-text').select(); toast(t('msg.select_copy'), 'info'); }
 };
 
 function renderVariants(g) {
@@ -591,7 +602,7 @@ $('#variants').addEventListener('input', e => {
 
 async function copyVariant(i) {
   const text = $$('#variants [data-variant]')[i].value;
-  try { await navigator.clipboard.writeText(text); toast('Réponse copiée. Collez-la sur votre fiche Google.'); }
+  try { await navigator.clipboard.writeText(text); toast(t('msg.reply_copied')); }
   catch { $$('#variants [data-variant]')[i].select(); toast('Sélectionnez puis copiez la réponse.', 'info'); }
 }
 async function publishVariant(i, btn) {
@@ -611,15 +622,15 @@ async function publishVariant(i, btn) {
     $('#gate-cancel').onclick = () => { clearInterval(tick); resolve(true); };
   });
   gate.hidden = true;
-  if (cancelled) { toast('Publication annulée — rien n’a été enregistré.', 'info'); return; }
+  if (cancelled) { toast(t('msg.publish_cancelled'), 'info'); return; }
   const unbusy = busy(btn);
   try {
     await api(`/reviews/${currentReview.id}/publish`, { method: 'POST', body: { text } });
     $$('#variants [data-publish]').forEach(b => { b.innerHTML = icon('i-check') + 'Marquer comme publiée'; b.classList.remove('is-published'); });
     btn.innerHTML = icon('i-check') + 'Publiée sur Google'; btn.classList.add('is-published');
     const note = $('#published-note');
-    note.hidden = false; note.textContent = 'Réponse copiée et marquée comme publiée — collez-la sur votre fiche Google. Retrouvez-la dans l’historique.';
-    toast('Réponse marquée comme publiée.');
+    note.hidden = false; note.textContent = t('msg.published_note');
+    toast(t('msg.marked_published'));
   } catch (err) { toast(err.message, 'error'); }
   finally { unbusy(); }
 }
@@ -681,7 +692,7 @@ async function reopenReview(id) {
       renderVariants({ variants: latest, usage: {}, rejected: [] });
       if (review.published_reply) {
         const note = $('#published-note');
-        note.hidden = false; note.textContent = 'Une réponse a déjà été marquée comme publiée pour cet avis.';
+        note.hidden = false; note.textContent = t('msg.already_published');
       }
     }
     $('#generate-btn').innerHTML = icon('i-sparkle') + (variants.length ? 'Rédiger à nouveau' : 'Rédiger 3 réponses');
@@ -730,7 +741,7 @@ $('#review-url-form').onsubmit = async e => {
     await api('/restaurant', { method: 'PATCH', body: { ...profile, google_review_url: f.elements.google_review_url.value.trim() } });
     await refresh();
     await loadCollect();
-    toast('Lien enregistré.');
+    toast(t('msg.link_saved'));
   } catch (err2) { setErr(err, err2.message); }
   finally { unbusy(); }
 };
@@ -740,7 +751,7 @@ $('#collect-form').onsubmit = async e => {
   err.hidden = true;
   try {
     await api('/collect', { method: 'PATCH', body: { title: f.elements.title.value.trim(), message: f.elements.message.value.trim() } });
-    toast('Texte enregistré.');
+    toast(t('msg.text_saved'));
   } catch (err2) { setErr(err, err2.message); }
   finally { unbusy(); }
 };
@@ -748,7 +759,7 @@ async function downloadPdf(kind, btn) {
   const unbusy = busy(btn);
   try {
     downloadBlob(await apiBlob(`/collect/${kind}.pdf`), `lemotduchef-${kind}.pdf`);
-    toast('PDF téléchargé.');
+    toast(t('msg.pdf_downloaded'));
   } catch (e) {
     if (e.code === 'PLAN_LIMIT') { $('#pdf-pro-note').hidden = false; }
     toast(e.message, 'error');
@@ -790,7 +801,7 @@ async function deleteReview(id) {
     await api(`/reviews/${id}`, { method: 'DELETE' });
     if (currentReview?.id === id) resetReply();
     loadHistory();
-    toast('Avis supprimé.', 'info');
+    toast(t('msg.review_deleted'), 'info');
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -842,7 +853,7 @@ async function billingPortal(btn) {
 function showCgvBanner() { $('#cgv-version-label').textContent = cgvVersion; $('#cgv-banner').hidden = false; }
 $('#cgv-accept').onclick = async e => {
   const unbusy = busy(e.target);
-  try { await api('/legal/accept', { method: 'POST', body: { version: cgvVersion } }); $('#cgv-banner').hidden = true; session.cgv_current = true; toast('CGV acceptées, merci.'); }
+  try { await api('/legal/accept', { method: 'POST', body: { version: cgvVersion } }); $('#cgv-banner').hidden = true; session.cgv_current = true; toast(t('msg.cgv_accepted')); }
   catch (err) { toast(err.message, 'error'); }
   finally { unbusy(); }
 };
@@ -890,12 +901,12 @@ function renderSessions(list) {
 }
 async function revokeSession(token) {
   if (!await askConfirm('Révoquer cette session ?', 'L\'appareil correspondant sera déconnecté immédiatement.', 'Révoquer')) return;
-  try { await api('/auth/revoke-session', { method: 'POST', body: { token } }); renderSessions(await api('/auth/list-sessions')); toast('Session révoquée.', 'info'); }
+  try { await api('/auth/revoke-session', { method: 'POST', body: { token } }); renderSessions(await api('/auth/list-sessions')); toast(t('msg.session_revoked'), 'info'); }
   catch (err) { toast(err.message, 'error'); }
 }
 $('#revoke-others').onclick = async () => {
   if (!await askConfirm('Déconnecter les autres appareils ?', 'Toutes les sessions sauf celle-ci seront révoquées.', 'Tout déconnecter')) return;
-  try { await api('/auth/revoke-other-sessions', { method: 'POST', body: {} }); renderSessions(await api('/auth/list-sessions')); toast('Autres sessions révoquées.', 'info'); }
+  try { await api('/auth/revoke-other-sessions', { method: 'POST', body: {} }); renderSessions(await api('/auth/list-sessions')); toast(t('msg.sessions_revoked'), 'info'); }
   catch (err) { toast(err.message, 'error'); }
 };
 $('#profile-form').onsubmit = async e => {
@@ -903,13 +914,13 @@ $('#profile-form').onsubmit = async e => {
   const f = e.target, unbusy = busy($('#profile-btn')), errN = $('#err-pname'), errE = $('#err-pemail');
   errN.hidden = errE.hidden = true;
   const name = f.elements.name.value.trim(), newEmail = f.elements.newemail.value.trim();
-  if (!name) { setErr(errN, 'Indiquez votre nom.'); unbusy(); return; }
+  if (!name) { setErr(errN, t('msg.name_required')); unbusy(); return; }
   try {
     await api('/profile', { method: 'PATCH', body: { name } });
     if (newEmail) {
       await api('/auth/change-email', { method: 'POST', body: { newEmail, callbackURL: location.origin + '/?verifie=1' } });
       f.elements.newemail.value = '';
-      toast('Nom enregistré. Confirmez la nouvelle adresse via l\'email reçu.', 'info');
+      toast(t('msg.name_saved_confirm'), 'info');
     } else { session.user.name = name; toast('Profil enregistré.'); }
     render();
   } catch (err) {
@@ -921,16 +932,16 @@ $('#password-form').onsubmit = async e => {
   e.preventDefault();
   const f = e.target, unbusy = busy($('#password-btn')), err = $('#err-password');
   err.hidden = true;
-  if (f.elements.next.value.length < 12) { setErr(err, 'Nouveau mot de passe : 12 caractères minimum.'); unbusy(); return; }
+  if (f.elements.next.value.length < 12) { setErr(err, t('msg.pw_new_min')); unbusy(); return; }
   try {
     await api('/auth/change-password', { method: 'POST', body: { currentPassword: f.elements.current.value, newPassword: f.elements.next.value, revokeOtherSessions: true } });
     f.reset(); renderSessions(await api('/auth/list-sessions'));
-    toast('Mot de passe changé. Les autres appareils ont été déconnectés.');
-  } catch (err2) { setErr(err, /invalid|password|credential/i.test(err2.message || '') ? 'Mot de passe actuel incorrect.' : (err2.message || 'Changement impossible.')); }
+    toast(t('msg.pw_changed'));
+  } catch (err2) { setErr(err, /invalid|password|credential/i.test(err2.message || '') ? t('msg.pw_wrong') : (err2.message || t('msg.change_fail'))); }
   finally { unbusy(); }
 };
 $('#export-data').onclick = async () => {
-  try { downloadBlob(await apiBlob('/export-data'), `lemotduchef-export-${new Date().toISOString().slice(0, 10)}.json`); toast('Export JSON téléchargé.'); }
+  try { downloadBlob(await apiBlob('/export-data'), `lemotduchef-export-${new Date().toISOString().slice(0, 10)}.json`); toast(t('msg.export_done')); }
   catch (err) { toast(err.message, 'error'); }
 };
 $('#delete-account').onclick = () => { $('#del-password').value = ''; $('#err-delete-account').hidden = true; $('#delete-account-dlg').showModal(); };
@@ -942,8 +953,8 @@ $('#delete-account-confirm').onclick = async () => {
     $('#delete-account-dlg').close();
     session = null; mode = 'landing'; profile = null; usage = null;
     show('landing');
-    toast('Compte supprimé. Vos données ont été effacées.', 'info');
-  } catch { setErr(err, 'Mot de passe incorrect, ou session trop ancienne — reconnectez-vous puis réessayez.'); }
+    toast(t('msg.account_deleted'), 'info');
+  } catch { setErr(err, t('msg.delete_fail')); }
   finally { unbusy(); }
 };
 
@@ -1015,8 +1026,8 @@ $('#admin-invite-form').onsubmit = async e => {
   err.hidden = true;
   try {
     await adminApi('/accounts', { method: 'POST', body: { email: f.elements.email.value.trim(), name: f.elements.name.value.trim() } });
-    f.reset(); toast('Compte créé. Email d\'invitation envoyé.'); loadAdminUsers();
-  } catch (err2) { setErr(err, err2.message || 'Création impossible.'); }
+    f.reset(); toast(t('msg.account_created')); loadAdminUsers();
+  } catch (err2) { setErr(err, err2.message || t('msg.create_fail')); }
   finally { unbusy(); }
 };
 async function loadAdminAudit() {
@@ -1053,10 +1064,10 @@ async function adminAction(act, id, email) {
 $('#admin-delete-confirm').onclick = async () => {
   const err = $('#err-admin-delete'), unbusy = busy($('#admin-delete-confirm'));
   err.hidden = true;
-  if ($('#admin-delete-confirm-email').value.trim().toLowerCase() !== adminDeleteTarget?.email?.toLowerCase()) { setErr(err, 'L\'email saisi ne correspond pas.'); unbusy(); return; }
+  if ($('#admin-delete-confirm-email').value.trim().toLowerCase() !== adminDeleteTarget?.email?.toLowerCase()) { setErr(err, t('msg.email_mismatch')); unbusy(); return; }
   try {
     await adminApi(`/users/${adminDeleteTarget.id}`, { method: 'DELETE' });
-    $('#admin-delete-dlg').close(); toast('Compte supprimé.', 'info');
+    $('#admin-delete-dlg').close(); toast(t('msg.account_deleted_short'), 'info');
     Promise.all([loadAdminUsers(), loadAdminAudit(), loadAdminStats()]).catch(() => {});
   } catch (err2) { setErr(err, err2.message || 'Suppression impossible.'); }
   finally { unbusy(); }
@@ -1076,6 +1087,7 @@ $('#admin-delete-confirm').onclick = async () => {
   } catch { signupEnabled = false; }
   mountLangSelector();
   applyI18n();
+  applyLegalRoutes();
   fillLegal(); fillConfig();
   $('#auth-tabs').hidden = !signupEnabled;
   $('#tab-signup').hidden = !signupEnabled;
@@ -1105,8 +1117,8 @@ $('#admin-delete-confirm').onclick = async () => {
         // Lien ouvert depuis une notification push : /?avis=<id>.
         const avisId = params.get('avis');
         if (avisId) { history.replaceState(null, '', '/'); reopenReview(avisId); }
-        if (billingResult === 'success') { history.replaceState(null, '', '/'); toast('Abonnement activé, merci !'); await refresh(); render(); }
-        else if (billingResult === 'cancel') { history.replaceState(null, '', '/'); toast('Souscription annulée — rien n\'a été débité.', 'info'); }
+        if (billingResult === 'success') { history.replaceState(null, '', '/'); toast(t('msg.sub_active')); await refresh(); render(); }
+        else if (billingResult === 'cancel') { history.replaceState(null, '', '/'); toast(t('msg.sub_cancelled'), 'info'); }
         return;
       }
       startOnboarding();
