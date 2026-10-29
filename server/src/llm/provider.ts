@@ -19,8 +19,6 @@ export interface LlmResult {
 export interface LlmProvider {
   readonly name: string;
   complete(req: LlmRequest, signal: AbortSignal): Promise<LlmResult>;
-  // Nombre de jetons d'un texte produit (contrôle du plafond art. 50).
-  countTokens(text: string): Promise<number>;
 }
 
 export class LlmError extends Error {
@@ -103,19 +101,6 @@ export class AnthropicProvider implements LlmProvider {
       stopReason: String(data?.stop_reason ?? ''),
     };
   }
-  // Endpoint count_tokens d'Anthropic (gratuit, ne produit rien) : la mesure
-  // exacte du plafond < 180 jetons par réponse, côté serveur.
-  async countTokens(text: string): Promise<number> {
-    if (!config.llm.anthropicApiKey) throw new LlmError('ANTHROPIC_API_KEY manquante.', 'config');
-    const res = await fetch('https://api.anthropic.com/v1/messages/count_tokens', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': config.llm.anthropicApiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: config.llm.model, messages: [{ role: 'user', content: text }] }),
-    });
-    if (!res.ok) throw new LlmError(`Comptage de jetons impossible (${res.status}).`, 'upstream');
-    const data: any = await res.json();
-    return Number(data?.input_tokens ?? 0);
-  }
 }
 
 /* ---------- Mock (dev / tests) ----------
@@ -127,11 +112,6 @@ export class MockProvider implements LlmProvider {
   async complete(req: LlmRequest): Promise<LlmResult> {
     const text = this.override ? this.override(req) : mockVariants(req.user);
     return { text, inputTokens: Math.ceil((req.system.length + req.user.length) / 4), outputTokens: Math.ceil(text.length / 4), model: 'mock', stopReason: 'end_turn' };
-  }
-  // Estimation hors-ligne calée sur le ratio mesuré en français (~2,5 jetons
-  // par mot, signature comprise) — dev/tests uniquement.
-  async countTokens(text: string): Promise<number> {
-    return Math.ceil((text.trim().match(/[\p{L}\p{N}’'-]+/gu) ?? []).length * 2.4);
   }
 }
 

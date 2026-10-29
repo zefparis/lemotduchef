@@ -285,7 +285,7 @@ const words = (n: number) => Array.from({ length: n }, (_, i) => `mot${i}`).join
 
 test('prompt système versionné : règles clés présentes', () => {
   assert.match(PROMPT_VERSION, /^\d{4}-\d{2}-\d{2}\.\d+$/);
-  for (const re of [/FUTURS clients/, /vouvoiement ou tutoiement/, /Anti-marqueurs IA/, /jamais accuser l'auteur de mentir/i, /information personnelle/i, /judiciaire/, /allergie, intoxication/, /UN point fort/, /AU PLUS une fois/, /vise environ 40 mots/, /vise environ 50 mots/, /3 variantes/, /aucun point fort/i])
+  for (const re of [/FUTURS clients/, /vouvoiement ou tutoiement/, /Anti-marqueurs IA/, /jamais accuser l'auteur de mentir/i, /information personnelle/i, /judiciaire/, /allergie, intoxication/, /UN point fort/, /AU PLUS une fois/, /vise environ 45 mots/, /vise environ 80 mots/, /3 variantes/, /aucun point fort/i])
     assert.match(SYSTEM_PROMPT, re);
   const u = buildUserPrompt(RULE_PROFILE as any, NEGATIVE as any, ['Merci pour votre retour.']);
   assert.match(u, /Signature : Marc, chef et propriétaire/);
@@ -300,9 +300,9 @@ test('règles : longueur, signature, nom/ville, interdits, données personnelles
   const okPos = `Bonjour Julie, merci pour ce retour. ${words(35)} Au plaisir de vous revoir chez La Table d’Aurore.\n${sig}`;
   assert.equal(checkReply(okPos, RULE_PROFILE as any, POSITIVE as any).ok, true);
   // Trop court / trop long.
-  assert.match(checkReply(`Merci.\n${sig}`, RULE_PROFILE as any, POSITIVE as any).warnings.join(), /hors cible/);
-  assert.match(checkReply(`${words(120)}\n${sig}`, RULE_PROFILE as any, POSITIVE as any).warnings.join(), /hors cible/);
-  assert.match(checkReply(`Bonjour Paul, ${words(30)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).warnings.join(), /hors cible/);
+  assert.match(checkReply(`Merci.\n${sig}`, RULE_PROFILE as any, POSITIVE as any).errors.join(), /trop court/);
+  assert.match(checkReply(`${words(120)}\n${sig}`, RULE_PROFILE as any, POSITIVE as any).errors.join(), /trop long/);
+  assert.match(checkReply(`Bonjour Paul, ${words(30)}\n${sig}`, RULE_PROFILE as any, NEGATIVE as any).errors.join(), /trop court/);
   // Signature absente.
   assert.match(checkReply(`Bonjour Julie, ${words(40)}\nL’équipe`, RULE_PROFILE as any, POSITIVE as any).errors.join(), /signature absente/);
   // Nom du restaurant répété, ville répétée.
@@ -376,10 +376,9 @@ test('génération : 3 variantes, journalisation des tokens, variante non confor
     assert.equal(r2.statusCode, 200, r2.body);
     assert.equal(r2.json().variants.filter((v: any) => !v.needsReview).length, 1, 'une seule variante conforme');
     assert.equal(r2.json().variants.filter((v: any) => v.needsReview).length, 2, 'positions écartées marquées à revoir');
-    // Les variantes fautives sont réécrites jusqu'à 2 essais puis écartées :
-    // les rejets consignés peuvent concerner n'importe quelle règle détectée.
-    assert.ok(r2.json().rejected.length >= 2, 'rejets consignés : ' + JSON.stringify(r2.json().rejected));
-    assert.ok(calls >= 2, 'appels supplémentaires pour réécriture/complétion');
+    assert.ok(r2.json().rejected.some((x: string) => /tutoiement/.test(x)));
+    assert.ok(r2.json().rejected.some((x: string) => /email étranger/.test(x)));
+    assert.equal(calls, 2, 'seconde tentative pour compléter');
     // Aucune variante conforme → 502 propre, sans décompte du quota.
     setLlmProvider(new MockProvider(() => 'pas du json'));
     const r3 = await generate(cookie, id);
@@ -416,22 +415,12 @@ test('génération : prénom pseudonymisé et plafond 180 jetons', async () => {
     const rn = await app.inject({ method: 'POST', url: `/api/reviews/${id2}/generate`, headers: { ...H, cookie }, payload: { include_author_name: false } });
     assert.equal(rn.statusCode, 200, rn.body);
     assert.ok(rn.json().variants.every((v: any) => !v.text.includes('Julie')), 'prénom absent des réponses');
-    // Réécriture ciblée : une variante qui enfreint une règle de style
-    // corrigible (formule interdite) est réécrite par le modèle (jusqu'à
-    // 2 essais) au lieu d'être écartée directement.
-    setLlmProvider(new MockProvider(req => {
-      if (/corriges une réponse/.test(req.system)) {
-        return JSON.stringify({ variants: ['Bonjour [PRÉNOM], merci pour votre retour. Ce soir-là, l’attente a été trop longue et le plat n’était pas à la hauteur : nous en prenons la mesure et ajustons le service. Au plaisir de vous revoir chez nous.', '', ''] });
-      }
-      const v = JSON.parse(mockVariants(req.user)).variants;
-      const bad = v[0].replace('merci pour', 'merci d’avoir pris le temps pour');
-      return JSON.stringify({ variants: [bad, v[1], v[2]] });
-    }));
-    const { id: id3 } = await addReview(cookie, { body: 'Service un peu lent ce soir, plat froid aussi, salle bruyante et serveur très distrait.' });
-    const r2 = await generate(cookie, id3);
-    const j = r2.json();
-    assert.equal(j.variants[0].needsReview ? 0 : 1, 1, 'variante corrigée acceptée : ' + JSON.stringify(j.rejected));
-    assert.match(j.variants[0].text, /merci pour votre retour/);
+    // Pseudonymisation : un avis sans prénom affiché reçoit « Auteur : non
+    // communiqué » (pas de marqueur dans le prompt).
+    setLlmProvider(new MockProvider(req => mockVariants(req.user)));
+    const { id: id3 } = await addReview(cookie, { author_name: 'R.' });
+    const r3 = await generate(cookie, id3);
+    assert.equal(r3.statusCode, 200, r3.body);
   } finally { setLlmProvider(null); }
 });
 

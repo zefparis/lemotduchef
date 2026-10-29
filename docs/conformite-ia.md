@@ -16,30 +16,24 @@ aux avis Google). Il est :
 
 ## Mesures art. 50 — contenus générés
 
-- **Réponses courtes par conception** : la consigne vise 40–60 mots (objectif
-  de style, avertissement hors cible — pas de plafond dur). Le code de bonnes
-  pratiques européen (juin 2026) exempte du filigrane lisible par machine les
-  très courts textes ; la longueur en jetons est mesurée et journalisée à
-  titre d'information (`variantTokens`).
 - **Relecture humaine** : chaque proposition est un brouillon présenté comme
   tel, jamais publié automatiquement ; le restaurateur relit, édite et publie
   en son nom (exception de responsabilité éditoriale, art. 50(4)).
 - **Mention en interface** : chaque variante affiche « Réponse proposée par
   une IA — relisez-la avant de la publier ».
 
-### Qualité — implémentation et tests
+### Génération — implémentation
 
-- Consigne dans le prompt système : 40–60 mots visés selon l'avis
-  (`prompt.ts`, fourchettes `*_WORDS`) + exemples négatifs des tournures
-  bannies.
-- `max_tokens` de sortie : 700 (`LLM_MAX_OUTPUT_TOKENS`).
-- Réécriture ciblée : une variante rejetée par les règles de style est
-  réécrite par le modèle (mêmes sens et ton, 2 essais max) avant d'être
-  écartée (`generate.ts`).
+- Consigne de style dans le prompt (fourchettes de mots selon l'avis,
+  `prompt.ts`) ; une variante hors règles est régénérée (seconde tentative)
+  puis marquée « à revoir ».
+- `max_tokens` de sortie : 1200 (`LLM_MAX_OUTPUT_TOKENS`).
 - Quota : une génération produisant moins de 2 propositions utilisables n'est
   pas décomptée (`generations.status = 'unbilled'`).
-- Mesure initiale (2026-10-28, 5 variantes en production) : ~2,5 jetons/mot
-  en français signature comprise.
+- Historique : un plafond < 180 jetons (exemption « très courts textes ») a
+  été testé du 28 au 29 octobre 2026 puis retiré — il écartait trop de
+  variantes utilisables. La minimisation ([PRÉNOM]) et la mention IA restent
+  en place.
 
 ## Minimisation des données (RGPD)
 

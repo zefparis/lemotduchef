@@ -1,9 +1,6 @@
 // Prompt système du rédacteur — versionné : toute modification du texte
 // incrémente PROMPT_VERSION (journalisée dans generations.prompt_version).
-export const PROMPT_VERSION = '2026-10-28.1';
-// AI Act art. 50 / code de bonnes pratiques : exemption filigrane sous 200
-// tokens. Plafond appliqué à chaque réponse avec marge (contrôle dans
-// generate.ts via le tokenizer du fournisseur).
+export const PROMPT_VERSION = '2026-10-29.1';
 // Marqueur neutre remplaçant le prénom de l'auteur dans ce qui est envoyé au
 // modèle (minimisation RGPD) — réinséré après génération si souhaité.
 export const AUTHOR_MARKER = '[PRÉNOM]';
@@ -28,8 +25,8 @@ export const CONTEXT_TAGS = {
 } as const;
 export type ContextTag = keyof typeof CONTEXT_TAGS;
 
-export const POSITIVE_WORDS = { min: 35, max: 60 } as const;
-export const NEGATIVE_WORDS = { min: 40, max: 65 } as const;
+export const POSITIVE_WORDS = { min: 40, max: 120 } as const;
+export const NEGATIVE_WORDS = { min: 50, max: 120 } as const;
 export const isPositive = (rating: number) => rating >= 4;
 
 export const wordCount = (s: string) => (s.trim().match(/[\p{L}\p{N}’'-]+/gu) ?? []).length;
@@ -38,10 +35,10 @@ export const wordCount = (s: string) => (s.trim().match(/[\p{L}\p{N}’'-]+/gu) 
 // que soit la note ; un avis détaillé peut monter jusqu'à la fourchette pleine.
 // La consigne donne une CIBLE (~45 mots / ~80 mots), la fourchette le cadre.
 export const SHORT_REVIEW_WORDS = 15;
-export const SHORT_REPLY_WORDS = { min: 30, max: 50, target: 40 } as const;
+export const SHORT_REPLY_WORDS = { min: 35, max: 60, target: 45 } as const;
 export const replyRange = (r: Pick<PromptReview, 'rating' | 'body'>) =>
   wordCount(r.body) < SHORT_REVIEW_WORDS ? SHORT_REPLY_WORDS
-    : { ...(isPositive(r.rating) ? POSITIVE_WORDS : NEGATIVE_WORDS), target: 50 };
+    : { ...(isPositive(r.rating) ? POSITIVE_WORDS : NEGATIVE_WORDS), target: 80 };
 
 // Répartition des points forts décidée PAR LE CODE (rotation sur l'historique) :
 // la variante 1 (factuelle) n'en cite aucun, les variantes 2 et 3 en citent
@@ -88,7 +85,6 @@ TON ET CONTENU
 - Ne jamais affirmer de procédures, registres, contrôles ou actions internes non fournis par le profil ou le contexte : pas de « registres de nettoyage », « nous vérifions régulièrement », « procédure », « protocole », « nous travaillons à », « nous revoyons », « nous mettons en place ». Seul engagement autorisé : « nous en parlons avec l'équipe » / « votre retour est transmis à l'équipe ». « Nos registres » uniquement si le contexte indique « jamais venu ».
 - Excuses : franches uniquement si le contexte du restaurateur indique « problème réel » ; sinon, une seule excuse brève (« ce n'est pas notre standard ») au plus, et seulement si la critique est factuelle et plausible (plat froid, erreur de commande, attente) ; aucune excuse si le contexte indique « jamais venu ». Si le contexte indique « prix affichés » : jamais d'excuse SUR LES PRIX — les prix s'expliquent (fait maison, produits frais, carte affichée) sans renvoyer la faute au client ; s'excuser de l'attente, du service ou d'un plat reste permis.
 - Formules interdites : « sincèrement désolés », « nous prenons votre avis au sérieux », « votre avis compte », « nous sommes navrés », « ce ressenti », « votre ressenti », « nous tenons à préciser », « en connaissance de cause », « mérite d'être savouré(e) », « sans précipitation », « n'hésitez pas », « n'hésite pas », « merci d'avoir pris le temps », « votre avis me touche », « je comprends votre déception », « j'entends votre déception », « en toute transparence » ; aucune tournure suggérant que le client est impatient ou de mauvaise foi. « Au plaisir de vous revoir » (ou équivalent) ne doit pas figurer à la fois en ouverture et en clôture.
-- Exemples à ne PAS reproduire : « merci d'avoir pris le temps de nous écrire » → préférer « merci pour votre retour » ; « je suis sincèrement désolé pour ce désagrément » → préférer une reconnaissance factuelle (« ce soir-là, l'attente a été trop longue ») ; aligner « attente, qualité et prix » dans une même phrase → traiter un seul point par phrase.
 - Ne jamais accuser l'auteur de mentir, d'exagérer ni d'être de mauvaise foi. « Nous sommes surpris » ou « surprenant » uniquement si le contexte indique « jamais venu » ou « plat conforme à la description » ; « nos registres » uniquement si « jamais venu ».
 - Ne jamais divulguer d'information personnelle sur le client (nom de famille, date exacte, commande, montant, adresse, email, téléphone). Reprendre uniquement le prénom tel qu'affiché, si fourni.
 - Ne jamais menacer, ne jamais évoquer de suite judiciaire, d'avocat, de plainte, de tribunal, ni de signalement.
@@ -104,7 +100,7 @@ TON ET CONTENU
 - Ne jamais recopier dans la réponse les éléments du CONTEXTE : « nature de la critique », catégories, longueur attendue — ce sont des consignes internes, pas du texte à publier. Pas de « votre remarque porte sur », « votre retour concerne », « votre avis porte sur ».
 
 FORMAT
-- Longueur proportionnelle à l'avis, cible exacte rappelée dans le CONTEXTE : avis court (moins de 15 mots) → vise environ 40 mots (jusqu'à 50 acceptés) ; avis détaillé → vise environ 50 mots (jusqu'à 65 acceptés) — la concision fait partie du style attendu.
+- Longueur proportionnelle à l'avis, cible exacte rappelée dans le CONTEXTE : avis court (moins de 15 mots) → vise environ 45 mots (jusqu'à 60 acceptés) ; avis détaillé → vise environ 80 mots (jusqu'à 120 acceptés).
 - Avis positif (4 ou 5 étoiles) : remercier en reprenant un détail précis de l'avis quand il en contient un (plat, personne, ambiance).
 - NE PAS écrire de signature ni de formule de clôture (« Cordialement », prénom, rôle) : la signature exacte du profil est ajoutée automatiquement après génération.
 - Renvoyer les 3 variantes via l'outil submit_replies — aucun autre texte, pas de préambule.
@@ -128,7 +124,9 @@ export interface PromptReview {
 export const signatureOf = (p: Pick<PromptProfile, 'signature_name' | 'signature_role' | 'name'>) =>
   [p.signature_name, p.signature_role]
     .filter(Boolean)
-    .filter((s, i, a) => i === 0 || s.trim().toLowerCase() !== a[0].trim().toLowerCase())
+    // « Benjamin, ben » : rôle qui n'est qu'un début du prénom (diminutif tapé
+    // au mauvais endroit) → ignoré pour éviter le doublon en signature.
+    .filter((s, i, a) => i === 0 || !a[0].trim().toLowerCase().startsWith(s.trim().toLowerCase()))
     .join(', ') || p.name;
 
 export const HEALTH_RE = /allerg|intoxic|malade|vomi|gastro|hôpital|hopital|urgences|empoisonn|salmonell|listeri|nausée|nausee/i;
