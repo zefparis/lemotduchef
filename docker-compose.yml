@@ -65,6 +65,23 @@ services:
       FREE_HISTORY_DAYS: ${FREE_HISTORY_DAYS:-30}
       # RGPD : purge du texte des avis et du prénom d'auteur (mois, 0 = jamais).
       REVIEW_RETENTION_MONTHS: ${REVIEW_RETENTION_MONTHS:-12}
+      # Notifications Web Push — générer : npx web-push generate-vapid-keys.
+      # Vides = fonctionnalité dormante proprement.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@lemotduchef.fr}
+      # Ingestion des avis par email (transfert Google → avis+code@) — OFF par
+      # défaut, à activer explicitement quand le parsing est validé.
+      MAIL_INGEST_ENABLED: ${MAIL_INGEST_ENABLED:-false}
+      IMAP_HOST: ${IMAP_HOST:-imap.mail.ovh.net}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USER: ${IMAP_USER:-}
+      IMAP_PASS: ${IMAP_PASS:-}
+      IMAP_TLS: ${IMAP_TLS:-true}
+      IMAP_POLL_INTERVAL_SEC: ${IMAP_POLL_INTERVAL_SEC:-120}
+      IMAP_PROCESSED_FOLDER: ${IMAP_PROCESSED_FOLDER:-}
+      REVIEW_MAIL_ADDRESS: ${REVIEW_MAIL_ADDRESS:-avis@lemotduchef.fr}
+      REVIEW_MAIL_CODE_LENGTH: ${REVIEW_MAIL_CODE_LENGTH:-8}
       # Abonnement Stripe (Checkout + Portail + webhook signé).
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
