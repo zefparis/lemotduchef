@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 import type { PDFFont, PDFPage } from 'pdf-lib';
 import QRCode from 'qrcode';
+import { tr } from './i18n.js';
 
 // Supports de collecte d'avis imprimables (chevalet de table, encarts
 // d'addition). Le QR code mène DIRECTEMENT à la page d'avis Google, pour tous
@@ -46,7 +47,7 @@ interface Fonts { regular: PDFFont; bold: PDFFont }
 
 // Dessine un panneau (texte + QR) centré sur la zone [x, y, w, h]. rotated=true
 // → contenu retourné de 180° (moitié haute du chevalet, lisible une fois plié).
-function drawPanel(page: PDFPage, fonts: Fonts, qr: any, c: CollectContent, x: number, y: number, w: number, h: number, rotated: boolean, scale = 1) {
+function drawPanel(page: PDFPage, fonts: Fonts, qr: any, c: CollectContent, x: number, y: number, w: number, h: number, rotated: boolean, scale = 1, lang = 'fr') {
   const rot = rotated ? degrees(180) : degrees(0);
   // Rotation 180° = symétrie centrale du panneau : chaque point (px,py) devient
   // (x+w-(px-x), y+h-(py-y)) et l'origine d'un élément devient son coin haut-droit.
@@ -75,13 +76,13 @@ function drawPanel(page: PDFPage, fonts: Fonts, qr: any, c: CollectContent, x: n
 
   centerText(safe(c.restaurant), fonts.bold, nameSize, cursor);
   cursor -= nameSize * 1.5;
-  centerText('Scannez avec l’appareil photo de votre téléphone', fonts.regular, smallSize, cursor, MUTED);
+  centerText(tr(lang, 'pdf.scan'), fonts.regular, smallSize, cursor, MUTED);
   cursor -= smallSize * 1.4;
-  centerText('Avis Google · tous les avis sont les bienvenus', fonts.regular, smallSize, cursor, MUTED);
+  centerText(tr(lang, 'pdf.welcome'), fonts.regular, smallSize, cursor, MUTED);
 }
 
 // Chevalet : A4 portrait plié en deux (deux faces A5, l'une tête-bêche).
-export async function chevaletPdf(c: CollectContent): Promise<Uint8Array> {
+export async function chevaletPdf(c: CollectContent, lang = 'fr'): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`Chevalet avis Google — ${safe(c.restaurant)}`);
   doc.setProducer('Le Mot du Chef');
@@ -92,13 +93,13 @@ export async function chevaletPdf(c: CollectContent): Promise<Uint8Array> {
   // Ligne de pliage.
   page.drawLine({ start: { x: 8 * MM, y: H / 2 }, end: { x: W - 8 * MM, y: H / 2 }, thickness: 0.4, color: MUTED, dashArray: [4, 4] });
   page.drawText('plier ici', { x: W - 24 * MM, y: H / 2 + 1.5 * MM, size: 7, font: fonts.regular, color: MUTED });
-  drawPanel(page, fonts, qr, c, 10 * MM, 10 * MM, W - 20 * MM, H / 2 - 20 * MM, false);
-  drawPanel(page, fonts, qr, c, 10 * MM, H / 2 + 10 * MM, W - 20 * MM, H / 2 - 20 * MM, true);
+  drawPanel(page, fonts, qr, c, 10 * MM, 10 * MM, W - 20 * MM, H / 2 - 20 * MM, false, 1, lang);
+  drawPanel(page, fonts, qr, c, 10 * MM, H / 2 + 10 * MM, W - 20 * MM, H / 2 - 20 * MM, true, 1, lang);
   return doc.save();
 }
 
 // Encarts d'addition : 8 cartes 85 × 55 mm par page A4, traits de coupe.
-export async function encartPdf(c: CollectContent): Promise<Uint8Array> {
+export async function encartPdf(c: CollectContent, lang = 'fr'): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`Encarts d’addition avis Google — ${safe(c.restaurant)}`);
   doc.setProducer('Le Mot du Chef');
@@ -120,7 +121,7 @@ export async function encartPdf(c: CollectContent): Promise<Uint8Array> {
     for (const l of wrap(c.message, fonts.regular, 7.5, tw).slice(0, 4)) { page.drawText(l, { x: tx, y: cursor, size: 7.5, font: fonts.regular, color: INK }); cursor -= 9.5; }
     cursor -= 3;
     for (const l of wrap(c.restaurant, fonts.bold, 8.5, tw).slice(0, 1)) { page.drawText(l, { x: tx, y: cursor, size: 8.5, font: fonts.bold, color: INK }); cursor -= 11; }
-    page.drawText('Avis Google · scannez avec votre téléphone', { x: tx, y: y + 4 * MM, size: 6, font: fonts.regular, color: MUTED });
+    page.drawText(tr(lang, 'pdf.tag'), { x: tx, y: y + 4 * MM, size: 6, font: fonts.regular, color: MUTED });
   }
   return doc.save();
 }

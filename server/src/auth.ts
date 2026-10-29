@@ -5,6 +5,7 @@ import { config } from './config.js';
 import { sendMail, EMAIL_TEMPLATES } from './mailer.js';
 import { CGV_VERSION, recordCgvAcceptance, isPublicAuthCall } from './legal.js';
 import { marketFromHeaders, frontUrlFor, type Market, isMarket } from './markets.js';
+import { tr, marketLang } from './i18n.js';
 
 // Anti-bombardement par e-mail : les envois transactionnels (réinitialisation,
 // vérification) sont plafonnés par ADRESSE, en plus du rate-limit par IP de
@@ -51,8 +52,9 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, token }: { user: { email: string; market?: string }; token: string }, request?: Request) => {
       // Le lien pointe vers le FRONT (SPA) du marché du compte.
       const market = await mailMarket(user, request);
+      const lang = marketLang(market);
       const url = `${frontUrlFor(market)}/reinitialiser?token=${encodeURIComponent(token)}`;
-      await sendMail({ to: user.email, subject: 'Le Mot du Chef — réinitialisation du mot de passe', ...EMAIL_TEMPLATES.resetPassword(url) }, market);
+      await sendMail({ to: user.email, subject: tr(lang, 'mail.reset.subject'), ...EMAIL_TEMPLATES.resetPassword(url, lang) }, market);
     },
     resetPasswordTokenExpiresIn: 60 * 60, // 1 h, usage unique géré par Better Auth
   },
@@ -64,9 +66,10 @@ export const auth = betterAuth({
       // url pointe sur l'API (vérification serveur) ; la redirection finale
       // renvoie vers le front du marché après succès.
       const market = await mailMarket(user, request);
+      const lang = marketLang(market);
       const u = new URL(url);
       u.searchParams.set('callbackURL', frontUrlFor(market) + '/?verifie=1');
-      await sendMail({ to: user.email, subject: 'Le Mot du Chef — confirmez votre email', ...EMAIL_TEMPLATES.verify(u.toString()) }, market);
+      await sendMail({ to: user.email, subject: tr(lang, 'mail.verify.subject'), ...EMAIL_TEMPLATES.verify(u.toString(), lang) }, market);
     },
   },
   user: {
@@ -80,9 +83,10 @@ export const auth = betterAuth({
       enabled: true,
       sendChangeEmailVerification: async ({ user, newEmail, url }: { user: { email: string; market?: string }; newEmail: string; url: string }, request?: Request) => {
         const market = await mailMarket(user, request);
+        const lang = marketLang(market);
         const u = new URL(url);
         u.searchParams.set('callbackURL', frontUrlFor(market) + '/?verifie=1');
-        await sendMail({ to: newEmail, subject: 'Le Mot du Chef — confirmez votre nouvelle adresse', ...EMAIL_TEMPLATES.changeEmail(u.toString()) }, market);
+        await sendMail({ to: newEmail, subject: tr(lang, 'mail.change.subject'), ...EMAIL_TEMPLATES.changeEmail(u.toString(), lang) }, market);
       },
     },
     deleteUser: {

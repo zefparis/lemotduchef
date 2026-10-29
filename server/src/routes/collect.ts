@@ -6,6 +6,7 @@ import { requireCompany } from '../guards.js';
 import { isPro } from '../stripe.js';
 import { chevaletPdf, encartPdf, qrPngBuffer } from '../pdf.js';
 import type { CollectContent } from '../pdf.js';
+import { marketLang } from '../i18n.js';
 import { loadProfile } from './profile.js';
 import { companyMarket, reviewMailAddressFor } from '../markets.js';
 
@@ -104,7 +105,8 @@ export default async function collectRoutes(app: FastifyInstance) {
     if (!(await isPro(req.companyId))) return reply.code(403).send(PRO_ONLY);
     const { c } = await content(req.companyId);
     if (!c) return reply.code(409).send(NO_LINK);
-    const bytes = kind === 'chevalet' ? await chevaletPdf(c) : await encartPdf(c);
+    const lang = marketLang(await companyMarket(req.companyId));
+    const bytes = kind === 'chevalet' ? await chevaletPdf(c, lang) : await encartPdf(c, lang);
     reply.header('Content-Type', 'application/pdf');
     reply.header('Content-Disposition', `attachment; filename="lemotduchef-${kind}.pdf"`);
     reply.header('Cache-Control', 'private, no-store');

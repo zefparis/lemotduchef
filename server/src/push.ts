@@ -2,6 +2,7 @@ import webPush from 'web-push';
 import { config } from './config.js';
 import { pool } from './db.js';
 import { companyMarket, marketConfig, localMinutes, type Market } from './markets.js';
+import { tr, marketLang } from './i18n.js';
 
 // Envoi Web Push (VAPID). Désactivé proprement sans clés : toute la
 // fonctionnalité reste dormant tant que VAPID_PUBLIC/PRIVATE_KEY ne sont
@@ -80,7 +81,8 @@ export async function notifyRepliesReady(companyId: string, p: PushPayload, log:
   const market: Market = await companyMarket(companyId);
   if (!s.enabled || p.rating > s.rating_max || inQuietHours(s, marketConfig(market).timezone)) return 0;
   const stars = '★'.repeat(p.rating) + '☆'.repeat(5 - p.rating);
+  const lang = marketLang(market);
   return sendPushDirect(companyId, s.hide_content
-    ? { title: `Nouvel avis ${p.rating}★ — 3 réponses prêtes`, body: 'Ouvrez pour choisir et publier.', url: `/?avis=${p.reviewId}`, tag: `review-${p.reviewId}` }
-    : { title: `${stars} Avis de ${p.author || 'un client'}`, body: `« ${p.excerpt} » — 3 réponses prêtes`, url: `/?avis=${p.reviewId}`, tag: `review-${p.reviewId}` }, log);
+    ? { title: tr(lang, 'push.private.title', { rating: p.rating }), body: tr(lang, 'push.private.body'), url: `/?avis=${p.reviewId}`, tag: `review-${p.reviewId}` }
+    : { title: tr(lang, 'push.review.title', { stars, author: p.author || tr(lang, 'push.author_default') }), body: tr(lang, 'push.review.body', { excerpt: p.excerpt }), url: `/?avis=${p.reviewId}`, tag: `review-${p.reviewId}` }, log);
 }

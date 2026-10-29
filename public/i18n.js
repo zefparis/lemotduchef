@@ -144,9 +144,9 @@ window.LMC_I18N = {
     "mail.verify.subject": "Le Mot du Chef — confirmez votre email",
     "mail.verify.body": "Bonjour,\n\nBienvenue sur Le Mot du Chef. Confirmez votre adresse email en cliquant sur ce lien (valable 24 h) :\n\n{url}\n\nSi vous n'êtes pas à l'origine de cette inscription, ignorez ce message.\n\n— L'équipe Le Mot du Chef",
     "mail.reset.subject": "Le Mot du Chef — réinitialisation du mot de passe",
-    "mail.reset.body": "Bonjour,\n\nVous avez demandé à réinitialiser votre mot de passe. Cliquez sur ce lien (valable 1 h) :\n\n{url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n— L'équipe Le Mot du Chef",
+    "mail.reset.body": "Bonjour,\n\nCliquez sur ce lien pour définir ou réinitialiser votre mot de passe Le Mot du Chef (valable 1 h, usage unique) :\n\n{url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.\n\n— L'équipe Le Mot du Chef",
     "mail.change.subject": "Le Mot du Chef — confirmez votre nouvelle adresse",
-    "mail.change.body": "Bonjour,\n\nConfirmez votre nouvelle adresse email en cliquant sur ce lien :\n\n{url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n— L'équipe Le Mot du Chef",
+    "mail.change.body": "Bonjour,\n\nConfirmez votre nouvelle adresse email Le Mot du Chef en cliquant sur ce lien :\n\n{url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n— L'équipe Le Mot du Chef",
 
     "push.review.title": "Réponses prêtes",
     "push.review.body": "Vos réponses à l'avis de {author} ({rating}★) sont prêtes — ouvrez votre espace.",
@@ -296,6 +296,14 @@ window.LMC_I18N = {
     "modal.cancel": "Annuler",
     "modal.delete": "Supprimer définitivement",
     "modal.ok": "Confirmer",
+    "push.private.title": "Nouvel avis {rating}★ · 3 réponses prêtes",
+    "push.private.body": "Ouvrez pour choisir et publier.",
+    "push.review.title": "{stars} Avis de {author}",
+    "push.review.body": "« {excerpt} » · 3 réponses prêtes",
+    "push.author_default": "un client",
+    "pdf.scan": "Scannez avec l'appareil photo de votre téléphone",
+    "pdf.welcome": "Avis Google · tous les avis sont les bienvenus",
+    "pdf.tag": "Avis Google · scannez avec votre téléphone",
     "limits": "Compte sécurisé · données hébergées sur notre serveur en France · gratuit pour démarrer · résiliable à tout moment."
   },
 
@@ -592,6 +600,14 @@ window.LMC_I18N = {
     "modal.cancel": "Cancel",
     "modal.delete": "Delete permanently",
     "modal.ok": "Confirm",
+    "push.private.title": "New review {rating}\u2605 · 3 replies ready",
+    "push.private.body": "Open to choose and publish.",
+    "push.review.title": "{stars} Review from {author}",
+    "push.review.body": "\u201c{excerpt}\u201d · 3 replies ready",
+    "push.author_default": "a customer",
+    "pdf.scan": "Scan with your phone camera",
+    "pdf.welcome": "Google reviews · every review is welcome",
+    "pdf.tag": "Google review · scan with your phone",
     "limits": "Secure account · data hosted on our server in Europe · free to start · cancel anytime."
   }
 };

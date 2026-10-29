@@ -64,7 +64,7 @@ async function signup(email: string, name = 'Test', origin?: string) {
     payload: { email, password: PASSWORD, name, cgvAccepted: true, cgvVersion: CGV_VERSION },
   });
   assert.equal(r.statusCode, 200, `signup ${email} : ${r.body}`);
-  let mail = lastMailTo(email, /confirmez votre email/i);
+  let mail = lastMailTo(email, /confirmez votre email|confirm your email/i);
   if (!mail) {
     // Le compte existe déjà (base de test partagée entre suites) : connexion
     // directe — la vérification a déjà eu lieu dans l'autre suite.
