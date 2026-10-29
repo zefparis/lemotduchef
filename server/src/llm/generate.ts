@@ -13,6 +13,13 @@ import { companyMarket, marketConfig } from '../markets.js';
 // Quota mensuel épuisé (réservation refusée dans la transaction atomique).
 export class QuotaExceededError extends Error {}
 
+// « Hello, » → « Hello [PRÉNOM], » quand le prénom est réinsérable : même
+// règle que « Bonjour, » → « Bonjour [PRÉNOM], », par langue de réponse.
+export function openWithAuthorMarker(text: string, greetWord: string): string {
+  const re = new RegExp(`^(\\s*${greetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\s*[,.;]`, 'i');
+  return re.test(text.trimStart()) ? text.replace(re, `$1 ${AUTHOR_MARKER},`) : text;
+}
+
 // Erreurs jamais affichées au restaurateur : fait non fourni, divulgation de
 // coordonnées, mention juridique, responsabilité santé, fuite d'analyse
 // interne. Tout autre motif est un défaut de style affichable « à relire ».
@@ -81,14 +88,11 @@ export async function generateReplies(
   };
   // Référentiel des règles : sans le nom quand il n'est pas réinséré.
   const effectiveReview: PromptReview = includeName ? review : { ...review, author_name: '' };
-  // Ouverture déterministe : « Bonjour, » + prénom autorisé → insertion du
-  // marqueur sans appel LLM. (« Bonjour, » reste valide quand le nom est
-  // neutralisé : pseudo, initiales.)
+  // Ouverture déterministe : « Bonjour, » / « Hello, » … + prénom autorisé
+  // → insertion du marqueur sans appel LLM. (« Bonjour, » reste valide
+  // quand le nom est neutralisé : pseudo, initiales.)
   const greetWord = pack ? pack.greetingWord : 'Bonjour';
-  const fixOpening = (t: string): string => {
-    const re = new RegExp(`^(\\s*${greetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\s*[,.;]`, 'i');
-    return author && re.test(t.trimStart()) ? t.replace(re, `$1 ${AUTHOR_MARKER},`) : t;
-  };
+  const fixOpening = (t: string): string => author ? openWithAuthorMarker(t, greetWord) : t;
   // Point fort imposé par variante, décidé par le code (rotation historique) :
   // variante 1 factuelle → aucun ; variantes 2 et 3 → chacune le sien.
   const strengths = assignedStrengths(profile, avoid.length);
