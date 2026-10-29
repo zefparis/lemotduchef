@@ -52,7 +52,7 @@
 <header class="site-header">
   <a class="brand" href="#" aria-label="Le Mot du Chef, retour en haut">
     <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
-    <span class="brand-id">Le Mot du Chef<small>réponses aux avis Google</small></span>
+    <span class="brand-id">Le Mot du Chef<small data-i18n="brand.tag">réponses aux avis Google</small></span>
   </a>
   <nav class="site-nav" aria-label="Navigation principale">
     <a href="#methode" data-i18n="nav.method">Comment ça marche</a>
@@ -235,9 +235,9 @@
     <span>Le Mot du Chef — réponses aux avis Google pour les restaurateurs</span>
     <button class="btn btn-quiet" data-open>Créer un compte</button>
     <nav class="legal-links" aria-label="Pages légales">
-      <a href="/mentions-legales">Mentions légales</a>
+      <a href="/mentions-legales" data-i18n="footer.legal.mentions">Mentions légales</a>
       <a href="/cgv">CGV</a>
-      <a href="/confidentialite">Confidentialité</a>
+      <a href="/confidentialite" data-i18n="footer.legal.privacy">Confidentialité</a>
     </nav>
   </footer>
 </main>
@@ -251,91 +251,91 @@
       <span class="brand-id">Le Mot du Chef<small>réponses aux avis Google</small></span>
     </a>
     <div class="auth-card">
-      <p class="eyebrow"><i></i>Espace restaurateur</p>
-      <h1 class="auth-title">Vos réponses, sur votre compte.</h1>
-      <p class="auth-sub" id="auth-sub">Connectez-vous pour retrouver votre restaurant, vos avis et vos réponses. Les données sont isolées par établissement.</p>
+      <p class="eyebrow"><i></i><span data-i18n="auth.eyebrow">Espace restaurateur</span></p>
+      <h1 class="auth-title" data-i18n="auth.title">Vos réponses, sur votre compte.</h1>
+      <p class="auth-sub" id="auth-sub" data-i18n="auth.login_sub">Connectez-vous pour retrouver votre restaurant, vos avis et vos réponses. Les données sont isolées par établissement.</p>
 
       <div class="auth-tabs" id="auth-tabs" hidden>
-        <button class="auth-tab active" id="tab-login" type="button">Connexion</button>
-        <button class="auth-tab" id="tab-signup" type="button" hidden>Créer un compte</button>
+        <button class="auth-tab active" id="tab-login" type="button" data-i18n="auth.tab.login">Connexion</button>
+        <button class="auth-tab" id="tab-signup" type="button" hidden data-i18n="auth.tab.signup">Créer un compte</button>
       </div>
 
       <form id="login-form" novalidate>
         <div class="field">
-          <label for="l-email">Email</label>
+          <label for="l-email" data-i18n="auth.email_label">Email</label>
           <input id="l-email" name="email" type="email" required autocomplete="email" placeholder="vous@restaurant.fr">
         </div>
         <div class="field">
-          <label for="l-pass">Mot de passe</label>
+          <label for="l-pass" data-i18n="auth.password_label">Mot de passe</label>
           <input id="l-pass" name="password" type="password" required autocomplete="current-password" placeholder="••••••••••">
         </div>
         <p class="field-error" id="err-login" hidden></p>
-        <button class="btn btn-primary btn-block" type="submit" id="login-btn">Se connecter</button>
-        <button class="btn btn-quiet btn-sm" type="button" id="forgot-link">Mot de passe oublié&nbsp;?</button>
+        <button class="btn btn-primary btn-block" type="submit" id="login-btn" data-i18n="auth.login">Se connecter</button>
+        <button class="btn btn-quiet btn-sm" type="button" id="forgot-link" data-i18n="auth.forgot">Mot de passe oublié&nbsp;?</button>
       </form>
 
       <form id="forgot-form" hidden novalidate>
-        <p class="auth-sub">Saisissez votre email : si un compte existe, un lien de réinitialisation vous sera envoyé (valable 1 h).</p>
+        <p class="auth-sub" data-i18n="auth.forgot_sub">Saisissez votre email : si un compte existe, un lien de réinitialisation vous sera envoyé (valable 1 h).</p>
         <div class="field">
-          <label for="fp-email">Email</label>
+          <label for="fp-email" data-i18n="auth.email_label">Email</label>
           <input id="fp-email" name="email" type="email" required autocomplete="email" placeholder="vous@restaurant.fr">
         </div>
         <p class="field-error" id="err-forgot" hidden></p>
         <p class="field-ok" id="ok-forgot" hidden></p>
-        <button class="btn btn-primary btn-block" type="submit" id="forgot-btn">Recevoir le lien</button>
-        <button class="btn btn-quiet btn-sm" type="button" id="forgot-back">← Retour à la connexion</button>
+        <button class="btn btn-primary btn-block" type="submit" id="forgot-btn" data-i18n="auth.forgot_cta">Recevoir le lien</button>
+        <button class="btn btn-quiet btn-sm" type="button" id="forgot-back" data-i18n="auth.back_login">← Retour à la connexion</button>
       </form>
 
       <form id="reset-form" hidden novalidate>
-        <p class="auth-sub">Choisissez votre nouveau mot de passe (12 caractères minimum).</p>
+        <p class="auth-sub" data-i18n="auth.reset_sub">Choisissez votre nouveau mot de passe (12 caractères minimum).</p>
         <div class="field">
-          <label for="r-pass">Nouveau mot de passe</label>
+          <label for="r-pass" data-i18n="auth.new_password">Nouveau mot de passe</label>
           <input id="r-pass" name="password" type="password" required minlength="12" autocomplete="new-password" placeholder="••••••••••">
         </div>
         <div class="field">
-          <label for="r-pass2">Confirmez le mot de passe</label>
+          <label for="r-pass2" data-i18n="auth.confirm_password">Confirmez le mot de passe</label>
           <input id="r-pass2" name="password2" type="password" required minlength="12" autocomplete="new-password" placeholder="••••••••••">
         </div>
         <p class="field-error" id="err-reset" hidden></p>
-        <button class="btn btn-primary btn-block" type="submit" id="reset-btn">Enregistrer le nouveau mot de passe</button>
+        <button class="btn btn-primary btn-block" type="submit" id="reset-btn" data-i18n="auth.reset_cta">Enregistrer le nouveau mot de passe</button>
       </form>
 
       <div id="verify-note" hidden>
         <p class="verify-icon"><svg class="icon"><use href="#i-mail"/></svg></p>
-        <p class="auth-sub"><strong>Vérifiez votre boîte mail.</strong><br>Un email de confirmation vient de partir vers <b id="verify-email-addr"></b>. Cliquez sur le lien (valable 24 h) pour activer votre compte, puis connectez-vous.</p>
-        <p class="subtle">Le lien est expiré ou l'email n'arrive pas&nbsp;? Reconnectez-vous : un nouvel email pourra être renvoyé.</p>
-        <button class="btn btn-outline btn-block" type="button" id="verify-back">Retour à la connexion</button>
+        <p class="auth-sub"><strong data-i18n="auth.verify_strong">Vérifiez votre boîte mail.</strong><br>Un email de confirmation vient de partir vers <b id="verify-email-addr"></b>. Cliquez sur le lien (valable 24 h) pour activer votre compte, puis connectez-vous.</p>
+        <p class="subtle" data-i18n="auth.verify_resend">Le lien est expiré ou l'email n'arrive pas&nbsp;? Reconnectez-vous : un nouvel email pourra être renvoyé.</p>
+        <button class="btn btn-outline btn-block" type="button" id="verify-back" data-i18n="auth.back_login2">Retour à la connexion</button>
       </div>
 
       <form id="signup-form" hidden novalidate>
         <div class="field">
-          <label for="s-name">Votre nom</label>
+          <label for="s-name" data-i18n="auth.name_label">Votre nom</label>
           <input id="s-name" name="name" required maxlength="100" autocomplete="name" placeholder="Ex. Marc Lefèvre">
         </div>
         <div class="field">
-          <label for="s-company">Nom du restaurant</label>
+          <label for="s-company" data-i18n="auth.company_label">Nom du restaurant</label>
           <input id="s-company" name="company" required maxlength="100" placeholder="Ex. La Table d'Aurore">
         </div>
         <div class="field">
-          <label for="s-email">Email</label>
+          <label for="s-email" data-i18n="auth.email_label">Email</label>
           <input id="s-email" name="email" type="email" required autocomplete="email" placeholder="vous@restaurant.fr">
         </div>
         <div class="field">
-          <label for="s-pass">Mot de passe <span class="opt">(12 caractères minimum)</span></label>
+          <label for="s-pass" data-i18n="auth.password_min">Mot de passe <span class="opt">(12 caractères minimum)</span></label>
           <input id="s-pass" name="password" type="password" required minlength="12" autocomplete="new-password" placeholder="••••••••••">
         </div>
         <label class="check-row" for="s-cgv">
           <input type="checkbox" id="s-cgv" required>
-          <span>J'agis à des fins professionnelles et j'accepte les <a href="/cgv" target="_blank" rel="noopener">conditions générales de vente</a>.</span>
+          <span data-i18n="auth.cgv_accept">J'agis à des fins professionnelles et j'accepte les <a href="/cgv" target="_blank" rel="noopener">conditions générales de vente</a>.</span>
         </label>
         <p class="field-error" id="err-cgv" hidden></p>
         <p class="field-error" id="err-signup" hidden></p>
-        <button class="btn btn-primary btn-block" type="submit" id="signup-btn">Créer mon compte</button>
-        <p class="subtle">Un email de vérification vous sera envoyé : il est nécessaire pour activer le compte.</p>
+        <button class="btn btn-primary btn-block" type="submit" id="signup-btn" data-i18n="auth.signup">Créer mon compte</button>
+        <p class="subtle" data-i18n="auth.verify_hint">Un email de vérification vous sera envoyé : il est nécessaire pour activer le compte.</p>
       </form>
 
       <div class="auth-alt">
-        <button class="btn btn-quiet btn-sm" data-landing>← Retour au site</button>
+        <button class="btn btn-quiet btn-sm" data-landing data-i18n="auth.back_site">← Retour au site</button>
       </div>
     </div>
   </div>
@@ -350,12 +350,12 @@
       Le Mot du Chef
     </a>
     <div class="auth-card">
-      <p class="eyebrow"><i></i>Bienvenue</p>
-      <h1 class="auth-title">Parlez-nous de votre maison.</h1>
-      <p class="auth-sub">Ces informations nourrissent chaque réponse : le rédacteur ne saura de vous que ce que vous écrivez ici. Modifiable à tout moment.</p>
+      <p class="eyebrow"><i></i><span data-i18n="onboard.eyebrow">Bienvenue</span></p>
+      <h1 class="auth-title" data-i18n="onboard.title">Parlez-nous de votre maison.</h1>
+      <p class="auth-sub" data-i18n="onboard.sub">Ces informations nourrissent chaque réponse : le rédacteur ne saura de vous que ce que vous écrivez ici. Modifiable à tout moment.</p>
       <form id="onboard-form" class="profile-fields" novalidate></form>
       <p class="field-error" id="err-onboard" hidden></p>
-      <button class="btn btn-primary btn-block" type="submit" form="onboard-form" id="onboard-btn">Créer mon espace</button>
+      <button class="btn btn-primary btn-block" type="submit" form="onboard-form" id="onboard-btn" data-i18n="onboard.cta">Créer mon espace</button>
     </div>
   </div>
 </section>
@@ -364,88 +364,88 @@
 <template id="profile-template">
   <div class="form-grid">
     <div class="field">
-      <label for="{p}-name">Nom du restaurant <span class="req" aria-hidden="true">*</span></label>
+      <label for="{p}-name" data-i18n="pf.name">Nom du restaurant <span class="req" aria-hidden="true">*</span></label>
       <input id="{p}-name" name="name" required maxlength="100" placeholder="Ex. La Table d'Aurore">
     </div>
     <div class="field">
-      <label for="{p}-city">Ville</label>
+      <label for="{p}-city" data-i18n="pf.city">Ville</label>
       <input id="{p}-city" name="city" maxlength="100" placeholder="Ex. Lyon">
     </div>
     <div class="field">
-      <label for="{p}-cuisine">Type de cuisine</label>
+      <label for="{p}-cuisine" data-i18n="pf.cuisine">Type de cuisine</label>
       <input id="{p}-cuisine" name="cuisine" maxlength="100" placeholder="Ex. bistronomie, pizzeria napolitaine…">
     </div>
     <div class="field full style-sep">
-      <span class="label style-title">Mon style</span>
-      <p class="field-hint">Appliqué à chaque réponse : ton, forme d'adresse, signature et tournures bannies.</p>
+      <span class="label style-title" data-i18n="pf.style">Mon style</span>
+      <p class="field-hint" data-i18n="pf.style_hint">Appliqué à chaque réponse : ton, forme d'adresse, signature et tournures bannies.</p>
     </div>
     <div class="field">
-      <label for="{p}-tone">Ton des réponses</label>
+      <label for="{p}-tone" data-i18n="pf.tone">Ton des réponses</label>
       <select id="{p}-tone" name="tone">
-        <option value="sobre">Sobre</option>
-        <option value="chaleureux" selected>Chaleureux</option>
-        <option value="direct">Direct</option>
+        <option value="sobre" data-i18n="pf.tone.sobre">Sobre</option>
+        <option value="chaleureux" selected data-i18n="pf.tone.warm">Chaleureux</option>
+        <option value="direct" data-i18n="pf.tone.direct">Direct</option>
       </select>
     </div>
     <div class="field">
-      <label for="{p}-addr">Forme d'adresse du client</label>
+      <label for="{p}-addr" data-i18n="pf.addr">Forme d'adresse du client</label>
       <select id="{p}-addr" name="address_form">
-        <option value="vous">Vouvoiement</option>
-        <option value="tu">Tutoiement</option>
+        <option value="vous" data-i18n="pf.addr.vous">Vouvoiement</option>
+        <option value="tu" data-i18n="pf.addr.tu">Tutoiement</option>
       </select>
     </div>
     <div class="field">
-      <label for="{p}-signame">Prénom (ou nom) de signature</label>
+      <label for="{p}-signame" data-i18n="pf.signame">Prénom (ou nom) de signature</label>
       <input id="{p}-signame" name="signature_name" maxlength="80" placeholder="Ex. Marc">
     </div>
     <div class="field">
-      <label for="{p}-sigrole">Rôle dans la signature</label>
+      <label for="{p}-sigrole" data-i18n="pf.sigrole">Rôle dans la signature</label>
       <input id="{p}-sigrole" name="signature_role" maxlength="80" placeholder="Ex. chef et propriétaire">
     </div>
     <div class="field full">
-      <label for="{p}-avoid">Expressions à éviter <span class="opt">(bannies de vos réponses)</span></label>
+      <label for="{p}-avoid" data-i18n="pf.avoid">Expressions à éviter <span class="opt">(bannies de vos réponses)</span></label>
       <input id="{p}-avoid" name="avoid_phrases" maxlength="400" placeholder="Ex. cher client, établissement, dans les meilleurs délais">
-      <p class="field-hint">Séparez les expressions par des virgules — 20 maximum, 60 caractères chacune.</p>
+      <p class="field-hint" data-i18n="pf.avoid_hint">Séparez les expressions par des virgules — 20 maximum, 60 caractères chacune.</p>
     </div>
     <div class="field full">
-      <span class="label">Points forts <span class="opt">(le rédacteur en rappelle un par réponse)</span></span>
+      <span class="label" data-i18n="pf.strengths">Points forts <span class="opt">(le rédacteur en rappelle un par réponse)</span></span>
       <div class="chips" data-strengths>
-        <label class="chip"><input type="checkbox" name="strengths" value="fait maison"><span>Fait maison</span></label>
-        <label class="chip"><input type="checkbox" name="strengths" value="produits locaux"><span>Produits locaux</span></label>
-        <label class="chip"><input type="checkbox" name="strengths" value="produits de saison"><span>De saison</span></label>
-        <label class="chip"><input type="checkbox" name="strengths" value="terrasse"><span>Terrasse</span></label>
-        <label class="chip"><input type="checkbox" name="strengths" value="carte des vins"><span>Carte des vins</span></label>
-        <label class="chip"><input type="checkbox" name="strengths" value="accueil des familles"><span>Familles bienvenues</span></label>
-        <label class="chip"><input type="checkbox" name="strengths" value="options végétariennes"><span>Options végétariennes</span></label>
-        <label class="chip"><input type="checkbox" name="strengths" value="équipe attentive"><span>Équipe attentive</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="fait maison"><span data-i18n="pf.s1">Fait maison</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="produits locaux"><span data-i18n="pf.s2">Produits locaux</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="produits de saison"><span data-i18n="pf.s3">De saison</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="terrasse"><span data-i18n="pf.s4">Terrasse</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="carte des vins"><span data-i18n="pf.s5">Carte des vins</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="accueil des familles"><span data-i18n="pf.s6">Familles bienvenues</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="options végétariennes"><span data-i18n="pf.s7">Options végétariennes</span></label>
+        <label class="chip"><input type="checkbox" name="strengths" value="équipe attentive"><span data-i18n="pf.s8">Équipe attentive</span></label>
       </div>
       <input name="strengths_custom" maxlength="120" placeholder="Autres points forts, séparés par des virgules (ex. pain maison, cave voûtée)">
     </div>
     <div class="field full">
-      <label for="{p}-practical">Infos pratiques <span class="opt">(réservation, horaires…)</span></label>
+      <label for="{p}-practical" data-i18n="pf.practical">Infos pratiques <span class="opt">(réservation, horaires…)</span></label>
       <input id="{p}-practical" name="practical_info" maxlength="300" placeholder="Ex. réservation conseillée le week-end, fermé le lundi">
     </div>
     <div class="field full">
-      <label for="{p}-maps">Lien de votre fiche Google <span class="opt">(URL Google Maps)</span></label>
+      <label for="{p}-maps" data-i18n="pf.maps">Lien de votre fiche Google <span class="opt">(URL Google Maps)</span></label>
       <input id="{p}-maps" name="google_maps_url" type="url" maxlength="500" placeholder="https://maps.app.goo.gl/…">
-      <p class="field-hint">Sert au bouton « Ouvrir ma fiche Google » après chaque réponse.</p>
+      <p class="field-hint" data-i18n="pf.maps_hint">Sert au bouton « Ouvrir ma fiche Google » après chaque réponse.</p>
     </div>
     <div class="field">
-      <label for="{p}-cemail">Email de contact pour les réclamations</label>
+      <label for="{p}-cemail" data-i18n="pf.cemail">Email de contact pour les réclamations</label>
       <input id="{p}-cemail" name="contact_email" type="email" maxlength="200" placeholder="contact@restaurant.fr">
     </div>
     <div class="field">
-      <label for="{p}-cphone">Téléphone de contact</label>
+      <label for="{p}-cphone" data-i18n="pf.cphone">Téléphone de contact</label>
       <input id="{p}-cphone" name="contact_phone" type="tel" maxlength="30" placeholder="04 00 00 00 00">
     </div>
     <div class="field full">
       <div class="chips">
         <label class="chip"><input id="{p}-showphone" type="checkbox" name="show_phone"><span>Afficher mon téléphone dans les réponses</span></label>
       </div>
-      <p class="field-hint">Décoché, seul l'email de contact peut figurer dans les réponses publiques.</p>
+      <p class="field-hint" data-i18n="pf.phone_hint">Décoché, seul l'email de contact peut figurer dans les réponses publiques.</p>
     </div>
   </div>
-  <p class="field-hint">Sur les sujets santé ou allergie, la réponse invite toujours à un contact privé via cet email ou ce téléphone.</p>
+  <p class="field-hint" data-i18n="pf.health_hint">Sur les sujets santé ou allergie, la réponse invite toujours à un contact privé via cet email ou ce téléphone.</p>
 </template>
 
 <!-- ==================== APPLICATION ==================== -->
@@ -505,7 +505,7 @@
     </div>
 
     <div class="cgv-banner" id="cgv-banner" hidden role="alert">
-      <p>Nos <a href="/cgv" data-legal-link>conditions générales de vente</a> ont été mises à jour (version <b id="cgv-version-label"></b>). Merci de les accepter pour continuer.</p>
+      <p data-i18n="cgv.updated">Nos <a href="/cgv" data-legal-link>conditions générales de vente</a> ont été mises à jour (version <b id="cgv-version-label"></b>). Merci de les accepter pour continuer.</p>
       <button class="btn btn-primary btn-sm" id="cgv-accept">J'accepte les CGV</button>
     </div>
 
@@ -514,8 +514,8 @@
       <div class="page-title">
         <div>
           <p class="eyebrow" id="today"></p>
-          <h2>Répondre à un avis.</h2>
-          <p class="page-sub">Collez l'avis tel qu'il apparaît sur Google. Trois réponses vous seront proposées, à relire avant de publier.</p>
+          <h2 data-i18n="review.title">Répondre à un avis.</h2>
+          <p class="page-sub" data-i18n="review.sub">Collez l'avis tel qu'il apparaît sur Google. Trois réponses vous seront proposées, à relire avant de publier.</p>
         </div>
         <button class="btn btn-outline btn-sm" id="reply-new" hidden><svg class="icon"><use href="#i-x"/></svg>Nouvel avis</button>
       </div>
@@ -589,12 +589,12 @@
             </details>
           </div>
           <div class="panel tips-panel" id="tips-panel">
-            <h3>Avant de publier</h3>
+            <h3 data-i18n="tips.title">Avant de publier</h3>
             <ul class="tips">
-              <li>Relisez : vous êtes l'auteur de la réponse publiée.</li>
-              <li>Ne corrigez jamais un détail que vous ne pouvez pas affirmer.</li>
-              <li>Sujet santé ou allergie : restez sur l'invitation au contact privé.</li>
-              <li>Une réponse courte et posée vaut mieux qu'une longue justification.</li>
+              <li data-i18n="tips.1">Relisez : vous êtes l'auteur de la réponse publiée.</li>
+              <li data-i18n="tips.2">Ne corrigez jamais un détail que vous ne pouvez pas affirmer.</li>
+              <li data-i18n="tips.3">Sujet santé ou allergie : restez sur l'invitation au contact privé.</li>
+              <li data-i18n="tips.4">Une réponse courte et posée vaut mieux qu'une longue justification.</li>
             </ul>
           </div>
         </div>
@@ -603,7 +603,7 @@
       <div id="variants-block" hidden>
         <div class="panel-header variants-head">
           <div>
-            <h3>Trois propositions</h3>
+            <h3 data-i18n="variants.title">Trois propositions</h3>
             <p id="variants-meta"></p>
           </div>
           <div class="tools">
@@ -616,8 +616,8 @@
         <div class="publish-gate" id="publish-gate" hidden>
           <div class="publish-gate-card" role="alertdialog" aria-live="assertive">
             <h3>Publication dans <b id="gate-count">10</b> s…</h3>
-            <p>La réponse est copiée dans le presse-papier : collez-la sur votre fiche Google. Sans action, elle sera marquée comme publiée.</p>
-            <button class="btn btn-quiet" id="gate-cancel">Annuler la publication</button>
+            <p data-i18n="gate.body">La réponse est copiée dans le presse-papier : collez-la sur votre fiche Google. Sans action, elle sera marquée comme publiée.</p>
+            <button class="btn btn-quiet" id="gate-cancel" data-i18n="gate.cancel">Annuler la publication</button>
           </div>
         </div>
       </div>
@@ -627,9 +627,9 @@
     <div id="history" class="tab" hidden>
       <div class="page-title">
         <div>
-          <p class="eyebrow">Vos avis et vos réponses</p>
-          <h2>Historique.</h2>
-          <p class="page-sub" id="history-sub">Retrouvez chaque avis, les réponses proposées et celle que vous avez publiée.</p>
+          <p class="eyebrow" data-i18n="history.eyebrow">Vos avis et vos réponses</p>
+          <h2 data-i18n="history.title">Historique.</h2>
+          <p class="page-sub" id="history-sub" data-i18n="history.sub">Retrouvez chaque avis, les réponses proposées et celle que vous avez publiée.</p>
         </div>
       </div>
       <div class="panel">
@@ -639,23 +639,23 @@
             <input id="h-search" placeholder="Rechercher un prénom, un mot de l'avis…" aria-label="Rechercher un avis">
           </label>
           <select id="h-rating" aria-label="Filtrer par note">
-            <option value="">Toutes les notes</option>
+            <option value="" data-i18n="history.all_ratings">Toutes les notes</option>
             <option value="5">5 étoiles</option><option value="4">4 étoiles</option><option value="3">3 étoiles</option><option value="2">2 étoiles</option><option value="1">1 étoile</option>
           </select>
           <select id="h-status" aria-label="Filtrer par statut">
-            <option value="">Tous</option>
-            <option value="pending">Sans réponse publiée</option>
-            <option value="published">Publiée sur Google</option>
-            <option value="flagged">Avis suspects</option>
+            <option value="" data-i18n="history.all">Tous</option>
+            <option value="pending" data-i18n="history.pending">Sans réponse publiée</option>
+            <option value="published" data-i18n="history.published">Publiée sur Google</option>
+            <option value="flagged" data-i18n="history.flagged">Avis suspects</option>
           </select>
         </div>
         <p class="history-limit" id="history-limit" hidden></p>
         <div class="review-list" id="review-list"></div>
         <div class="empty-state" id="history-empty" hidden>
           <svg class="icon empty-icon"><use href="#i-msg"/></svg>
-          <h3>Aucun avis pour l'instant</h3>
-          <p>Collez votre premier avis dans « Répondre à un avis ».</p>
-          <button class="btn btn-primary" data-tab="reply">Répondre à un avis</button>
+          <h3 data-i18n="history.empty">Aucun avis pour l'instant</h3>
+          <p data-i18n="history.empty_sub">Collez votre premier avis dans « Répondre à un avis ».</p>
+          <button class="btn btn-primary" data-tab="reply" data-i18n="history.cta">Répondre à un avis</button>
         </div>
       </div>
     </div>
@@ -664,49 +664,49 @@
     <div id="collect" class="tab" hidden>
       <div class="page-title">
         <div>
-          <p class="eyebrow">Plus d'avis de clients satisfaits</p>
-          <h2>Collecte d'avis.</h2>
-          <p class="page-sub">Un chevalet de table et un encart d'addition avec QR code vers votre page d'avis Google.</p>
+          <p class="eyebrow" data-i18n="collect.eyebrow">Plus d'avis de clients satisfaits</p>
+          <h2 data-i18n="collect.title">Collecte d'avis.</h2>
+          <p class="page-sub" data-i18n="collect.sub">Un chevalet de table et un encart d'addition avec QR code vers votre page d'avis Google.</p>
         </div>
       </div>
       <div class="pledge" id="collect-pledge"><svg class="icon"><use href="#i-info"/></svg><p></p></div>
       <div class="settings-grid">
         <div class="settings-col">
           <form id="review-url-form" class="panel form-panel" novalidate>
-            <h3>Votre lien « laisser un avis »</h3>
-            <p class="form-intro">C'est l'adresse que le QR code ouvrira. Elle est différente du lien de votre fiche.</p>
+            <h3 data-i18n="collect.link.title">Votre lien « laisser un avis »</h3>
+            <p class="form-intro" data-i18n="collect.link.hint">C'est l'adresse que le QR code ouvrira. Elle est différente du lien de votre fiche.</p>
             <ol class="help-steps" id="collect-help"></ol>
             <div class="field">
-              <label for="c-review-url">Lien « laisser un avis »</label>
+              <label for="c-review-url" data-i18n="collect.link.label">Lien « laisser un avis »</label>
               <input id="c-review-url" name="google_review_url" type="url" maxlength="500" placeholder="https://g.page/r/…/review">
               <p class="field-error" id="err-review-url" hidden></p>
             </div>
             <div class="form-actions">
-              <button class="btn btn-primary" type="submit" id="review-url-btn">Enregistrer le lien</button>
+              <button class="btn btn-primary" type="submit" id="review-url-btn" data-i18n="collect.link.save">Enregistrer le lien</button>
               <a class="btn btn-quiet" id="test-review-url" href="#" target="_blank" rel="noopener" hidden>Tester le lien<svg class="icon"><use href="#i-arrow"/></svg></a>
             </div>
           </form>
           <form id="collect-form" class="panel form-panel" novalidate>
-            <h3>Texte imprimé</h3>
+            <h3 data-i18n="collect.print.title">Texte imprimé</h3>
             <div class="field">
-              <label for="c-title">Titre</label>
+              <label for="c-title" data-i18n="collect.print.title_label">Titre</label>
               <input id="c-title" name="title" maxlength="60">
             </div>
             <div class="field">
-              <label for="c-message">Message</label>
+              <label for="c-message" data-i18n="collect.print.msg_label">Message</label>
               <textarea id="c-message" name="message" rows="3" maxlength="200"></textarea>
               <p class="field-hint">Aucune contrepartie (remise, cadeau, boisson offerte) ne peut être proposée en échange d'un avis.</p>
               <p class="field-error" id="err-collect" hidden></p>
             </div>
             <div class="form-actions">
-              <button class="btn btn-primary" type="submit" id="collect-btn">Enregistrer le texte</button>
+              <button class="btn btn-primary" type="submit" id="collect-btn" data-i18n="collect.print.save">Enregistrer le texte</button>
             </div>
           </form>
           <div class="panel form-panel" id="ingest-panel">
-            <h3>Vos avis sans copier-coller</h3>
+            <h3 data-i18n="collect.ingest.title">Vos avis sans copier-coller</h3>
             <p class="form-intro">Transférez automatiquement les emails « nouvel avis » de Google vers votre adresse dédiée : l'avis arrive ici tout seul et les réponses sont rédigées d'avance.</p>
             <div class="field">
-              <label for="ingest-address">Votre adresse de transfert</label>
+              <label for="ingest-address" data-i18n="collect.ingest.address">Votre adresse de transfert</label>
               <div class="copy-row">
                 <input id="ingest-address" readonly value="">
                 <button class="btn btn-outline btn-sm" id="ingest-copy" type="button"><svg class="icon"><use href="#i-copy"/></svg>Copier</button>
@@ -717,7 +717,7 @@
               <p>Votre règle de transfert attend une validation. <span id="ingest-confirm-code"></span><a id="ingest-confirm-link" href="#" target="_blank" rel="noopener">Valider sur Gmail</a></p>
             </div>
             <details class="ingest-guide">
-              <summary>Créer la règle de transfert</summary>
+              <summary data-i18n="collect.ingest.rule">Créer la règle de transfert</summary>
               <ol class="help-steps">
                 <li><b>Gmail</b> — Paramètres › Filtres › Créer un filtre : expéditeur <code>google.com</code>, objet contient « avis » → « Transférer à » votre adresse ci-dessus.</li>
                 <li><b>Outlook / Microsoft 365</b> — Paramètres › Courrier › Règles : « Si l'expéditeur contient google.com » → « Transférer vers ».</li>
@@ -730,7 +730,7 @@
         </div>
         <div class="settings-col">
           <div class="panel form-panel qr-panel">
-            <h3>Aperçu et impression</h3>
+            <h3 data-i18n="collect.preview.title">Aperçu et impression</h3>
             <div class="qr-preview" id="qr-preview"><p class="subtle">Renseignez votre lien « laisser un avis » pour voir le QR code.</p></div>
             <div class="danger-actions" id="pdf-actions">
               <button class="btn btn-outline btn-sm" data-pdf="chevalet"><svg class="icon"><use href="#i-print"/></svg>Chevalet de table (PDF A4 à plier)</button>
@@ -746,21 +746,21 @@
     <div id="restaurant" class="tab" hidden>
       <div class="page-title">
         <div>
-          <p class="eyebrow">Ce que le rédacteur sait de vous</p>
-          <h2>Mon restaurant.</h2>
-          <p class="page-sub">Ton, points forts, signature et contacts utilisés dans chaque réponse.</p>
+          <p class="eyebrow" data-i18n="restaurant.eyebrow">Ce que le rédacteur sait de vous</p>
+          <h2 data-i18n="restaurant.title">Mon restaurant.</h2>
+          <p class="page-sub" data-i18n="restaurant.sub">Ton, points forts, signature et contacts utilisés dans chaque réponse.</p>
         </div>
       </div>
       <div id="sub-panel" class="panel form-panel" hidden>
-        <h3>Abonnement</h3>
+        <h3 data-i18n="restaurant.subscription">Abonnement</h3>
         <div id="sub-body"><p class="form-intro">Chargement…</p></div>
       </div>
       <form id="restaurant-form" class="panel form-panel profile-fields" novalidate>
-        <h3>Profil</h3>
+        <h3 data-i18n="restaurant.profile">Profil</h3>
         <div data-profile-fields></div>
         <p class="field-error" id="err-restaurant" hidden></p>
         <div class="form-actions">
-          <button class="btn btn-primary" type="submit" id="restaurant-btn">Enregistrer le profil</button>
+          <button class="btn btn-primary" type="submit" id="restaurant-btn" data-i18n="restaurant.save">Enregistrer le profil</button>
         </div>
       </form>
     </div>
@@ -769,61 +769,61 @@
     <div id="account" class="tab" hidden>
       <div class="page-title">
         <div>
-          <p class="eyebrow">Votre compte</p>
-          <h2>Profil et sécurité.</h2>
-          <p class="page-sub">Identifiants, sessions, export et suppression de vos données.</p>
+          <p class="eyebrow" data-i18n="account.eyebrow">Votre compte</p>
+          <h2 data-i18n="account.title">Profil et sécurité.</h2>
+          <p class="page-sub" data-i18n="account.sub">Identifiants, sessions, export et suppression de vos données.</p>
         </div>
       </div>
       <div class="settings-grid">
         <div class="settings-col">
           <form id="profile-form" class="panel form-panel" novalidate>
-            <h3>Informations personnelles</h3>
+            <h3 data-i18n="account.personal">Informations personnelles</h3>
             <div class="field">
-              <label for="p-name">Votre nom</label>
+              <label for="p-name" data-i18n="auth.name_label">Votre nom</label>
               <input id="p-name" name="name" required maxlength="100" autocomplete="name">
               <p class="field-error" id="err-pname" hidden></p>
             </div>
             <div class="field">
-              <label for="p-email">Email du compte</label>
+              <label for="p-email" data-i18n="account.email_label">Email du compte</label>
               <input id="p-email" name="email" type="email" disabled aria-describedby="p-email-hint">
               <p class="field-hint" id="p-email-hint">Pour changer d'adresse, renseignez la nouvelle : un email de confirmation lui sera envoyé.</p>
             </div>
             <div class="field">
-              <label for="p-newemail">Nouvelle adresse email <span class="opt">(optionnel)</span></label>
+              <label for="p-newemail" data-i18n="account.newemail">Nouvelle adresse email <span class="opt">(optionnel)</span></label>
               <input id="p-newemail" name="newemail" type="email" autocomplete="off" placeholder="nouvelle@restaurant.fr">
               <p class="field-error" id="err-pemail" hidden></p>
             </div>
             <div class="form-actions">
-              <button class="btn btn-primary" type="submit" id="profile-btn">Enregistrer</button>
+              <button class="btn btn-primary" type="submit" id="profile-btn" data-i18n="account.save">Enregistrer</button>
             </div>
           </form>
           <form id="password-form" class="panel form-panel" novalidate>
-            <h3>Changer le mot de passe</h3>
+            <h3 data-i18n="account.password">Changer le mot de passe</h3>
             <div class="field">
-              <label for="pw-current">Mot de passe actuel</label>
+              <label for="pw-current" data-i18n="account.pw_current">Mot de passe actuel</label>
               <input id="pw-current" name="current" type="password" required autocomplete="current-password">
             </div>
             <div class="field">
-              <label for="pw-new">Nouveau mot de passe <span class="opt">(12 caractères minimum)</span></label>
+              <label for="pw-new" data-i18n="auth.password_min">Nouveau mot de passe <span class="opt">(12 caractères minimum)</span></label>
               <input id="pw-new" name="next" type="password" required minlength="12" autocomplete="new-password">
             </div>
             <p class="field-error" id="err-password" hidden></p>
             <div class="form-actions">
-              <button class="btn btn-primary" type="submit" id="password-btn">Changer le mot de passe</button>
+              <button class="btn btn-primary" type="submit" id="password-btn" data-i18n="account.password">Changer le mot de passe</button>
             </div>
           </form>
         </div>
         <div class="settings-col">
           <div class="panel form-panel">
-            <h3>Sessions actives</h3>
+            <h3 data-i18n="account.sessions">Sessions actives</h3>
             <p class="form-intro">Chaque session correspond à un appareil connecté. Révoquez celle que vous ne reconnaissez pas.</p>
             <ul class="session-list" id="session-list"><li class="subtle">Chargement…</li></ul>
             <div class="form-actions">
-              <button class="btn btn-outline btn-sm" id="revoke-others">Déconnecter les autres appareils</button>
+              <button class="btn btn-outline btn-sm" id="revoke-others" data-i18n="account.revoke">Déconnecter les autres appareils</button>
             </div>
           </div>
           <div class="panel form-panel" id="push-panel">
-            <h3>Notifications</h3>
+            <h3 data-i18n="account.notifications">Notifications</h3>
             <p class="form-intro">Soyez alerté sur votre téléphone dès que des réponses sont prêtes. L'application est installable comme une appli : depuis le navigateur, « Ajouter à l'écran d'accueil ».</p>
             <div id="push-unavailable" hidden>
               <p class="field-hint">Les notifications push ne sont pas prises en charge par ce navigateur.</p>
@@ -835,16 +835,16 @@
               </div>
               <div id="push-opts" hidden>
                 <div class="field">
-                  <label for="push-rating">Avis concernés</label>
+                  <label for="push-rating" data-i18n="push.rating_label">Avis concernés</label>
                   <select id="push-rating">
-                    <option value="3">Avis négatifs uniquement (≤ 3★)</option>
-                    <option value="2">Sévères uniquement (≤ 2★)</option>
-                    <option value="5">Tous les avis</option>
+                    <option value="3" data-i18n="push.rating3">Avis négatifs uniquement (≤ 3★)</option>
+                    <option value="2" data-i18n="push.rating2">Sévères uniquement (≤ 2★)</option>
+                    <option value="5" data-i18n="push.rating5">Tous les avis</option>
                   </select>
                 </div>
                 <div class="field field-row">
                   <div>
-                    <label for="push-quiet-start">Silence, de</label>
+                    <label for="push-quiet-start" data-i18n="push.quiet">Silence, de</label>
                     <input id="push-quiet-start" type="time">
                   </div>
                   <div>
@@ -861,14 +861,14 @@
                   <ul class="session-list" id="push-devices"></ul>
                 </div>
                 <div class="form-actions">
-                  <button class="btn btn-primary btn-sm" id="push-save">Enregistrer</button>
-                  <button class="btn btn-outline btn-sm" id="push-test">Notification test</button>
+                  <button class="btn btn-primary btn-sm" id="push-save" data-i18n="account.save">Enregistrer</button>
+                  <button class="btn btn-outline btn-sm" id="push-test" data-i18n="push.test">Notification test</button>
                 </div>
               </div>
             </div>
           </div>
           <div class="panel form-panel danger-zone">
-            <h3>Vos données</h3>
+            <h3 data-i18n="account.data">Vos données</h3>
             <p class="form-intro">Export complet de votre compte en JSON (profil, avis, réponses), et suppression définitive. Le texte des avis est effacé automatiquement après <span data-retention-months>12</span> mois.</p>
             <div class="danger-actions">
               <button class="btn btn-outline btn-sm" id="export-data"><svg class="icon"><use href="#i-download"/></svg>Exporter toutes mes données (JSON)</button>
@@ -1080,8 +1080,8 @@
     <p class="field-error" id="err-delete-account" hidden></p>
   </div>
   <div class="dialog-footer">
-    <button class="btn btn-quiet" data-close>Annuler</button>
-    <button class="btn btn-danger" id="delete-account-confirm">Supprimer définitivement</button>
+    <button class="btn btn-quiet" data-close data-i18n="modal.cancel">Annuler</button>
+    <button class="btn btn-danger" id="delete-account-confirm" data-i18n="modal.delete">Supprimer définitivement</button>
   </div>
 </dialog>
 
@@ -1098,7 +1098,7 @@
   </div>
   <div class="dialog-footer">
     <button class="btn btn-quiet" data-close>Annuler</button>
-    <button class="btn btn-danger" id="admin-delete-confirm">Supprimer définitivement</button>
+    <button class="btn btn-danger" id="admin-delete-confirm" data-i18n="modal.delete">Supprimer définitivement</button>
   </div>
 </dialog>
 
@@ -1109,8 +1109,8 @@
   </div>
   <p id="confirm-text" class="confirm-text"></p>
   <div class="dialog-footer">
-    <button class="btn btn-quiet" id="confirm-cancel">Annuler</button>
-    <button class="btn btn-danger" id="confirm-ok">Confirmer</button>
+    <button class="btn btn-quiet" id="confirm-cancel" data-i18n="modal.cancel">Annuler</button>
+    <button class="btn btn-danger" id="confirm-ok" data-i18n="modal.ok">Confirmer</button>
   </div>
 </dialog>
 
