@@ -37,6 +37,10 @@ function applyI18n(root = document) {
   root.querySelectorAll('[data-i18n-attr]').forEach(el => {
     for (const [attr, key] of Object.entries(JSON.parse(el.dataset.i18nAttr))) el.setAttribute(attr, t(key));
   });
+  // Attributs unitaires : data-i18n-aria / data-i18n-ph / data-i18n-alt / data-i18n-title.
+  for (const [da, attr] of [['data-i18n-aria', 'aria-label'], ['data-i18n-ph', 'placeholder'], ['data-i18n-alt', 'alt'], ['data-i18n-title', 'title']]) {
+    root.querySelectorAll(`[${da}]`).forEach(el => el.setAttribute(attr, t(el.getAttribute(da))));
+  }
   document.title = t('meta.title');
   const md = document.querySelector('meta[name="description"]'); if (md) md.content = t('meta.description');
   document.documentElement.lang = LANG;
@@ -248,12 +252,24 @@ function showLegal(path) {
   return true;
 }
 function fillLegal() {
-  const L = window.LMC_LEGAL || {};
-  $$('[data-legal]').forEach(el => { el.textContent = L[el.dataset.legal] || '—'; });
+  // Valeurs légales propres au marché : FR → champs build LEGAL_* ;
+  // ZA → markets.js.za.company (vide = rien affiché, jamais les valeurs FR).
+  const L = MARKET_ID === 'fr' ? (window.LMC_LEGAL || {}) : {
+    name: MARKET.company?.name, siren: MARKET.company?.registration, rcs: '',
+    address: MARKET.company?.address, email: MARKET.company?.email,
+    vatMention: '', publisher: '',
+  };
+  $$('[data-legal]').forEach(el => {
+    const v = L[el.dataset.legal];
+    el.textContent = v || '—';
+    el.closest('[data-legal-hide],small,p,span,strong') && (el.hidden = !v && MARKET_ID !== 'fr');
+  });
   $$('[data-legal-email]').forEach(el => { el.href = `mailto:${L.email || ''}`; });
   $$('[data-legal-version]').forEach(el => { el.textContent = cgvVersion || '—'; });
-  $('#legal-warn').hidden = !(window.LMC_LEGAL_MISSING?.length);
+  $('#legal-warn').hidden = !(window.LMC_LEGAL_MISSING?.length) || MARKET_ID !== 'fr';
 }
+// Mention de société française (TVA, SIREN…) : jamais exposée hors marché FR.
+const legalValue = (k) => MARKET_ID === 'fr' ? (window.LMC_LEGAL || {})[k] : '';
 function fillConfig() {
   $$('[data-free-replies]').forEach(el => { el.textContent = appConfig.freeMonthlyReplies ?? '—'; });
   $$('[data-free-history]').forEach(el => { el.textContent = appConfig.freeHistoryDays ?? '—'; });
@@ -832,7 +848,7 @@ async function loadBilling() {
       const labels = { pro_monthly: t('sub.monthly'), pro_yearly: t('sub.yearly') };
       html += (b.prices || []).map(p => `<button class="btn btn-primary btn-sm" data-subscribe="${p.id}">${labels[p.key] ?? p.key} — ${fmtPrice(p.amount_cents)}${p.interval === 'year' ? t('sub.per_year') : t('sub.per_month')}</button>`).join('')
         || `<p class="form-intro">${t('sub.no_offers')}</p>`;
-      const vat = window.LMC_LEGAL?.vatMention;
+      const vat = legalValue('vatMention');
       html += `<p class="sub-meta">${t('sub.pro_note', { vat: vat ? ` · ${esc(vat)}` : '' })}</p>`;
     }
     if (b.hasCustomer) html += `<button class="btn btn-quiet btn-sm" data-portal>${paid ? t('sub.manage') : t('sub.portal')}${icon('i-arrow')}</button>`;

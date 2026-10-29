@@ -50,7 +50,7 @@
 
 <!-- ==================== PAGE COMMERCIALE ==================== -->
 <header class="site-header">
-  <a class="brand" href="#" aria-label="Le Mot du Chef, retour en haut">
+  <a class="brand" href="#" data-i18n-aria="brand.back_top" aria-label="Le Mot du Chef, retour en haut">
     <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
     <span class="brand-id">Le Mot du Chef<small data-i18n="brand.tag">réponses aux avis Google</small></span>
   </a>
@@ -59,9 +59,9 @@
     <a href="#exemple" data-i18n="nav.example">Exemple</a>
     <a href="#offre" data-i18n="nav.offer">Offres</a>
     <a href="#faq" data-i18n="nav.faq">Questions</a>
-    <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
+    <button class="btn-icon theme-toggle" type="button" data-i18n-aria="msg.theme_toggle" data-i18n-aria="msg.theme_toggle" aria-label="Changer de thème"></button>
     <button class="btn btn-quiet btn-sm" data-auth data-i18n="nav.login">Se connecter</button>
-    <button class="btn btn-dark btn-sm" data-open><span class="cta-full" data-i18n="nav.signup">Créer un compte</span><span class="cta-short" data-i18n="nav.signup">Essai gratuit</span></button>
+    <button class="btn btn-dark btn-sm" data-open><span class="cta-full" data-i18n="nav.signup">Créer un compte</span><span class="cta-short" data-i18n="hero.cta_short">Essai gratuit</span></button>
   </nav>
 </header>
 
@@ -76,7 +76,7 @@
         <button class="btn btn-outline" data-auth data-i18n="hero.login">Se connecter</button>
       </div>
       <p class="subtle"><span data-free-replies>—</span> <span data-i18n="hero.subtle">réponses offertes chaque mois · sans carte bancaire · rien n'est publié sans vous</span></p>
-      <ul class="hero-tags" aria-label="Types d'établissements">
+      <ul class="hero-tags" data-i18n-aria="hero.tags" aria-label="Types d'établissements">
         <li data-i18n="hero.tag1">Restaurants</li>
         <li data-i18n="hero.tag2">Brasseries</li>
         <li data-i18n="hero.tag3">Pizzerias</li>
@@ -138,12 +138,12 @@
     <div class="method-intro">
       <p class="eyebrow"><i></i><span data-i18n="example.eyebrow">Avant / après</span></p>
       <h2 data-i18n="example.title">Ce que lisent vos futurs clients.</h2>
-      <p class="section-lead"><strong>Exemple fictif</strong> : l'avis ci-dessous est inventé pour illustrer la méthode ; aucun restaurant ni client réel n'est concerné. La réponse « après » a été produite par Le Mot du Chef à partir d'un profil d'exemple.</p>
+      <p class="section-lead" data-i18n="example.lead"><strong>Exemple fictif</strong> : l'avis ci-dessous est inventé pour illustrer la méthode ; aucun restaurant ni client réel n'est concerné. La réponse « après » a été produite par Le Mot du Chef à partir d'un profil d'exemple.</p>
     </div>
     <div class="example-grid">
       <article class="example-card example-review">
         <p class="example-label" data-i18n="example.review_label">L'avis (fictif)</p>
-        <p class="stars" aria-label="1 étoile sur 5" data-i18n-aria-hidden="true"><span class="on">★</span><span>★</span><span>★</span><span>★</span><span>★</span></p>
+        <p class="stars" data-i18n-aria="example.review_stars" aria-label="1 étoile sur 5"><span class="on">★</span><span>★</span><span>★</span><span>★</span><span>★</span></p>
         <p class="example-quote" data-i18n="example.review">« Attente de 45 minutes pour un plat froid et un serveur qui nous ignore. Prix exagérés pour ce que c'est. Jamais plus. »</p>
         <p class="example-meta" data-i18n="example.review_meta">— Kévin, il y a 3 jours</p>
       </article>
@@ -154,11 +154,11 @@
       </article>
       <article class="example-card example-after">
         <p class="example-label" data-i18n="example.after_label">Après — avec Le Mot du Chef</p>
-        <p class="example-quote">« Bonjour Kévin, merci pour votre retour. Samedi soir, nous étions complets et vous avez attendu trop longtemps : vous avez raison, ce n'est pas l'accueil que nous voulons offrir. Pour le plat tiède, j'en ai parlé avec la cuisine dès le lendemain, ça ne doit pas arriver. Nos prix sont affichés à l'entrée parce que tout est fait maison, avec des produits frais. Si vous nous laissez une seconde chance, venez plutôt en semaine, c'est plus calme et je passerai vous saluer.<br>Marc, chef et propriétaire »</p>
+        <p class="example-quote"><span data-i18n="example.after">« Bonjour Kévin, merci pour votre retour. Samedi soir, nous étions complets et vous avez attendu trop longtemps : vous avez raison, ce n'est pas l'accueil que nous voulons offrir. Pour le plat tiède, j'en ai parlé avec la cuisine dès le lendemain, ça ne doit pas arriver. Nos prix sont affichés à l'entrée parce que tout est fait maison, avec des produits frais. Si vous nous laissez une seconde chance, venez plutôt en semaine, c'est plus calme et je passerai vous saluer.<br>Marc, chef et propriétaire »</span></p>
         <p class="example-why" data-i18n="example.after_why">Il reconnaît, il explique sans se justifier, il invite à revenir. C'est cette réponse que liront vos futurs clients.</p>
       </article>
     </div>
-    <p class="reassure"><svg class="icon"><use href="#i-check"/></svg>Vous gardez la main : chaque réponse vous est proposée, vous la relisez, l'ajustez et la publiez vous-même. Elle est écrite dans votre style, signée de votre nom.</p>
+    <p class="reassure"><svg class="icon"><use href="#i-check"/></svg><span data-i18n="example.reassure">Vous gardez la main : chaque réponse vous est proposée, vous la relisez, l'ajustez et la publiez vous-même. Elle est écrite dans votre style, signée de votre nom.</span></p>
   </section>
 
   <section class="offer" id="offre">
@@ -168,21 +168,21 @@
       <p data-i18n="offer.lead">L'offre Gratuit vous donne chaque mois quelques réponses sans carte bancaire. L'offre Pro lève la limite, débloque les supports imprimables de collecte d'avis et l'historique complet.</p>
       <p class="offer-note" data-i18n="offer.note">Paiement sécurisé par Stripe · code promo accepté à la souscription · résiliable à tout moment depuis votre espace.</p>
     </div>
-    <div class="price" aria-label="Tarifs des offres">
+    <div class="price" data-i18n-aria="offer.price_aria" aria-label="Tarifs des offres">
       <p class="price-label" data-i18n="offer.price_label">Nos offres</p>
       <div class="price-plans">
         <div class="price-plan">
           <strong data-i18n="offer.free.name">Gratuit</strong>
           <p><b>0 €</b></p>
-          <small><span data-free-replies>—</span> réponses par mois · historique <span data-free-history>—</span> jours · sans carte</small>
+          <small><span data-free-replies>—</span> <span data-i18n="offer.free.per">réponses par mois · historique jours · sans carte</span></small>
         </div>
         <div class="price-plan">
           <strong data-i18n="offer.pro.name">Pro</strong>
-          <p><b><span data-price="pro_monthly">—</span></b> / mois</p>
-          <small><span data-price="pro_yearly">—</span> / an · réponses illimitées · chevalets et encarts PDF · historique complet</small>
+          <p><b><span data-price="pro_monthly">—</span></b> <span data-i18n="offer.per_month">/ mois</span></p>
+          <small><span data-price="pro_yearly">—</span> <span data-i18n="offer.pro.per">/ an · réponses illimitées · chevalets et encarts PDF · historique complet</span></small>
         </div>
       </div>
-      <button class="btn btn-primary btn-block" data-open>Créer un compte gratuit<svg class="icon"><use href="#i-arrow"/></svg></button>
+      <button class="btn btn-primary btn-block" data-open><span data-i18n="cta.free">Créer un compte gratuit</span><svg class="icon"><use href="#i-arrow"/></svg></button>
       <small class="price-note" data-i18n="offer.terms">Sans engagement · changement d'offre à tout moment</small>
       <small class="price-note" data-legal="vatMention"></small>
     </div>
@@ -195,32 +195,32 @@
     </div>
     <div class="faq-list">
       <details>
-        <summary>Peut-on faire supprimer un avis ?<svg class="icon"><use href="#i-chev"/></svg></summary>
-        <p>Rarement, et jamais parce qu'il est injuste. Google ne retire que les avis contraires à ses règles de contenu : hors sujet, spam, conflit d'intérêts (concurrent, ancien salarié), injures, informations personnelles, faux avis manifeste. Un avis sévère, exagéré ou que vous contestez reste en ligne. Le Mot du Chef vous signale les indices qui relèvent de ces règles et vous prépare le signalement — mais la décision appartient à Google, et le plus efficace reste une réponse publique posée, lue par vos futurs clients.</p>
+        <summary><span data-i18n="faq.q1">Peut-on faire supprimer un avis ?</span><svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p data-i18n="faq.a1">Rarement, et jamais parce qu'il est injuste. Google ne retire que les avis contraires à ses règles de contenu : hors sujet, spam, conflit d'intérêts (concurrent, ancien salarié), injures, informations personnelles, faux avis manifeste. Un avis sévère, exagéré ou que vous contestez reste en ligne. Le Mot du Chef vous signale les indices qui relèvent de ces règles et vous prépare le signalement — mais la décision appartient à Google, et le plus efficace reste une réponse publique posée, lue par vos futurs clients.</p>
       </details>
       <details>
-        <summary>Les réponses sont-elles publiées automatiquement ?<svg class="icon"><use href="#i-chev"/></svg></summary>
-        <p>Non. Dans cette version, vous copiez la réponse et la collez vous-même sur votre fiche Google ; rien ne part sans vous. La connexion directe à Google Business Profile (lecture des avis, publication en un clic) est prévue dans une prochaine version et restera optionnelle.</p>
+        <summary><span data-i18n="faq.q2">Les réponses sont-elles publiées automatiquement ?</span><svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p data-i18n="faq.a2">Non. Dans cette version, vous copiez la réponse et la collez vous-même sur votre fiche Google ; rien ne part sans vous. La connexion directe à Google Business Profile (lecture des avis, publication en un clic) est prévue dans une prochaine version et restera optionnelle.</p>
       </details>
       <details>
-        <summary>Qui écrit les réponses ?<svg class="icon"><use href="#i-chev"/></svg></summary>
-        <p>Un modèle de langage, encadré par des règles strictes que nous vérifions à la sortie : vouvoiement, courtoisie, aucune accusation de mensonge, aucune mention judiciaire, aucune donnée personnelle sur le client, prudence absolue sur les sujets santé et allergies, longueur maîtrisée, votre signature. Vous restez l'auteur : relisez et modifiez toujours avant de publier.</p>
+        <summary><span data-i18n="faq.q3">Qui écrit les réponses ?</span><svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p data-i18n="faq.a3">Un modèle de langage, encadré par des règles strictes que nous vérifions à la sortie : vouvoiement, courtoisie, aucune accusation de mensonge, aucune mention judiciaire, aucune donnée personnelle sur le client, prudence absolue sur les sujets santé et allergies, longueur maîtrisée, votre signature. Vous restez l'auteur : relisez et modifiez toujours avant de publier.</p>
       </details>
       <details>
-        <summary>Que deviennent les avis que je colle ?<svg class="icon"><use href="#i-chev"/></svg></summary>
-        <p>Ils contiennent des données de vos clients (prénom, texte). Nous n'en stockons que le nécessaire, isolé par restaurant, sur un serveur en France. Le texte et le prénom sont effacés automatiquement après <span data-retention-months>12</span> mois ; la note, la date et votre réponse restent dans votre historique. Vous êtes responsable de ces données, nous en sommes le sous-traitant (voir la <a href="/confidentialite">politique de confidentialité</a>).</p>
+        <summary><span data-i18n="faq.q4">Que deviennent les avis que je colle ?</span><svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p data-i18n="faq.a4">Ils contiennent des données de vos clients (prénom, texte). Nous n'en stockons que le nécessaire, isolé par restaurant, sur un serveur en France. Le texte et le prénom sont effacés automatiquement après <span data-retention-months>12</span> mois ; la note, la date et votre réponse restent dans votre historique. Vous êtes responsable de ces données, nous en sommes le sous-traitant (voir la <a href="/confidentialite">politique de confidentialité</a>).</p>
       </details>
       <details>
-        <summary>Le QR code trie-t-il les clients satisfaits ?<svg class="icon"><use href="#i-chev"/></svg></summary>
-        <p>Non, et nous ne le proposerons pas. Le QR code mène directement à votre page d'avis Google, pour tous vos clients. Les pages « êtes-vous satisfait ? » qui ne redirigent vers Google que les contents, comme les cadeaux contre un avis, sont interdits par Google et constituent une pratique commerciale trompeuse.</p>
+        <summary><span data-i18n="faq.q5">Le QR code trie-t-il les clients satisfaits ?</span><svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p data-i18n="faq.a5">Non, et nous ne le proposerons pas. Le QR code mène directement à votre page d'avis Google, pour tous vos clients. Les pages « êtes-vous satisfait ? » qui ne redirigent vers Google que les contents, comme les cadeaux contre un avis, sont interdits par Google et constituent une pratique commerciale trompeuse.</p>
       </details>
       <details>
-        <summary>Dois-je signaler que ma réponse est rédigée avec une IA ?<svg class="icon"><use href="#i-chev"/></svg></summary>
-        <p>En pratique, non. Le règlement européen sur l'IA (article 50) exige le marquage des contenus synthétiques surtout pour les textes publiés à des fins d'information du public — et prévoit une exception lorsque le contenu est relu et validé par une personne qui en assume la responsabilité éditoriale : c'est exactement votre cas, vous relisez, modifiez et publiez chaque réponse en votre nom. Ce n'est pas un avis juridique : si votre situation est particulière, vérifiez auprès de votre conseil.</p>
+        <summary><span data-i18n="faq.q6">Dois-je signaler que ma réponse est rédigée avec une IA ?</span><svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p data-i18n="faq.a6">En pratique, non. Le règlement européen sur l'IA (article 50) exige le marquage des contenus synthétiques surtout pour les textes publiés à des fins d'information du public — et prévoit une exception lorsque le contenu est relu et validé par une personne qui en assume la responsabilité éditoriale : c'est exactement votre cas, vous relisez, modifiez et publiez chaque réponse en votre nom. Ce n'est pas un avis juridique : si votre situation est particulière, vérifiez auprès de votre conseil.</p>
       </details>
       <details>
-        <summary>Comment se passe le paiement ?<svg class="icon"><use href="#i-chev"/></svg></summary>
-        <p>Vous souscrivez sur une page de paiement hébergée par Stripe (code promo accepté), puis tout se gère depuis votre espace : changement d'offre, carte, factures, résiliation. L'offre Gratuit ne demande aucune carte.</p>
+        <summary><span data-i18n="faq.q7">Comment se passe le paiement ?</span><svg class="icon"><use href="#i-chev"/></svg></summary>
+        <p data-i18n="faq.a7">Vous souscrivez sur une page de paiement hébergée par Stripe (code promo accepté), puis tout se gère depuis votre espace : changement d'offre, carte, factures, résiliation. L'offre Gratuit ne demande aucune carte.</p>
       </details>
     </div>
   </section>
@@ -232,23 +232,23 @@
       <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
       Le Mot du Chef
     </a>
-    <span>Le Mot du Chef — réponses aux avis Google pour les restaurateurs</span>
-    <button class="btn btn-quiet" data-open>Créer un compte</button>
-    <nav class="legal-links" aria-label="Pages légales">
+    <span data-i18n="footer.tag">réponses aux avis Google pour les restaurateurs</span>
+    <button class="btn btn-quiet" data-open data-i18n="footer.signup">Créer un compte</button>
+    <nav class="legal-links" data-i18n-aria="footer.aria" data-i18n-aria="footer.aria" data-i18n-aria="footer.aria" data-i18n-aria="footer.aria" aria-label="Pages légales">
       <a href="/mentions-legales" data-i18n="footer.legal.mentions">Mentions légales</a>
-      <a href="/cgv">CGV</a>
+      <a href="/cgv" data-i18n="footer.cgv_short">CGV</a>
       <a href="/confidentialite" data-i18n="footer.legal.privacy">Confidentialité</a>
     </nav>
   </footer>
 </main>
 
 <!-- ==================== CONNEXION / INSCRIPTION ==================== -->
-<section id="auth" hidden aria-label="Connexion à votre espace">
+<section id="auth" hidden data-i18n-aria="auth.aria" aria-label="Connexion à votre espace">
   <div class="auth-wrap">
-    <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
+    <button class="btn-icon theme-toggle" type="button" data-i18n-aria="msg.theme_toggle" aria-label="Changer de thème"></button>
     <a class="brand" href="#" id="auth-home">
       <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
-      <span class="brand-id">Le Mot du Chef<small>réponses aux avis Google</small></span>
+      <span class="brand-id">Le Mot du Chef<small data-i18n="brand.tag">réponses aux avis Google</small></span>
     </a>
     <div class="auth-card">
       <p class="eyebrow"><i></i><span data-i18n="auth.eyebrow">Espace restaurateur</span></p>
@@ -263,7 +263,7 @@
       <form id="login-form" novalidate>
         <div class="field">
           <label for="l-email" data-i18n="auth.email_label">Email</label>
-          <input id="l-email" name="email" type="email" required autocomplete="email" placeholder="vous@restaurant.fr">
+          <input id="l-email" name="email" type="email" required autocomplete="email" data-i18n-ph="ph.email" placeholder="vous@restaurant.fr">
         </div>
         <div class="field">
           <label for="l-pass" data-i18n="auth.password_label">Mot de passe</label>
@@ -278,7 +278,7 @@
         <p class="auth-sub" data-i18n="auth.forgot_sub">Saisissez votre email : si un compte existe, un lien de réinitialisation vous sera envoyé (valable 1 h).</p>
         <div class="field">
           <label for="fp-email" data-i18n="auth.email_label">Email</label>
-          <input id="fp-email" name="email" type="email" required autocomplete="email" placeholder="vous@restaurant.fr">
+          <input id="fp-email" name="email" type="email" required autocomplete="email" data-i18n-ph="ph.email" placeholder="vous@restaurant.fr">
         </div>
         <p class="field-error" id="err-forgot" hidden></p>
         <p class="field-ok" id="ok-forgot" hidden></p>
@@ -302,7 +302,7 @@
 
       <div id="verify-note" hidden>
         <p class="verify-icon"><svg class="icon"><use href="#i-mail"/></svg></p>
-        <p class="auth-sub"><strong data-i18n="auth.verify_strong">Vérifiez votre boîte mail.</strong><br>Un email de confirmation vient de partir vers <b id="verify-email-addr"></b>. Cliquez sur le lien (valable 24 h) pour activer votre compte, puis connectez-vous.</p>
+        <p class="auth-sub"><strong data-i18n="auth.verify_strong">Vérifiez votre boîte mail.</strong><br><span data-i18n="auth.verify_sent">Un email de confirmation vient de partir vers</span> <b id="verify-email-addr"></b><span data-i18n="auth.verify_click">. Cliquez sur le lien (valable 24 h) pour activer votre compte, puis connectez-vous.</span></p>
         <p class="subtle" data-i18n="auth.verify_resend">Le lien est expiré ou l'email n'arrive pas&nbsp;? Reconnectez-vous : un nouvel email pourra être renvoyé.</p>
         <button class="btn btn-outline btn-block" type="button" id="verify-back" data-i18n="auth.back_login2">Retour à la connexion</button>
       </div>
@@ -310,7 +310,7 @@
       <form id="signup-form" hidden novalidate>
         <div class="field">
           <label for="s-name" data-i18n="auth.name_label">Votre nom</label>
-          <input id="s-name" name="name" required maxlength="100" autocomplete="name" placeholder="Ex. Marc Lefèvre">
+          <input id="s-name" name="name" required maxlength="100" autocomplete="name" data-i18n-ph="ph.name" placeholder="Ex. Marc Lefèvre">
         </div>
         <div class="field">
           <label for="s-company" data-i18n="auth.company_label">Nom du restaurant</label>
@@ -318,7 +318,7 @@
         </div>
         <div class="field">
           <label for="s-email" data-i18n="auth.email_label">Email</label>
-          <input id="s-email" name="email" type="email" required autocomplete="email" placeholder="vous@restaurant.fr">
+          <input id="s-email" name="email" type="email" required autocomplete="email" data-i18n-ph="ph.email" placeholder="vous@restaurant.fr">
         </div>
         <div class="field">
           <label for="s-pass" data-i18n="auth.password_min">Mot de passe <span class="opt">(12 caractères minimum)</span></label>
@@ -344,7 +344,7 @@
 <!-- ==================== ONBOARDING : PROFIL DU RESTAURANT ==================== -->
 <section id="onboard" hidden aria-label="Profil de votre restaurant">
   <div class="auth-wrap wide">
-    <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
+    <button class="btn-icon theme-toggle" type="button" data-i18n-aria="msg.theme_toggle" aria-label="Changer de thème"></button>
     <a class="brand" href="#">
       <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
       Le Mot du Chef
@@ -400,11 +400,11 @@
     </div>
     <div class="field">
       <label for="{p}-sigrole" data-i18n="pf.sigrole">Rôle dans la signature</label>
-      <input id="{p}-sigrole" name="signature_role" maxlength="80" placeholder="Ex. chef et propriétaire">
+      <input id="{p}-sigrole" name="signature_role" maxlength="80" data-i18n-ph="ph.sigrole" placeholder="Ex. chef et propriétaire">
     </div>
     <div class="field full">
       <label for="{p}-avoid" data-i18n="pf.avoid">Expressions à éviter <span class="opt">(bannies de vos réponses)</span></label>
-      <input id="{p}-avoid" name="avoid_phrases" maxlength="400" placeholder="Ex. cher client, établissement, dans les meilleurs délais">
+      <input id="{p}-avoid" name="avoid_phrases" maxlength="400" data-i18n-ph="ph.avoid" placeholder="Ex. cher client, établissement, dans les meilleurs délais">
       <p class="field-hint" data-i18n="pf.avoid_hint">Séparez les expressions par des virgules — 20 maximum, 60 caractères chacune.</p>
     </div>
     <div class="field full">
@@ -419,11 +419,11 @@
         <label class="chip"><input type="checkbox" name="strengths" value="options végétariennes"><span data-i18n="pf.s7">Options végétariennes</span></label>
         <label class="chip"><input type="checkbox" name="strengths" value="équipe attentive"><span data-i18n="pf.s8">Équipe attentive</span></label>
       </div>
-      <input name="strengths_custom" maxlength="120" placeholder="Autres points forts, séparés par des virgules (ex. pain maison, cave voûtée)">
+      <input name="strengths_custom" maxlength="120" data-i18n-ph="ph.strengths" placeholder="Autres points forts, séparés par des virgules (ex. pain maison, cave voûtée)">
     </div>
     <div class="field full">
       <label for="{p}-practical" data-i18n="pf.practical">Infos pratiques <span class="opt">(réservation, horaires…)</span></label>
-      <input id="{p}-practical" name="practical_info" maxlength="300" placeholder="Ex. réservation conseillée le week-end, fermé le lundi">
+      <input id="{p}-practical" name="practical_info" maxlength="300" data-i18n-ph="ph.practical" placeholder="Ex. réservation conseillée le week-end, fermé le lundi">
     </div>
     <div class="field full">
       <label for="{p}-maps" data-i18n="pf.maps">Lien de votre fiche Google <span class="opt">(URL Google Maps)</span></label>
@@ -440,7 +440,7 @@
     </div>
     <div class="field full">
       <div class="chips">
-        <label class="chip"><input id="{p}-showphone" type="checkbox" name="show_phone"><span>Afficher mon téléphone dans les réponses</span></label>
+        <label class="chip"><input id="{p}-showphone" type="checkbox" name="show_phone"><span><span data-i18n="pf.show_phone">Afficher mon téléphone dans les réponses</span></span></label>
       </div>
       <p class="field-hint" data-i18n="pf.phone_hint">Décoché, seul l'email de contact peut figurer dans les réponses publiques.</p>
     </div>
@@ -459,46 +459,46 @@
     <div class="workspace">
       <span class="avatar" id="ws-avatar">–</span>
       <div>
-        <strong id="ws-name">Votre restaurant</strong>
+        <strong id="ws-name" data-i18n="ws.restaurant">Votre restaurant</strong>
         <small id="ws-plan">Offre Gratuit</small>
       </div>
     </div>
     <nav class="side-nav" aria-label="Navigation">
       <button data-tab="reply" class="nav-item active">
-        <svg class="icon"><use href="#i-msg"/></svg><span>Répondre à un avis</span>
+        <svg class="icon"><use href="#i-msg"/></svg><span data-i18n="nav.reviews">Répondre à un avis</span>
       </button>
       <button data-tab="history" class="nav-item">
-        <svg class="icon"><use href="#i-history"/></svg><span>Historique</span>
+        <svg class="icon"><use href="#i-history"/></svg><span data-i18n="nav.history">Historique</span>
       </button>
       <button data-tab="collect" class="nav-item">
-        <svg class="icon"><use href="#i-qr"/></svg><span>Collecte d'avis</span>
+        <svg class="icon"><use href="#i-qr"/></svg><span data-i18n="nav.collect">Collecte d'avis</span>
       </button>
       <button data-tab="restaurant" class="nav-item">
-        <svg class="icon"><use href="#i-store"/></svg><span>Mon restaurant</span>
+        <svg class="icon"><use href="#i-store"/></svg><span data-i18n="nav.restaurant">Mon restaurant</span>
       </button>
       <button data-tab="account" class="nav-item">
-        <svg class="icon"><use href="#i-user"/></svg><span>Compte</span>
+        <svg class="icon"><use href="#i-user"/></svg><span data-i18n="nav.account">Compte</span>
       </button>
     </nav>
     <div class="aside-bottom">
-      <p class="storage-note"><svg class="icon"><use href="#i-info"/></svg>Rien n'est publié sans vous.</p>
-      <button id="logout" class="nav-item"><svg class="icon"><use href="#i-x"/></svg><span>Se déconnecter</span></button>
+      <p class="storage-note"><svg class="icon"><use href="#i-info"/></svg><span data-i18n="storage.note">Rien n'est publié sans vous.</span></p>
+      <button id="logout" class="nav-item"><svg class="icon"><use href="#i-x"/></svg><span data-i18n="nav.logout">Se déconnecter</span></button>
     </div>
   </aside>
 
   <div class="app-main">
     <div class="app-top">
-      <span class="crumb">Votre espace <span aria-hidden="true">/</span> <b id="breadcrumb">Répondre à un avis</b></span>
+      <span class="crumb"><span data-i18n="crumb.space">Votre espace</span> <span aria-hidden="true">/</span> <b id="breadcrumb" data-i18n="nav.reviews">Répondre à un avis</b></span>
       <div class="app-top-right">
-        <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
+        <button class="btn-icon theme-toggle" type="button" data-i18n-aria="msg.theme_toggle" aria-label="Changer de thème"></button>
         <span class="quota-pill" id="quota-pill" hidden></span>
         <div class="user-menu">
-          <button class="avatar avatar-btn" id="top-avatar" aria-label="Menu du compte" aria-haspopup="menu" aria-expanded="false">–</button>
+          <button class="avatar avatar-btn" id="top-avatar" data-i18n-aria="account.menu" aria-label="Menu du compte" aria-haspopup="menu" aria-expanded="false">–</button>
           <div class="user-menu-pop" id="user-menu" hidden role="menu">
             <p class="user-menu-id" id="user-menu-email"></p>
             <button class="user-menu-item" data-tab="account" role="menuitem"><svg class="icon"><use href="#i-user"/></svg>Mon compte</button>
             <button class="user-menu-item" id="menu-admin" role="menuitem" hidden><svg class="icon"><use href="#i-sliders"/></svg>Administration</button>
-            <button class="user-menu-item" id="menu-logout" role="menuitem"><svg class="icon"><use href="#i-x"/></svg>Se déconnecter</button>
+            <button class="user-menu-item" id="menu-logout" role="menuitem"><svg class="icon"><use href="#i-x"/></svg><span data-i18n="nav.logout">Se déconnecter</span></button>
           </div>
         </div>
       </div>
@@ -506,7 +506,7 @@
 
     <div class="cgv-banner" id="cgv-banner" hidden role="alert">
       <p data-i18n="cgv.updated">Nos <a href="/cgv" data-legal-link>conditions générales de vente</a> ont été mises à jour (version <b id="cgv-version-label"></b>). Merci de les accepter pour continuer.</p>
-      <button class="btn btn-primary btn-sm" id="cgv-accept">J'accepte les CGV</button>
+      <button class="btn btn-primary btn-sm" id="cgv-accept" data-i18n="cgv.accept">J'accepte les CGV</button>
     </div>
 
     <!-- ===== Répondre ===== -->
@@ -517,75 +517,75 @@
           <h2 data-i18n="review.title">Répondre à un avis.</h2>
           <p class="page-sub" data-i18n="review.sub">Collez l'avis tel qu'il apparaît sur Google. Trois réponses vous seront proposées, à relire avant de publier.</p>
         </div>
-        <button class="btn btn-outline btn-sm" id="reply-new" hidden><svg class="icon"><use href="#i-x"/></svg>Nouvel avis</button>
+        <button class="btn btn-outline btn-sm" id="reply-new" hidden><svg class="icon"><use href="#i-x"/></svg><span data-i18n="review.new">Nouvel avis</span></button>
       </div>
 
       <div class="reply-grid">
         <form id="review-form" class="panel form-panel" novalidate>
           <input type="hidden" name="id">
           <div class="field">
-            <label for="rv-body">Texte de l'avis <span class="opt">(collé depuis Google — peut être vide)</span></label>
-            <textarea id="rv-body" name="body" rows="6" maxlength="4000" placeholder="« Attente de 45 minutes pour un plat froid… »"></textarea>
+            <label for="rv-body" data-i18n="rv.body">Texte de l'avis <span class="opt">(collé depuis Google — peut être vide)</span></label>
+            <textarea id="rv-body" name="body" rows="6" maxlength="4000" data-i18n-ph="ph.review" placeholder="« Attente de 45 minutes pour un plat froid… »"></textarea>
           </div>
           <div class="form-grid">
             <div class="field">
               <span class="label">Note <span class="req" aria-hidden="true">*</span></span>
-              <div class="star-input" id="rv-stars" role="radiogroup" aria-label="Note de l'avis">
-                <input type="radio" name="rating" value="1" id="st1"><label for="st1" title="1 étoile">★</label>
-                <input type="radio" name="rating" value="2" id="st2"><label for="st2" title="2 étoiles">★</label>
-                <input type="radio" name="rating" value="3" id="st3"><label for="st3" title="3 étoiles">★</label>
-                <input type="radio" name="rating" value="4" id="st4"><label for="st4" title="4 étoiles">★</label>
-                <input type="radio" name="rating" value="5" id="st5" checked><label for="st5" title="5 étoiles">★</label>
+              <div class="star-input" id="rv-stars" role="radiogroup" data-i18n-aria="rv.rating_aria" aria-label="Note de l'avis">
+                <input type="radio" name="rating" value="1" id="st1"><label for="st1" data-i18n-title="stars.1" title="1 étoile">★</label>
+                <input type="radio" name="rating" value="2" id="st2"><label for="st2" data-i18n-title="stars.2" title="2 étoiles">★</label>
+                <input type="radio" name="rating" value="3" id="st3"><label for="st3" data-i18n-title="stars.3" title="3 étoiles">★</label>
+                <input type="radio" name="rating" value="4" id="st4"><label for="st4" data-i18n-title="stars.4" title="4 étoiles">★</label>
+                <input type="radio" name="rating" value="5" id="st5" checked><label for="st5" data-i18n-title="stars.5" title="5 étoiles">★</label>
                 <span class="star-label" id="star-label">5 / 5</span>
               </div>
               <p class="field-error" id="err-rating" hidden></p>
             </div>
             <div class="field">
-              <label for="rv-author">Prénom de l'auteur <span class="opt">(tel qu'affiché)</span></label>
-              <input id="rv-author" name="author_name" maxlength="80" placeholder="Ex. Kévin">
+              <label for="rv-author" data-i18n="rv.author">Prénom de l'auteur <span class="opt">(tel qu'affiché)</span></label>
+              <input id="rv-author" name="author_name" maxlength="80" data-i18n-ph="ph.author" placeholder="Ex. Kévin">
               <label class="check-row" id="rv-name-row" for="rv-include-name" hidden>
                 <input type="checkbox" id="rv-include-name" checked>
-                <span>Inclure ce prénom dans les réponses <span class="opt">(non envoyé au rédacteur, réinséré après génération)</span></span>
+                <span><span data-i18n="rv.incl_name">Inclure ce prénom dans les réponses <span class="opt">(non envoyé au rédacteur, réinséré après génération)</span></span></span>
               </label>
             </div>
             <div class="field">
-              <label for="rv-date">Date de visite <span class="opt">(si connue)</span></label>
+              <label for="rv-date" data-i18n="rv.date">Date de visite <span class="opt">(si connue)</span></label>
               <input id="rv-date" name="visited_on" type="date">
             </div>
           </div>
 
           <div id="context-block" hidden>
-            <span class="label">Contexte <span class="opt">(plusieurs choix possibles — aide le rédacteur à rétablir les faits avec tact)</span></span>
+            <span class="label"><span data-i18n="rv.context">Contexte <span class="opt">(plusieurs choix possibles — aide le rédacteur à rétablir les faits avec tact)</span></span></span>
             <div class="chips" id="context-chips"></div>
-            <input name="context_note" id="rv-note" maxlength="300" placeholder="Précision libre et courte (ex. « table de 8 arrivée sans réservation »)" hidden>
+            <input name="context_note" id="rv-note" maxlength="300" data-i18n-ph="ph.context" placeholder="Précision libre et courte (ex. « table de 8 arrivée sans réservation »)" hidden>
           </div>
 
           <div id="plan-limit-note" class="plan-limit" hidden>
             <p id="plan-limit-text"></p>
-            <button type="button" class="btn btn-primary btn-sm" id="plan-limit-upgrade">Passer en Pro</button>
+            <button type="button" class="btn btn-primary btn-sm" id="plan-limit-upgrade"><span data-i18n="collect.go_pro">Passer en Pro</span></button>
           </div>
           <p class="field-error" id="err-review" hidden></p>
           <div class="form-actions">
-            <button class="btn btn-primary" type="submit" id="generate-btn"><svg class="icon"><use href="#i-sparkle"/></svg>Rédiger 3 réponses</button>
+            <button class="btn btn-primary" type="submit" id="generate-btn"><svg class="icon"><use href="#i-sparkle"/></svg><span data-i18n="review.generate">Rédiger 3 réponses</span></button>
             <span class="subtle" id="generate-hint"></span>
           </div>
         </form>
 
         <div class="reply-side">
           <div class="panel suspect-panel" id="suspect-panel" hidden>
-            <p class="suspect-badge"><svg class="icon"><use href="#i-flag"/></svg>Avis potentiellement contraire aux règles Google</p>
+            <p class="suspect-badge"><svg class="icon"><use href="#i-flag"/></svg><span data-i18n="rv.suspect">Avis potentiellement contraire aux règles Google</span></p>
             <ul id="suspect-flags" class="flag-list"></ul>
             <details class="report-guide">
-              <summary>Guide de signalement<svg class="icon"><use href="#i-chev"/></svg></summary>
+              <summary><span data-i18n="rv.report_guide">Guide de signalement</span><svg class="icon"><use href="#i-chev"/></svg></summary>
               <p class="report-notice" id="report-notice"></p>
-              <p><strong>Motif conseillé :</strong> <span id="report-reason"></span></p>
-              <label for="report-text" class="label">Texte de signalement (prêt à copier)</label>
+              <p><strong data-i18n="rv.motive">Motif conseillé :</strong> <span id="report-reason"></span></p>
+              <label for="report-text" class="label" data-i18n="rv.report">Texte de signalement (prêt à copier)</label>
               <textarea id="report-text" rows="5" readonly></textarea>
               <div class="form-actions">
                 <button class="btn btn-outline btn-sm" type="button" id="report-copy"><svg class="icon"><use href="#i-copy"/></svg>Copier</button>
-                <a class="btn btn-quiet btn-sm" id="report-help" href="#" target="_blank" rel="noopener">Aide Google : signaler un avis<svg class="icon"><use href="#i-arrow"/></svg></a>
+                <a class="btn btn-quiet btn-sm" id="report-help" href="#" target="_blank" rel="noopener"><span data-i18n="rv.help_google">Aide Google : signaler un avis</span><svg class="icon"><use href="#i-arrow"/></svg></a>
               </div>
-              <p class="subtle">Sur Google Maps : avis → menu ⋮ → « Signaler un avis », choisissez le motif ci-dessus. Google ne retire que les contenus contraires à ses règles.</p>
+              <p class="subtle" data-i18n="rv.maps_help">Sur Google Maps : avis → menu ⋮ → « Signaler un avis », choisissez le motif ci-dessus. Google ne retire que les contenus contraires à ses règles.</p>
             </details>
           </div>
           <div class="panel tips-panel" id="tips-panel">
@@ -607,15 +607,15 @@
             <p id="variants-meta"></p>
           </div>
           <div class="tools">
-            <a class="btn btn-outline btn-sm" id="open-google" href="#" target="_blank" rel="noopener"><svg class="icon"><use href="#i-arrow"/></svg>Ouvrir ma fiche Google</a>
-            <button class="btn btn-quiet btn-sm" id="regenerate"><svg class="icon"><use href="#i-sparkle"/></svg>Trois autres</button>
+            <a class="btn btn-outline btn-sm" id="open-google" href="#" target="_blank" rel="noopener"><svg class="icon"><use href="#i-arrow"/></svg><span data-i18n="rv.open_google">Ouvrir ma fiche Google</span></a>
+            <button class="btn btn-quiet btn-sm" id="regenerate"><svg class="icon"><use href="#i-sparkle"/></svg><span data-i18n="variants.more">Trois autres</span></button>
           </div>
         </div>
         <div class="variants" id="variants"></div>
         <p class="published-note" id="published-note" hidden></p>
         <div class="publish-gate" id="publish-gate" hidden>
           <div class="publish-gate-card" role="alertdialog" aria-live="assertive">
-            <h3>Publication dans <b id="gate-count">10</b> s…</h3>
+            <h3><span data-i18n="gate.pre">Publication dans</span> <b id="gate-count">10</b> <span data-i18n="gate.unit">s…</span></h3>
             <p data-i18n="gate.body">La réponse est copiée dans le presse-papier : collez-la sur votre fiche Google. Sans action, elle sera marquée comme publiée.</p>
             <button class="btn btn-quiet" id="gate-cancel" data-i18n="gate.cancel">Annuler la publication</button>
           </div>
@@ -636,13 +636,13 @@
         <div class="filters">
           <label class="search">
             <svg class="icon"><use href="#i-search"/></svg>
-            <input id="h-search" placeholder="Rechercher un prénom, un mot de l'avis…" aria-label="Rechercher un avis">
+            <input id="h-search" data-i18n-ph="ph.search" placeholder="Rechercher un prénom, un mot de l'avis…" data-i18n-aria="hist.search_aria" aria-label="Rechercher un avis">
           </label>
-          <select id="h-rating" aria-label="Filtrer par note">
+          <select id="h-rating" data-i18n-aria="hist.rating_aria" aria-label="Filtrer par note">
             <option value="" data-i18n="history.all_ratings">Toutes les notes</option>
-            <option value="5">5 étoiles</option><option value="4">4 étoiles</option><option value="3">3 étoiles</option><option value="2">2 étoiles</option><option value="1">1 étoile</option>
+            <option value="5" data-i18n="stars.5">5 étoiles</option><option value="4" data-i18n="stars.4">4 étoiles</option><option value="3" data-i18n="stars.3">3 étoiles</option><option value="2" data-i18n="stars.2">2 étoiles</option><option value="1" data-i18n="stars.1">1 étoile</option>
           </select>
-          <select id="h-status" aria-label="Filtrer par statut">
+          <select id="h-status" data-i18n-aria="hist.status_aria" aria-label="Filtrer par statut">
             <option value="" data-i18n="history.all">Tous</option>
             <option value="pending" data-i18n="history.pending">Sans réponse publiée</option>
             <option value="published" data-i18n="history.published">Publiée sur Google</option>
@@ -678,12 +678,12 @@
             <ol class="help-steps" id="collect-help"></ol>
             <div class="field">
               <label for="c-review-url" data-i18n="collect.link.label">Lien « laisser un avis »</label>
-              <input id="c-review-url" name="google_review_url" type="url" maxlength="500" placeholder="https://g.page/r/…/review">
+              <input id="c-review-url" name="google_review_url" type="url" maxlength="500" data-i18n-ph="ph.gurl" placeholder="https://g.page/r/…/review">
               <p class="field-error" id="err-review-url" hidden></p>
             </div>
             <div class="form-actions">
               <button class="btn btn-primary" type="submit" id="review-url-btn" data-i18n="collect.link.save">Enregistrer le lien</button>
-              <a class="btn btn-quiet" id="test-review-url" href="#" target="_blank" rel="noopener" hidden>Tester le lien<svg class="icon"><use href="#i-arrow"/></svg></a>
+              <a class="btn btn-quiet" id="test-review-url" href="#" target="_blank" rel="noopener" hidden><span data-i18n="collect.test_link">Tester le lien</span><svg class="icon"><use href="#i-arrow"/></svg></a>
             </div>
           </form>
           <form id="collect-form" class="panel form-panel" novalidate>
@@ -695,7 +695,7 @@
             <div class="field">
               <label for="c-message" data-i18n="collect.print.msg_label">Message</label>
               <textarea id="c-message" name="message" rows="3" maxlength="200"></textarea>
-              <p class="field-hint">Aucune contrepartie (remise, cadeau, boisson offerte) ne peut être proposée en échange d'un avis.</p>
+              <p class="field-hint" data-i18n="collect.no_gift">Aucune contrepartie (remise, cadeau, boisson offerte) ne peut être proposée en échange d'un avis.</p>
               <p class="field-error" id="err-collect" hidden></p>
             </div>
             <div class="form-actions">
@@ -704,7 +704,7 @@
           </form>
           <div class="panel form-panel" id="ingest-panel">
             <h3 data-i18n="collect.ingest.title">Vos avis sans copier-coller</h3>
-            <p class="form-intro">Transférez automatiquement les emails « nouvel avis » de Google vers votre adresse dédiée : l'avis arrive ici tout seul et les réponses sont rédigées d'avance.</p>
+            <p class="form-intro"><span data-i18n="collect.ingest.intro">Transférez automatiquement les emails « nouvel avis » de Google vers votre adresse dédiée : l'avis arrive seul, sans copier-coller.</span> <span data-i18n="collect.ingest.auto">L'avis arrive ici tout seul et les réponses sont rédigées d'avance.</span></p>
             <div class="field">
               <label for="ingest-address" data-i18n="collect.ingest.address">Votre adresse de transfert</label>
               <div class="copy-row">
@@ -714,29 +714,29 @@
             </div>
             <div class="notice local" id="ingest-confirm" hidden>
               <span class="notice-label">Gmail</span>
-              <p>Votre règle de transfert attend une validation. <span id="ingest-confirm-code"></span><a id="ingest-confirm-link" href="#" target="_blank" rel="noopener">Valider sur Gmail</a></p>
+              <p><span data-i18n="collect.ingest.pending">Votre règle de transfert attend une validation.</span> <span id="ingest-confirm-code"></span><a id="ingest-confirm-link" href="#" target="_blank" rel="noopener" data-i18n="collect.validate_gmail">Valider sur Gmail</a></p>
             </div>
             <details class="ingest-guide">
               <summary data-i18n="collect.ingest.rule">Créer la règle de transfert</summary>
               <ol class="help-steps">
-                <li><b>Gmail</b> — Paramètres › Filtres › Créer un filtre : expéditeur <code>google.com</code>, objet contient « avis » → « Transférer à » votre adresse ci-dessus.</li>
-                <li><b>Outlook / Microsoft 365</b> — Paramètres › Courrier › Règles : « Si l'expéditeur contient google.com » → « Transférer vers ».</li>
-                <li><b>Orange, Free, autre webmail</b> — « Règles » ou « Filtres » : rediriger les messages de <code>@google.com</code> vers votre adresse.</li>
-                <li>Dans tous les cas : conservez l'email dans votre boîte (option « garder une copie ») — le transfert ne supprime rien.</li>
+                <li data-i18n="collect.ingest.gmail"><b>Gmail</b> — Paramètres › Filtres › Créer un filtre : expéditeur <code>google.com</code>, objet contient « avis » → « Transférer à » votre adresse ci-dessus.</li>
+                <li data-i18n="collect.ingest.outlook"><b>Outlook / Microsoft 365</b> — Paramètres › Courrier › Règles : « Si l'expéditeur contient google.com » → « Transférer vers ».</li>
+                <li data-i18n="collect.ingest.other"><b>Orange, Free, autre webmail</b> — « Règles » ou « Filtres » : rediriger les messages de <code>@google.com</code> vers votre adresse.</li>
+                <li data-i18n="collect.ingest.keep"><b></b>Dans tous les cas : conservez l'email dans votre boîte (option « garder une copie ») — le transfert ne supprime rien.</li>
               </ol>
             </details>
-            <p class="field-hint">Seuls les emails signés Google (SPF/DKIM vérifiés) alimentent vos avis : un faux avis transféré à la main est rejeté.</p>
+            <p class="field-hint" data-i18n="collect.ingest.spf">Seuls les emails signés Google (SPF/DKIM vérifiés) alimentent vos avis : un faux avis transféré à la main est rejeté.</p>
           </div>
         </div>
         <div class="settings-col">
           <div class="panel form-panel qr-panel">
             <h3 data-i18n="collect.preview.title">Aperçu et impression</h3>
-            <div class="qr-preview" id="qr-preview"><p class="subtle">Renseignez votre lien « laisser un avis » pour voir le QR code.</p></div>
+            <div class="qr-preview" id="qr-preview"><p class="subtle"><span data-i18n="collect.qr_empty">Renseignez votre lien « laisser un avis » pour voir le QR code.</span></p></div>
             <div class="danger-actions" id="pdf-actions">
-              <button class="btn btn-outline btn-sm" data-pdf="chevalet"><svg class="icon"><use href="#i-print"/></svg>Chevalet de table (PDF A4 à plier)</button>
-              <button class="btn btn-outline btn-sm" data-pdf="encart"><svg class="icon"><use href="#i-print"/></svg>Encarts d'addition (8 par page)</button>
+              <button class="btn btn-outline btn-sm" data-pdf="chevalet"><svg class="icon"><use href="#i-print"/></svg><span data-i18n="collect.chevalet_btn">Chevalet de table (PDF A4 à plier)</span></button>
+              <button class="btn btn-outline btn-sm" data-pdf="encart"><svg class="icon"><use href="#i-print"/></svg><span data-i18n="collect.encart_btn">Encarts d'addition (8 par page)</span></button>
             </div>
-            <p class="plan-limit" id="pdf-pro-note" hidden>Les PDF imprimables sont réservés à l'offre Pro. <button type="button" class="btn btn-primary btn-sm" data-tab="restaurant">Passer en Pro</button></p>
+            <p class="plan-limit" id="pdf-pro-note" hidden><span data-i18n="collect.pro_only">Les PDF imprimables sont réservés à l'offre Pro.</span> <button type="button" class="btn btn-primary btn-sm" data-tab="restaurant"><span data-i18n="collect.go_pro">Passer en Pro</span></button></p>
           </div>
         </div>
       </div>
@@ -753,7 +753,7 @@
       </div>
       <div id="sub-panel" class="panel form-panel" hidden>
         <h3 data-i18n="restaurant.subscription">Abonnement</h3>
-        <div id="sub-body"><p class="form-intro">Chargement…</p></div>
+        <div id="sub-body"><p class="form-intro"><span data-i18n="msg.loading">Chargement…</span></p></div>
       </div>
       <form id="restaurant-form" class="panel form-panel profile-fields" novalidate>
         <h3 data-i18n="restaurant.profile">Profil</h3>
@@ -786,11 +786,11 @@
             <div class="field">
               <label for="p-email" data-i18n="account.email_label">Email du compte</label>
               <input id="p-email" name="email" type="email" disabled aria-describedby="p-email-hint">
-              <p class="field-hint" id="p-email-hint">Pour changer d'adresse, renseignez la nouvelle : un email de confirmation lui sera envoyé.</p>
+              <p class="field-hint" id="p-email-hint" data-i18n="account.email_hint">Pour changer d'adresse, renseignez la nouvelle : un email de confirmation lui sera envoyé.</p>
             </div>
             <div class="field">
               <label for="p-newemail" data-i18n="account.newemail">Nouvelle adresse email <span class="opt">(optionnel)</span></label>
-              <input id="p-newemail" name="newemail" type="email" autocomplete="off" placeholder="nouvelle@restaurant.fr">
+              <input id="p-newemail" name="newemail" type="email" autocomplete="off" data-i18n-ph="ph.newemail" placeholder="nouvelle@restaurant.fr">
               <p class="field-error" id="err-pemail" hidden></p>
             </div>
             <div class="form-actions">
@@ -816,21 +816,21 @@
         <div class="settings-col">
           <div class="panel form-panel">
             <h3 data-i18n="account.sessions">Sessions actives</h3>
-            <p class="form-intro">Chaque session correspond à un appareil connecté. Révoquez celle que vous ne reconnaissez pas.</p>
-            <ul class="session-list" id="session-list"><li class="subtle">Chargement…</li></ul>
+            <p class="form-intro" data-i18n="sess.intro">Chaque session correspond à un appareil connecté. Révoquez celle que vous ne reconnaissez pas.</p>
+            <ul class="session-list" id="session-list"><li class="subtle"><span data-i18n="msg.loading">Chargement…</span></li></ul>
             <div class="form-actions">
               <button class="btn btn-outline btn-sm" id="revoke-others" data-i18n="account.revoke">Déconnecter les autres appareils</button>
             </div>
           </div>
           <div class="panel form-panel" id="push-panel">
             <h3 data-i18n="account.notifications">Notifications</h3>
-            <p class="form-intro">Soyez alerté sur votre téléphone dès que des réponses sont prêtes. L'application est installable comme une appli : depuis le navigateur, « Ajouter à l'écran d'accueil ».</p>
+            <p class="form-intro" data-i18n="push.intro">Soyez alerté sur votre téléphone dès que des réponses sont prêtes. L'application est installable depuis le navigateur. <span data-i18n="push.install">L'application est installable comme une appli : depuis le navigateur, « Ajouter à l'écran d'accueil ».</span></p>
             <div id="push-unavailable" hidden>
-              <p class="field-hint">Les notifications push ne sont pas prises en charge par ce navigateur.</p>
+              <p class="field-hint" data-i18n="push.unsupported">Les notifications push ne sont pas prises en charge par ce navigateur.</p>
             </div>
             <div id="push-body" hidden>
               <div class="field">
-                <button class="btn btn-primary btn-sm" id="push-enable">Activer les notifications sur cet appareil</button>
+                <button class="btn btn-primary btn-sm" id="push-enable" data-i18n="push.enable_dev">Activer les notifications sur cet appareil</button>
                 <p class="field-hint" id="push-status"></p>
               </div>
               <div id="push-opts" hidden>
@@ -854,10 +854,10 @@
                 </div>
                 <label class="check-row" for="push-hide">
                   <input type="checkbox" id="push-hide">
-                  <span>Masquer le contenu de l'avis sur l'écran verrouillé <span class="opt">(titre générique, sans extrait ni nom)</span></span>
+                  <span><span data-i18n="push.hide">Masquer le contenu de l'avis sur l'écran verrouillé <span class="opt">(titre générique, sans extrait ni nom)</span></span></span>
                 </label>
                 <div class="field">
-                  <label>Appareils enregistrés</label>
+                  <label data-i18n="push.devices">Appareils enregistrés</label>
                   <ul class="session-list" id="push-devices"></ul>
                 </div>
                 <div class="form-actions">
@@ -869,10 +869,10 @@
           </div>
           <div class="panel form-panel danger-zone">
             <h3 data-i18n="account.data">Vos données</h3>
-            <p class="form-intro">Export complet de votre compte en JSON (profil, avis, réponses), et suppression définitive. Le texte des avis est effacé automatiquement après <span data-retention-months>12</span> mois.</p>
+            <p class="form-intro"><span data-i18n="account.data_intro">Export complet de votre compte en JSON (profil, avis, réponses), et suppression définitive. Le tout se fait ici, sans support.</span> <span data-i18n="account.erase">Le texte des avis est effacé automatiquement après</span> <span data-retention-months>12</span> <span data-i18n="account.months">mois</span>.</p>
             <div class="danger-actions">
-              <button class="btn btn-outline btn-sm" id="export-data"><svg class="icon"><use href="#i-download"/></svg>Exporter toutes mes données (JSON)</button>
-              <button class="btn btn-danger btn-sm" id="delete-account"><svg class="icon"><use href="#i-alert"/></svg>Supprimer mon compte</button>
+              <button class="btn btn-outline btn-sm" id="export-data"><svg class="icon"><use href="#i-download"/></svg><span data-i18n="account.export">Exporter toutes mes données (JSON)</span></button>
+              <button class="btn btn-danger btn-sm" id="delete-account"><svg class="icon"><use href="#i-alert"/></svg><span data-i18n="account.delete">Supprimer mon compte</span></button>
             </div>
           </div>
         </div>
@@ -881,19 +881,19 @@
   </div>
 
   <footer class="app-footer">
-    <nav class="legal-links" aria-label="Pages légales">
-      <a href="/mentions-legales">Mentions légales</a>
+    <nav class="legal-links" data-i18n-aria="footer.aria" aria-label="Pages légales">
+      <a href="/mentions-legales" data-i18n="footer.legal.mentions">Mentions légales</a>
       <a href="/cgv">CGV</a>
-      <a href="/confidentialite">Confidentialité</a>
+      <a href="/confidentialite" data-i18n="footer.legal.privacy">Confidentialité</a>
     </nav>
   </footer>
 
   <nav class="mobile-nav" aria-label="Navigation">
-    <button data-tab="reply" class="mobile-item active"><svg class="icon"><use href="#i-msg"/></svg><span>Répondre</span></button>
-    <button data-tab="history" class="mobile-item"><svg class="icon"><use href="#i-history"/></svg><span>Historique</span></button>
-    <button data-tab="collect" class="mobile-item"><svg class="icon"><use href="#i-qr"/></svg><span>Collecte</span></button>
-    <button data-tab="restaurant" class="mobile-item"><svg class="icon"><use href="#i-store"/></svg><span>Restaurant</span></button>
-    <button data-tab="account" class="mobile-item"><svg class="icon"><use href="#i-user"/></svg><span>Compte</span></button>
+    <button data-tab="reply" class="mobile-item active"><svg class="icon"><use href="#i-msg"/></svg><span data-i18n="nav.reviews_short">Répondre</span></button>
+    <button data-tab="history" class="mobile-item"><svg class="icon"><use href="#i-history"/></svg><span data-i18n="nav.history_short">Historique</span></button>
+    <button data-tab="collect" class="mobile-item"><svg class="icon"><use href="#i-qr"/></svg><span data-i18n="nav.collect_short">Collecte</span></button>
+    <button data-tab="restaurant" class="mobile-item"><svg class="icon"><use href="#i-store"/></svg><span data-i18n="nav.restaurant_short">Restaurant</span></button>
+    <button data-tab="account" class="mobile-item"><svg class="icon"><use href="#i-user"/></svg><span data-i18n="nav.account_short">Compte</span></button>
   </nav>
 </section>
 
@@ -903,7 +903,7 @@
     <div class="app-top">
       <span class="crumb">Le Mot du Chef <span aria-hidden="true">/</span> <b>Administration</b></span>
       <div class="app-top-right">
-        <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
+        <button class="btn-icon theme-toggle" type="button" data-i18n-aria="msg.theme_toggle" aria-label="Changer de thème"></button>
         <button class="btn btn-quiet btn-sm" id="admin-back">← Espace restaurateur</button>
       </div>
     </div>
@@ -971,24 +971,24 @@
 </section>
 
 <!-- ==================== PAGES LÉGALES ==================== -->
-<section id="legal" hidden aria-label="Pages légales">
+<section id="legal" hidden data-i18n-aria="footer.aria" aria-label="Pages légales">
   <div class="legal-wrap">
     <div class="legal-head">
       <a class="brand" href="/">
         <span class="logo" aria-hidden="true"><svg class="mark"><use href="#i-mark"/></svg></span>
         Le Mot du Chef
       </a>
-      <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
+      <button class="btn-icon theme-toggle" type="button" data-i18n-aria="msg.theme_toggle" aria-label="Changer de thème"></button>
     </div>
     <div class="legal-card panel">
-      <nav class="legal-nav" aria-label="Navigation des pages légales">
-        <a href="/mentions-legales" data-legal-page="mentions">Mentions légales</a>
-        <a href="/cgv" data-legal-page="cgv">CGV</a>
-        <a href="/confidentialite" data-legal-page="confidentialite">Confidentialité</a>
+      <nav class="legal-nav" data-i18n-aria="legal.aria" aria-label="Navigation des pages légales">
+        <a href="/mentions-legales" data-legal-page="mentions" data-i18n="footer.legal.mentions">Mentions légales</a>
+        <a href="/cgv" data-legal-page="cgv" data-i18n="footer.cgv_short">CGV</a>
+        <a href="/confidentialite" data-legal-page="confidentialite" data-i18n="footer.legal.privacy">Confidentialité</a>
       </nav>
-      <p class="legal-warn" id="legal-warn" hidden>Variables légales non configurées — environnement de développement uniquement.</p>
+      <p class="legal-warn" id="legal-warn" hidden data-i18n="legal.warn">Variables légales non configurées — environnement de développement uniquement.</p>
 
-      <article id="legal-mentions">
+      <article id="legal-mentions" data-legal-doc>
         <h1>Mentions légales</h1>
         <h2>Éditeur du service</h2>
         <p>
@@ -1006,7 +1006,7 @@
         <p>Cloudflare Inc. (réseau de diffusion et tunnel sécurisé), 101 Townsend St, San Francisco, CA 94107, États-Unis. Anthropic PBC (modèle de langage utilisé pour la rédaction des réponses), 548 Market St, San Francisco, CA 94104, États-Unis. Stripe (paiement). Le Mot du Chef n'est pas affilié à Google LLC&nbsp;; « Google » et « Google Maps » sont des marques de Google LLC.</p>
       </article>
 
-      <article id="legal-cgv" hidden>
+      <article id="legal-cgv" hidden data-legal-doc>
         <h1>Conditions générales de vente</h1>
         <p class="legal-version">Version du <span data-legal-version>—</span></p>
         <h2>1. Objet et champ d'application</h2>
@@ -1039,7 +1039,7 @@
         <p>Les présentes CGV sont soumises au droit français. Tout litige relatif à leur exécution ou leur interprétation relève des tribunaux compétents du ressort du siège de l'Éditeur.</p>
       </article>
 
-      <article id="legal-privacy" hidden>
+      <article id="legal-privacy" hidden data-legal-doc>
         <h1>Politique de confidentialité</h1>
         <h2>Données traitées et finalités</h2>
         <p>Le Mot du Chef traite&nbsp;: les données de compte (nom, email, mot de passe chiffré), le profil de votre restaurant (nom, ville, cuisine, signature, points forts, coordonnées de contact, liens Google), et les avis que vous saisissez (prénom de l'auteur tel qu'affiché publiquement, note, texte, date de visite, contexte que vous indiquez) ainsi que les réponses générées et publiées. Ces données servent exclusivement à fournir le service&nbsp;: authentification, rédaction assistée des réponses, historique, supports de collecte, facturation et obligations légales comptables.</p>
@@ -1075,15 +1075,15 @@
         <h2>Hosting</h2>
         <p>Website (frontend): Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, United States.</p>
         <p>Application and database: server operated by the provider, located in Europe.</p>
-        <p class="legal-warn">Content pending — to be supplied for the South African market.</p>
+        <p class="legal-warn">Content pending, to be supplied for the South African market.</p>
       </article>
       <article id="legal-cgv-za" hidden>
         <h1>Terms of sale</h1>
-        <p class="legal-warn">Content pending — to be supplied for the South African market.</p>
+        <p class="legal-warn">Content pending, to be supplied for the South African market.</p>
       </article>
       <article id="legal-privacy-za" hidden>
         <h1>Privacy policy</h1>
-        <p class="legal-warn">Content pending — to be supplied for the South African market.</p>
+        <p class="legal-warn">Content pending, to be supplied for the South African market.</p>
       </article>
     </div>
     <button class="btn btn-quiet" data-legal-back>← Retour</button>
@@ -1093,12 +1093,12 @@
 <!-- ==================== DIALOGUES ==================== -->
 <dialog id="delete-account-dlg" aria-labelledby="delete-account-title">
   <div class="dialog-head">
-    <div><p class="eyebrow"><i></i>Action définitive</p><h2 id="delete-account-title">Supprimer votre compte&nbsp;?</h2></div>
+    <div><p class="eyebrow"><i></i><span data-i18n="modal.def">Action définitive</span></p><h2 id="delete-account-title" data-i18n="modal.del_account">Supprimer votre compte&nbsp;?</h2></div>
     <button type="button" class="btn-icon" data-close aria-label="Fermer"><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
-  <p class="confirm-text">Votre compte, votre restaurant, vos avis et vos réponses seront définitivement supprimés. Cette action est irréversible.</p>
+  <p class="confirm-text"><span data-i18n="modal.del_body">Votre compte, votre restaurant, vos avis et vos réponses seront définitivement supprimés. Cette action est irréversible.</span></p>
   <div class="field">
-    <label for="del-password">Confirmez par votre mot de passe</label>
+    <label for="del-password" data-i18n="modal.confirm_pw">Confirmez par votre mot de passe</label>
     <input id="del-password" type="password" autocomplete="current-password" required>
     <p class="field-error" id="err-delete-account" hidden></p>
   </div>
