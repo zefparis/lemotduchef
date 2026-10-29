@@ -210,9 +210,10 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
   const words = wordCount(bodyNoSig);
   const range = replyRange(r);
   // Longueur : dépassement jusqu'à +10 % = avertissement ; au-delà = rejet.
-  if (words < Math.floor(range.min * 0.85)) errors.push(`trop court (${words} mots, minimum ${range.min})`);
-  else if (words > Math.ceil(range.max * 1.30)) errors.push(`trop long (${words} mots, maximum ${range.max})`);
-  else if (words < range.min || words > range.max) warnings.push(`longueur hors cible (${words} mots, cible ${range.min}–${range.max})`);
+  // La longueur est un objectif de style, jamais un motif de rejet : hors
+  // cible → avertissement uniquement (pas de plafond dur en mots ou jetons).
+  if (words < range.min || words > range.max)
+    warnings.push(`longueur hors cible (${words} mots, cible ${range.min}–${range.max})`);
 
   // Ouverture : « Bonjour {prénom} » si un prénom exploitable est affiché
   // (≥ 2 lettres, pas un pseudo comme « Anonyme » ou « R. »), sinon « Bonjour ».

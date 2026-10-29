@@ -2,7 +2,7 @@ import { pool } from '../db.js';
 import { config } from '../config.js';
 import { llmProvider, LlmError } from './provider.js';
 import { effectivePlan, FREE_MONTHLY_LIMIT } from '../stripe.js';
-import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, signatureOf, assignedStrengths, authorDisplayName, AUTHOR_MARKER, REPLY_TOKEN_MAX } from './prompt.js';
+import { SYSTEM_PROMPT, PROMPT_VERSION, buildUserPrompt, signatureOf, assignedStrengths, authorDisplayName, AUTHOR_MARKER} from './prompt.js';
 import type { PromptProfile, PromptReview } from './prompt.js';
 import { checkReply, parseVariants, tooSimilar, cleanReply, withSignature, mentionsContactEmail, mentionsReservation } from './rules.js';
 
@@ -47,7 +47,7 @@ export async function generateReplies(
   const author = authorDisplayName(review);
   const includeName = opts.includeAuthorName !== false && !!author;
   const applyAuthor = (text: string): string => {
-    if (includeName && author) return text.replaceAll(AUTHOR_MARKER, author);
+    if (includeName && author) return text.replaceAll(AUTHOR_MARKER, author.charAt(0).toUpperCase() + author.slice(1));
     // Marqueur retiré : « Bonjour [PRÉNOM], » → « Bonjour, » (et ailleurs).
     return text.replace(new RegExp(`\\s*${AUTHOR_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'g'),
       (m, off, s: string) => (off === 0 || /[,;.!?»]$/.test(s.slice(0, off)) ? ' ' : ''))
@@ -77,7 +77,7 @@ export async function generateReplies(
       if (effectivePlan(co[0] ?? { plan: 'free', subscription_status: 'none' }) === 'free') {
         const { rows: n } = await client.query<{ n: string }>(
           `SELECT count(*) AS n FROM generations
-            WHERE company_id=$1 AND created_at >= date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`,
+            WHERE company_id=$1 AND status <> 'unbilled' AND created_at >= date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`,
           [companyId]);
         if (Number(n[0].n) >= FREE_MONTHLY_LIMIT) {
           await client.query('ROLLBACK');
@@ -101,6 +101,7 @@ export async function generateReplies(
   let inputTokens = 0, outputTokens = 0, model = config.llm.model, stopReason = '';
   const slots: (GeneratedVariant | null)[] = [null, null, null];
   const rejected: string[] = [];
+  const variantTokens: number[] = [];
   // Sobriété entre variantes : l'email de contact dans au plus 2 réponses,
   // « réservez » dans une seule.
   let emailVariants = 0, reservationUsed = false;
@@ -152,20 +153,59 @@ export async function generateReplies(
       if (hasEmail && emailVariants >= 2) { rejected.push(`variante ${i + 1} : email dans trop de variantes`); continue; }
       const hasReservation = mentionsReservation(text);
       if (hasReservation && reservationUsed) { rejected.push(`variante ${i + 1} : « réservez » déjà utilisé`); continue; }
-      const c = checkReply(text, profile, effectiveReview, { allowedStrength: strengths[i] });
-      if (c.ok) {
-        // Plafond AI Act : chaque réponse reste sous 180 jetons (exemption
-        // « très courts textes » à 200) — dépassement → variante régénérée.
-        const tokens = await provider.countTokens(text);
-        if (tokens >= REPLY_TOKEN_MAX) { rejected.push(`variante ${i + 1} : trop longue (${tokens} jetons)`); continue; }
-        slots[i] = { idx: i, text, warnings: c.warnings, words: c.words };
-        if (hasEmail) emailVariants++;
-        if (hasReservation) reservationUsed = true;
-      } else rejected.push(`variante ${i + 1} : ${c.errors.join(', ')}`);
+      let cur = text;
+      let c = checkReply(cur, profile, effectiveReview, { allowedStrength: strengths[i] });
+      // Réécriture ciblée : jusqu'à 2 essais pour corriger les règles enfreintes
+      // (formule interdite, excuses, triplette, invitation manquante…), même
+      // sens et même ton, avant d'écarter la variante.
+      for (let fix = 0; !c.ok && fix < 2; fix++) {
+        try {
+          // Conseils correctifs adaptés aux motifs détectés.
+          const hints = c.errors.map(e =>
+            /triplette/.test(e) ? 'traite un seul point par phrase, jamais trois éléments alignés'
+            : /invitation/.test(e) ? 'termine par une invitation chaleureuse à revenir ou à reprendre contact'
+            : /formule interdite/.test(e) ? 'remplace la tournure bannie par une formulation naturelle et personnelle'
+            : /excuse|explication/.test(e) ? 'commence par reconnaître le problème du client, pas par une excuse ou une explication'
+            : /tutoiement/.test(e) ? 'vouvoie le client partout'
+            : null).filter(Boolean).join(' ; ');
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), config.llm.timeoutMs);
+          const r2 = await provider.complete({
+            system: 'Tu corriges une réponse de restaurateur à un avis Google en respectant les règles énoncées, sans perdre le sens ni le ton.',
+            user: `Corrige cette réponse. Problèmes : ${c.errors.join(' ; ')}.${hints ? ` Corrections à appliquer : ${hints}.` : ''} Réécris-la en 40 à 60 mots, même sens, même ton, sans signature ni salutation finale :\n\n«${cur}»`,
+            maxTokens: 400,
+          }, ctrl.signal);
+          clearTimeout(timer);
+          inputTokens += r2.inputTokens; outputTokens += r2.outputTokens;
+          const cand = withSignature(applyAuthor(cleanReply(JSON.parse(r2.text).variants?.[0] ?? r2.text)), sig);
+          const c2 = checkReply(cand, profile, effectiveReview, { allowedStrength: strengths[i] });
+          if (c2.ok || c2.errors.length < c.errors.length) { cur = cand; c = c2; }
+        } catch { break; }
+      }
+      if (!c.ok) { rejected.push(`variante ${i + 1} : ${c.errors.join(', ')}`); continue; }
+      // Longueur en jetons mesurée pour information (pas de plafond dur).
+      const tokens = await provider.countTokens(cur).catch(() => 0);
+      variantTokens.push(tokens);
+      slots[i] = { idx: i, text: cur, warnings: c.warnings, words: c.words };
+      if (hasEmail) emailVariants++;
+      if (hasReservation) reservationUsed = true;
     }
   }
   const durationMs = Date.now() - started;
   const accepted = slots.filter((s): s is GeneratedVariant => !!s);
+  // Quota : une génération qui produit moins de 2 propositions utilisables
+  // n'est pas décomptée (status 'unbilled', ignoré du décompte mensuel).
+  if (accepted.length < 2) {
+    await pool.query(
+      `UPDATE generations SET status='unbilled', model=$2, input_tokens=$3, output_tokens=$4, duration_ms=$5 WHERE id=$1`,
+      [generationId, model, inputTokens, outputTokens, durationMs]);
+    log.warn({ rejected, accepted: accepted.length }, 'llm: moins de 2 variantes utilisables — génération non décomptée');
+    if (accepted.length === 1) {
+      const variants: GeneratedVariant[] = [accepted[0], { idx: 1, text: '', warnings: [], words: 0, needsReview: true }, { idx: 2, text: '', warnings: [], words: 0, needsReview: true }];
+      return { generationId, variants, usage: { inputTokens, outputTokens, model, provider: provider.name, durationMs, stopReason }, rejected };
+    }
+    throw new LlmError('Le rédacteur n’a pas produit de réponse conforme aux règles. Réessayez dans un instant.', 'format');
+  }
   if (!accepted.length) {
     // Échec total : la réservation est débitée quand même — l'appel
     // fournisseur a eu lieu, une boucle d'échecs ne peut plus générer à l'infini.
@@ -196,6 +236,6 @@ export async function generateReplies(
   // Les positions restées non conformes reviennent marquées « à revoir ».
   const variants: GeneratedVariant[] = slots.map((s, i) => s ?? { idx: i, text: '', warnings: [], words: 0, needsReview: true });
   // Journal du coût par réponse (tokens, stop_reason) — jamais le contenu de l'avis.
-  log.info({ generationId, companyId, provider: provider.name, model, inputTokens, outputTokens, stopReason, durationMs, variants: accepted.length, rejected: rejected.length }, 'llm: génération');
+  log.info({ generationId, companyId, provider: provider.name, model, inputTokens, outputTokens, stopReason, durationMs, variants: accepted.length, rejected: rejected.length, rejectedReasons: rejected, variantTokens }, 'llm: génération');
   return { generationId, variants, usage: { inputTokens, outputTokens, model, provider: provider.name, durationMs, stopReason }, rejected };
 }

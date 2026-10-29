@@ -51,22 +51,22 @@ test('longueur : cible 45 mots (court) / 55 mots (détaillé), +10 % = avertisse
   const court = byKey('plat-froid'); // « Plat froid. » = 2 mots
   const good = variants(court)[0];
   const u = buildUserPrompt(court.profile, court.review, []);
-  assert.match(u, /Longueur attendue : 35 à 55 mots \(vise ~45\)/);
-  assert.match(checkReply(`${good} ${pad(45)}`, court.profile, court.review).errors.join(), /trop long/);
-  // +10 % : avertissement, pas rejet (65 ≤ 66).
-  const slightOver = checkReply(`Bonjour Paul, ${pad(59)}. Venez nous voir.\n${sig}`, court.profile, court.review);
+  assert.match(u, /Longueur attendue : 30 à 50 mots \(vise ~40\)/);
+  assert.match(checkReply(`${good} ${pad(45)}`, court.profile, court.review).warnings.join(), /hors cible/);
+  // +10 % : avertissement, pas rejet (59 ≤ 65).
+  const slightOver = checkReply(`Bonjour Paul, ${pad(50)}. Venez nous voir.\n${sig}`, court.profile, court.review);
   assert.equal(slightOver.ok, true, slightOver.errors.join());
   assert.match(slightOver.warnings.join(), /hors cible/);
-  assert.match(checkReply(`Bonjour Paul, ${pad(20)}\n${sig}`, court.profile, court.review).errors.join(), /trop court/);
+  assert.match(checkReply(`Bonjour Paul, ${pad(20)}\n${sig}`, court.profile, court.review).warnings.join(), /hors cible/);
 
   const detaille = { ...byKey('positif').review, body: byKey('positif').review.body }; // ≥ 15 mots
   assert.ok(wordCount(detaille.body) >= 15);
-  assert.match(buildUserPrompt(SAMPLE_PROFILE, detaille, []), /Longueur attendue : 35 à 65 mots \(vise ~55\)/);
+  assert.match(buildUserPrompt(SAMPLE_PROFILE, detaille, []), /Longueur attendue : 35 à 60 mots \(vise ~50\)/);
   const longPos = variants({ ...byKey('positif'), review: detaille })[0];
-  assert.match(checkReply(`${longPos} ${pad(100)}`, SAMPLE_PROFILE, detaille).errors.join(), /trop long/);
+  assert.match(checkReply(`${longPos} ${pad(100)}`, SAMPLE_PROFILE, detaille).warnings.join(), /hors cible/);
 
   const negDetaille = { ...byKey('attente').review, body: 'Attente de plus d’une heure ce soir, malgré une salle à moitié vide et trois serveurs qui discutaient entre eux au comptoir.' };
-  assert.match(buildUserPrompt(SAMPLE_PROFILE, negDetaille, []), /Longueur attendue : 45 à 70 mots/);
+  assert.match(buildUserPrompt(SAMPLE_PROFILE, negDetaille, []), /Longueur attendue : 40 à 65 mots/);
   assert.match(buildUserPrompt(SAMPLE_PROFILE, negDetaille, []), /Nature de la critique : .*attente/);
 });
 
