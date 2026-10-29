@@ -124,7 +124,7 @@ function setTheme(theme, persist) {
   const dark = theme === 'dark';
   $$('.theme-toggle').forEach(b => {
     b.innerHTML = icon(dark ? 'i-sun' : 'i-moon');
-    const label = dark ? 'Passer au thème clair' : 'Passer au thème sombre';
+    const label = dark ? t('msg.theme_light') : t('msg.theme_dark');
     b.setAttribute('aria-label', label); b.title = label;
   });
 }
@@ -148,7 +148,7 @@ async function api(path, { method = 'GET', body } = {}) {
   try { data = await r.json(); } catch { /* réponse vide */ }
   if (!r.ok) {
     const err = Object.assign(new Error(data?.error || 'Erreur serveur.'), { status: r.status, code: data?.code });
-    if (r.status === 401 && mode === 'live') { session = null; mode = 'landing'; showAuth('login', 'Votre session a expiré. Reconnectez-vous.'); }
+    if (r.status === 401 && mode === 'live') { session = null; mode = 'landing'; showAuth('login', t('msg.session_expired')); }
     throw err;
   }
   return data;
@@ -157,7 +157,7 @@ async function apiBlob(path) {
   const r = await fetch(API_BASE + '/api' + path, { credentials: 'include', headers: { 'x-lemotduchef-client': '1' } });
   if (!r.ok) {
     let data = null; try { data = await r.json(); } catch { /* vide */ }
-    throw Object.assign(new Error(data?.error || 'Téléchargement impossible.'), { status: r.status, code: data?.code });
+    throw Object.assign(new Error(data?.error || t('msg.dl_fail')), { status: r.status, code: data?.code });
   }
   return r.blob();
 }
@@ -346,7 +346,7 @@ $('#reset-form').onsubmit = async e => {
   const f = e.target, unbusy = busy($('#reset-btn')), err = $('#err-reset');
   err.hidden = true;
   const p1 = f.elements.password.value, p2 = f.elements.password2.value;
-  if (p1.length < 12) { setErr(err, 'Mot de passe : 12 caractères minimum.'); unbusy(); return; }
+  if (p1.length < 12) { setErr(err, t('msg.pw_min')); unbusy(); return; }
   if (p1 !== p2) { setErr(err, t('msg.pw_mismatch')); unbusy(); return; }
   const token = new URLSearchParams(location.search).get('token') || '';
   try {
@@ -453,14 +453,14 @@ function renderQuota() {
   const pill = $('#quota-pill');
   if (!usage) { pill.hidden = true; return; }
   pill.hidden = false;
-  if (usage.admin) { pill.textContent = 'Réponses illimitées (admin)'; pill.className = 'quota-pill pro'; }
-  else if (usage.plan === 'pro') { pill.textContent = 'Pro · réponses illimitées'; pill.className = 'quota-pill pro'; }
+  if (usage.admin) { pill.textContent = t('msg.quota_admin'); pill.className = 'quota-pill pro'; }
+  else if (usage.plan === 'pro') { pill.textContent = t('msg.quota_pro'); pill.className = 'quota-pill pro'; }
   else {
-    pill.textContent = `${usage.remaining} / ${usage.limit} réponses restantes ce mois`;
+    pill.textContent = t('msg.quota_left', { n: usage.remaining, m: usage.limit });
     pill.className = 'quota-pill' + (usage.remaining === 0 ? ' empty' : '');
   }
-  $('#generate-hint').textContent = !usage.llmReady ? 'Le rédacteur n’est pas configuré sur ce serveur.'
-    : usage.plan === 'pro' || usage.admin ? '' : `${usage.remaining} génération(s) restante(s) ce mois-ci.`;
+  $('#generate-hint').textContent = !usage.llmReady ? t('msg.llm_off')
+    : usage.plan === 'pro' || usage.admin ? '' : t('msg.gen_left', { n: usage.remaining });
 }
 
 /* ---------- Écran Répondre ---------- */
@@ -503,7 +503,7 @@ function resetReply() {
   $('#plan-limit-note').hidden = true;
   $('#reply-new').hidden = true;
   $('#published-note').hidden = true;
-  $('#generate-btn').innerHTML = icon('i-sparkle') + 'Rédiger 3 réponses';
+  $('#generate-btn').innerHTML = icon('i-sparkle') + t('review.generate');
   updateContextVisibility();
 }
 $('#reply-new').onclick = resetReply;
@@ -515,7 +515,7 @@ form.onsubmit = async e => {
   const r = readReviewForm();
   if (!r.rating) { setErr(err, t('msg.rating_required')); unbusy(); return; }
   if (!profile?.signature_name && !profile?.name) { setErr(err, t('msg.profile_required')); unbusy(); return; }
-  $('#generate-btn').innerHTML = icon('i-sparkle') + 'Rédaction en cours…';
+  $('#generate-btn').innerHTML = icon('i-sparkle') + t('msg.generating');
   try {
     let id = form.elements.id.value;
     let created;
@@ -529,9 +529,9 @@ form.onsubmit = async e => {
     renderVariants(g);
     renderQuota();
     $('#reply-new').hidden = false;
-    $('#generate-btn').innerHTML = icon('i-sparkle') + 'Rédiger à nouveau';
+    $('#generate-btn').innerHTML = icon('i-sparkle') + t('review.generate_again');
   } catch (err2) {
-    $('#generate-btn').innerHTML = icon('i-sparkle') + 'Rédiger 3 réponses';
+    $('#generate-btn').innerHTML = icon('i-sparkle') + t('review.generate');
     if (err2.code === 'PLAN_LIMIT') { $('#plan-limit-text').textContent = err2.message; $('#plan-limit-note').hidden = false; }
     else setErr(err, err2.message || t('msg.gen_fail'));
     if (form.elements.id.value) $('#reply-new').hidden = false;
@@ -558,15 +558,15 @@ $('#report-copy').onclick = async () => {
 function renderVariants(g) {
   const tipFor = (w = []) => {
     const s = w.join(' ');
-    if (/prénom|ouverture/.test(s)) return 'Astuce : ajoutez le prénom du client en ouverture.';
-    if (/tutoiement/.test(s)) return 'Astuce : passez au vouvoiement.';
-    if (/triplette|énumération/.test(s)) return 'Astuce : un point par phrase, c’est plus fluide.';
-    if (/invitation|contact privé/.test(s)) return 'Astuce : terminez en invitant à revenir ou à échanger en privé.';
-    if (/excuse|explication/.test(s)) return 'Astuce : commencez par ce qu’a vécu le client, pas par l’explication.';
-    if (/sincèrement|formule|tournure|navré|ressenti/.test(s)) return 'Astuce : reformulez une expression pour la rendre plus personnelle.';
-    if (/signature/.test(s)) return 'Astuce : signez la réponse de votre nom.';
-    if (/hors cible|longueur/.test(s)) return 'Astuce : ajustez la longueur si besoin.';
-    return 'Astuce : une petite retouche peut la rendre encore plus naturelle.';
+    if (/prénom|ouverture/.test(s)) return t('tip.name');
+    if (/tutoiement/.test(s)) return t('tip.formal');
+    if (/triplette|énumération/.test(s)) return t('tip.triad');
+    if (/invitation|contact privé/.test(s)) return t('tip.invite');
+    if (/excuse|explication/.test(s)) return t('tip.experience');
+    if (/sincèrement|formule|tournure|navré|ressenti/.test(s)) return t('tip.personal');
+    if (/signature/.test(s)) return t('tip.sign');
+    if (/hors cible|longueur/.test(s)) return t('tip.length');
+    return t('tip.generic');
   };
   const block = $('#variants-block');
   block.hidden = false;
@@ -581,9 +581,9 @@ function renderVariants(g) {
         <strong>Proposition ${i + 1}</strong>
         <small data-meta${v.text ? '' : ' hidden'}><span data-words>${words(v.text)}</span> mots</small>
       </div>
-      <textarea rows="8" data-variant${v.needsReview ? ' placeholder="Écrivez votre réponse ou régénérez."' : ''}>${esc(v.text)}</textarea>
+      <textarea rows="8" data-variant${v.needsReview ? ` placeholder="${esc(t('variant.write_ph'))}"` : ''}>${esc(v.text)}</textarea>
       ${v.translation ? `<details class="variant-translation"><summary>Traduction</summary><p>${esc(v.translation)}</p></details>` : ''}
-      ${v.needsReview ? `<p class="variant-tip">${esc(v.text ? tipFor(v.warnings) : 'Pas de proposition pour cette carte — écrivez la vôtre ou régénérez.')}</p>` : ''}
+      ${v.needsReview ? `<p class="variant-tip">${esc(v.text ? tipFor(v.warnings) : t('variant.empty'))}</p>` : ''}
       <p class="ai-note">${icon('i-info')}Réponse proposée par une IA — relisez-la avant de la publier</p>
       <div class="variant-actions">
         <button class="btn btn-primary btn-sm" data-copy="${i}">${icon('i-copy')}Copier</button>
@@ -603,7 +603,7 @@ $('#variants').addEventListener('input', e => {
 async function copyVariant(i) {
   const text = $$('#variants [data-variant]')[i].value;
   try { await navigator.clipboard.writeText(text); toast(t('msg.reply_copied')); }
-  catch { $$('#variants [data-variant]')[i].select(); toast('Sélectionnez puis copiez la réponse.', 'info'); }
+  catch { $$('#variants [data-variant]')[i].select(); toast(t('variant.select_copy'), 'info'); }
 }
 async function publishVariant(i, btn) {
   const text = $$('#variants [data-variant]')[i].value.trim();
@@ -626,8 +626,8 @@ async function publishVariant(i, btn) {
   const unbusy = busy(btn);
   try {
     await api(`/reviews/${currentReview.id}/publish`, { method: 'POST', body: { text } });
-    $$('#variants [data-publish]').forEach(b => { b.innerHTML = icon('i-check') + 'Marquer comme publiée'; b.classList.remove('is-published'); });
-    btn.innerHTML = icon('i-check') + 'Publiée sur Google'; btn.classList.add('is-published');
+    $$('#variants [data-publish]').forEach(b => { b.innerHTML = icon('i-check') + t('variant.publish'); b.classList.remove('is-published'); });
+    btn.innerHTML = icon('i-check') + t('variant.published'); btn.classList.add('is-published');
     const note = $('#published-note');
     note.hidden = false; note.textContent = t('msg.published_note');
     toast(t('msg.marked_published'));
@@ -651,18 +651,18 @@ async function loadHistory() {
     $('#review-list').innerHTML = reviews.map(r => `
       <article class="review-card${r.published_reply ? ' is-published' : ''}">
         <div class="review-card-head">
-          <div>${stars(r.rating)} <strong>${esc(r.author_name || 'Anonyme')}</strong> <small>· saisi le ${fmtDate(r.created_at)}${r.visited_on ? ` · visite du ${fmtDate(r.visited_on)}` : ''}</small></div>
+          <div>${stars(r.rating)} <strong>${esc(r.author_name || t('hist.anon'))}</strong> <small>· ${t('hist.on')} ${fmtDate(r.created_at)}${r.visited_on ? ` · ${t('hist.visit')} ${fmtDate(r.visited_on)}` : ''}</small></div>
           <div class="review-badges">
-            ${r.flags?.length ? `<span class="badge badge-flag">${icon('i-flag')}Suspect</span>` : ''}
-            ${r.published_reply ? `<span class="badge badge-won">${icon('i-check')}Publiée</span>` : `<span class="badge badge-sent">${r.generation_count ? 'Réponses prêtes' : 'À rédiger'}</span>`}
+            ${r.flags?.length ? `<span class="badge badge-flag">${icon('i-flag')}${t('hist.flagged')}</span>` : ''}
+            ${r.published_reply ? `<span class="badge badge-won">${icon('i-check')}${t('variant.published_short')}</span>` : `<span class="badge badge-sent">${r.generation_count ? t('hist.ready') : t('hist.todo')}</span>`}
           </div>
         </div>
-        <p class="review-body">${r.body_purged_at ? '<em>Texte effacé (durée de conservation atteinte).</em>' : esc(r.body || '(avis sans texte)')}</p>
-        ${r.published_reply ? `<div class="review-reply"><span class="label">Votre réponse publiée</span><p>${esc(r.published_reply).replace(/\n/g, '<br>')}</p></div>` : ''}
+        <p class="review-body">${r.body_purged_at ? `<em>${t('hist.purged')}</em>` : esc(r.body || t('hist.no_text'))}</p>
+        ${r.published_reply ? `<div class="review-reply"><span class="label">${t('hist.your_reply')}</span><p>${esc(r.published_reply).replace(/\n/g, '<br>')}</p></div>` : ''}
         <div class="row-actions">
-          <button class="btn btn-outline btn-sm" data-reopen="${r.id}">${icon('i-pen')}${r.published_reply ? 'Revoir' : 'Reprendre'}</button>
-          ${r.published_reply ? `<button class="btn btn-quiet btn-sm" data-unpublish="${r.id}">Annuler « publiée »</button>` : ''}
-          <button class="btn btn-quiet btn-sm" data-delete-review="${r.id}">${icon('i-trash')}Supprimer</button>
+          <button class="btn btn-outline btn-sm" data-reopen="${r.id}">${icon('i-pen')}${r.published_reply ? t('hist.review') : t('hist.resume')}</button>
+          ${r.published_reply ? `<button class="btn btn-quiet btn-sm" data-unpublish="${r.id}">${t('hist.unpublish')}</button>` : ''}
+          <button class="btn btn-quiet btn-sm" data-delete-review="${r.id}">${icon('i-trash')}${t('hist.delete')}</button>
         </div>
       </article>`).join('');
   } catch (e) { toast(e.message, 'error'); }
@@ -695,7 +695,7 @@ async function reopenReview(id) {
         note.hidden = false; note.textContent = t('msg.already_published');
       }
     }
-    $('#generate-btn').innerHTML = icon('i-sparkle') + (variants.length ? 'Rédiger à nouveau' : 'Rédiger 3 réponses');
+    $('#generate-btn').innerHTML = icon('i-sparkle') + (variants.length ? t('review.generate_again') : 'Rédiger 3 réponses');
     tab('reply');
   } catch (e) { toast(e.message, 'error'); }
 }
@@ -728,9 +728,9 @@ async function loadCollect() {
     if (c.google_review_url) {
       try {
         const blob = await apiBlob('/collect/qr.png');
-        prev.innerHTML = `<img alt="QR code vers votre page d'avis Google" src="${URL.createObjectURL(blob)}"><p class="subtle">Scannez pour vérifier que le lien ouvre bien votre page d'avis.</p>`;
+        prev.innerHTML = `<img alt="QR code vers votre page d'avis Google" src="${URL.createObjectURL(blob)}"><p class="subtle">${t('collect.qr_check')}</p>`;
       } catch (e) { prev.innerHTML = `<p class="subtle">${esc(e.message)}</p>`; }
-    } else prev.innerHTML = '<p class="subtle">Renseignez votre lien « laisser un avis » pour voir le QR code.</p>';
+    } else prev.innerHTML = `<p class="subtle">${t('collect.qr_empty')}</p>`;
   } catch (e) { toast(e.message, 'error'); }
 }
 $('#review-url-form').onsubmit = async e => {
@@ -796,7 +796,7 @@ document.addEventListener('click', e => {
   if (legalLink && LEGAL_PATHS[new URL(legalLink.href).pathname]) { e.preventDefault(); showLegal(new URL(legalLink.href).pathname); }
 });
 async function deleteReview(id) {
-  if (!await askConfirm('Supprimer cet avis ?', 'L’avis et toutes les réponses associées seront supprimés de votre historique.', 'Supprimer')) return;
+  if (!await askConfirm(t('hist.del_title'), t('hist.del_body'), t('hist.del_ok'))) return;
   try {
     await api(`/reviews/${id}`, { method: 'DELETE' });
     if (currentReview?.id === id) resetReply();
@@ -806,36 +806,36 @@ async function deleteReview(id) {
 }
 
 /* ---------- Abonnement ---------- */
-const PLAN_NAMES = { free: 'Gratuit', pro: 'Pro' };
-const STATUS_TXT = { active: 'Abonnement actif', trialing: 'Période d\'essai', past_due: 'Paiement en échec — Stripe retente le prélèvement', canceled: 'Abonnement résilié', unpaid: 'Impayé' };
+const PLAN_NAMES = () => ({ free: t('offer.free.name'), pro: t('offer.pro.name') });
+const STATUS_TXT = () => ({ active: t('sub.active'), trialing: t('sub.trialing'), past_due: t('sub.past_due'), canceled: t('sub.canceled'), unpaid: t('sub.unpaid') });
 const fmtPrice = c => c == null ? '—' : (c / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
 
 async function loadBilling() {
   const panel = $('#sub-panel'), body = $('#sub-body');
   if (mode !== 'live') return;
   panel.hidden = false;
-  body.innerHTML = '<p class="form-intro">Chargement…</p>';
+  body.innerHTML = `<p class="form-intro">${t('msg.loading')}</p>`;
   try {
     const b = await api('/billing');
-    if (!b.enabled) { body.innerHTML = '<p class="form-intro">La facturation n\'est pas encore activée.</p>'; return; }
+    if (!b.enabled) { body.innerHTML = `<p class="form-intro">${t('sub.disabled')}</p>`; return; }
     const paid = b.plan !== 'free';
-    let html = `<div class="sub-line"><span class="plan-badge${paid ? '' : ' free'}">${PLAN_NAMES[b.plan] ?? b.plan}</span><strong>${STATUS_TXT[b.status] ?? (paid ? 'Abonnement actif' : 'Offre gratuite')}</strong></div>`;
+    let html = `<div class="sub-line"><span class="plan-badge${paid ? '' : ' free'}">${PLAN_NAMES()[b.plan] ?? b.plan}</span><strong>${STATUS_TXT()[b.status] ?? (paid ? t('sub.active') : t('sub.free'))}</strong></div>`;
     if (b.usage.limit != null) {
       const pct = Math.min(100, Math.round(b.usage.used / b.usage.limit * 100));
-      html += `<div class="usage"><div class="usage-bar${b.usage.used >= b.usage.limit ? ' full' : ''}"><i style="width:${pct}%"></i></div><p class="usage-text">${b.usage.used} / ${b.usage.limit} réponses générées ce mois-ci</p></div>`;
+      html += `<div class="usage"><div class="usage-bar${b.usage.used >= b.usage.limit ? ' full' : ''}"><i style="width:${pct}%"></i></div><p class="usage-text">${b.usage.used} / ${b.usage.limit} ${t('sub.used')}</p></div>`;
     }
     if (paid && b.currentPeriodEnd) {
-      html += `<p class="sub-meta">${b.cancelAtPeriodEnd ? `Résiliation programmée — accès jusqu'au ${new Date(b.currentPeriodEnd).toLocaleDateString('fr-FR')}.` : `Prochain renouvellement le ${new Date(b.currentPeriodEnd).toLocaleDateString('fr-FR')}.`}</p>`;
+      html += `<p class="sub-meta">${b.cancelAtPeriodEnd ? t('sub.ends', { d: new Date(b.currentPeriodEnd).toLocaleDateString(LOCALES[LANG] || 'fr-FR') }) : t('sub.renews', { d: new Date(b.currentPeriodEnd).toLocaleDateString(LOCALES[LANG] || 'fr-FR') })}</p>`;
     }
     html += '<div class="sub-actions">';
     if (!paid) {
-      const labels = { pro_monthly: 'Pro mensuel', pro_yearly: 'Pro annuel' };
-      html += (b.prices || []).map(p => `<button class="btn btn-primary btn-sm" data-subscribe="${p.id}">${labels[p.key] ?? p.key} — ${fmtPrice(p.amount_cents)}${p.interval === 'year' ? '/an' : '/mois'}</button>`).join('')
-        || '<p class="form-intro">Aucune offre configurée.</p>';
+      const labels = { pro_monthly: t('sub.monthly'), pro_yearly: t('sub.yearly') };
+      html += (b.prices || []).map(p => `<button class="btn btn-primary btn-sm" data-subscribe="${p.id}">${labels[p.key] ?? p.key} — ${fmtPrice(p.amount_cents)}${p.interval === 'year' ? t('sub.per_year') : t('sub.per_month')}</button>`).join('')
+        || `<p class="form-intro">${t('sub.no_offers')}</p>`;
       const vat = window.LMC_LEGAL?.vatMention;
-      html += `<p class="sub-meta">Pro : réponses illimitées, chevalets et encarts PDF, historique complet. Prix sans TVA${vat ? ` · ${esc(vat)}` : ''}. Paiement sécurisé par Stripe.</p>`;
+      html += `<p class="sub-meta">${t('sub.pro_note', { vat: vat ? ` · ${esc(vat)}` : '' })}</p>`;
     }
-    if (b.hasCustomer) html += `<button class="btn btn-quiet btn-sm" data-portal>${paid ? 'Gérer mon abonnement' : 'Portail de facturation'}${icon('i-arrow')}</button>`;
+    if (b.hasCustomer) html += `<button class="btn btn-quiet btn-sm" data-portal>${paid ? t('sub.manage') : t('sub.portal')}${icon('i-arrow')}</button>`;
     html += '</div>';
     body.innerHTML = html;
   } catch (e) { body.innerHTML = `<p class="form-intro">${esc(e.message || 'Abonnement indisponible.')}</p>`; }
@@ -871,7 +871,7 @@ async function loadAccount() {
   loadPushState();
 }
 function deviceLabel(ua) {
-  if (!ua) return 'Appareil inconnu';
+  if (!ua) return t('push.unknown');
   const os = /iphone/i.test(ua) ? 'iPhone'
     : /ipad/i.test(ua) ? 'iPad'
     : /android/i.test(ua) ? 'Android'
@@ -900,12 +900,12 @@ function renderSessions(list) {
     </li>`).join('') : '<li class="subtle">Aucune autre session.</li>';
 }
 async function revokeSession(token) {
-  if (!await askConfirm('Révoquer cette session ?', 'L\'appareil correspondant sera déconnecté immédiatement.', 'Révoquer')) return;
+  if (!await askConfirm(t('sess.revoke_title'), t('sess.revoke_body'), t('sess.revoke_ok'))) return;
   try { await api('/auth/revoke-session', { method: 'POST', body: { token } }); renderSessions(await api('/auth/list-sessions')); toast(t('msg.session_revoked'), 'info'); }
   catch (err) { toast(err.message, 'error'); }
 }
 $('#revoke-others').onclick = async () => {
-  if (!await askConfirm('Déconnecter les autres appareils ?', 'Toutes les sessions sauf celle-ci seront révoquées.', 'Tout déconnecter')) return;
+  if (!await askConfirm(t('sess.all_title'), t('sess.all_body'), t('sess.all_ok'))) return;
   try { await api('/auth/revoke-other-sessions', { method: 'POST', body: {} }); renderSessions(await api('/auth/list-sessions')); toast(t('msg.sessions_revoked'), 'info'); }
   catch (err) { toast(err.message, 'error'); }
 };
@@ -921,7 +921,7 @@ $('#profile-form').onsubmit = async e => {
       await api('/auth/change-email', { method: 'POST', body: { newEmail, callbackURL: location.origin + '/?verifie=1' } });
       f.elements.newemail.value = '';
       toast(t('msg.name_saved_confirm'), 'info');
-    } else { session.user.name = name; toast('Profil enregistré.'); }
+    } else { session.user.name = name; toast(t('msg.profile_saved')); }
     render();
   } catch (err) {
     const msg = err.message || 'Enregistrement impossible.';
@@ -1125,7 +1125,7 @@ $('#admin-delete-confirm').onclick = async () => {
       return;
     }
   } catch { /* pas de session : page commerciale */ }
-  if (justVerified) { history.replaceState(null, '', '/'); showAuth('login', 'Email confirmé. Connectez-vous pour accéder à votre espace.'); }
+  if (justVerified) { history.replaceState(null, '', '/'); showAuth('login', t('msg.email_confirmed')); }
 })();
 
 /* ---------- Notifications push (PWA + Web Push VAPID) ---------- */
@@ -1153,16 +1153,16 @@ async function loadPushState() {
     pushCurrentEndpoint = sub?.endpoint ?? '';
     const st = await api('/push/state'), s = st.settings;
     $('#push-opts').hidden = !s.enabled && !sub;
-    $('#push-enable').textContent = sub ? 'Notifications activées sur cet appareil' : 'Activer les notifications sur cet appareil';
+    $('#push-enable').textContent = sub ? t('push.enabled_dev') : t('push.enable_dev');
     $('#push-enable').classList.toggle('btn-outline', !!sub);
     $('#push-enable').classList.toggle('btn-primary', !sub);
-    $('#push-status').textContent = st.count ? `${st.count} appareil(s) reçoivent les notifications.` : 'Aucun appareil enregistré.';
+    $('#push-status').textContent = st.count ? t('push.count', { n: st.count }) : t('push.none');
     $('#push-rating').value = String(s.rating_max);
     $('#push-quiet-start').value = (s.quiet_start ?? '').slice(0, 5);
     $('#push-quiet-end').value = (s.quiet_end ?? '').slice(0, 5);
     $('#push-hide').checked = !!s.hide_content;
     $('#push-devices').innerHTML = st.subscriptions.length
-      ? st.subscriptions.map(d => `<li><span>${esc(d.user_agent || 'Appareil inconnu').slice(0, 70)}${d.endpoint === pushCurrentEndpoint ? ' <small class="subtle">(cet appareil)</small>' : ''}</span><button class="btn btn-quiet btn-sm" data-unsub="${esc(d.endpoint)}">Retirer</button></li>`).join('')
+      ? st.subscriptions.map(d => `<li><span>${esc(d.user_agent || 'Appareil inconnu').slice(0, 70)}${d.endpoint === pushCurrentEndpoint ? ` <small class="subtle">${t('push.this_dev')}</small>` : ''}</span><button class="btn btn-quiet btn-sm" data-unsub="${esc(d.endpoint)}">${t('push.remove')}</button></li>`).join('')
       : '<li class="subtle">Aucun appareil enregistré.</li>';
   } catch { /* panneau informatif seulement */ }
 }
