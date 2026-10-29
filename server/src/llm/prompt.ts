@@ -54,16 +54,18 @@ export const assignedStrengths = (p: Pick<PromptProfile, 'strengths'>, offset = 
 export function reviewCategories(body: string): string[] {
   const b = body.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const cats: string[] = [];
-  const waitBeforeOrder = /command(er|e)|addition|carte|menu/.test(b);
-  if (/attente|attendu|attendre|lent|minute|heure|long|patienté|patiente/.test(b))
+  // Frontières de mots (\b) : « excellent » ne déclenche pas « lent »,
+  // « chaleureux » pas « cher », « agréable » pas « table ».
+  const waitBeforeOrder = /\b(command\w*|addition|carte|menu)\b/.test(b);
+  if (/\b(attente|attendu\w*|attendre|lent\w*|minutes?|heures?|long\w*|patient[ée]\w*)/.test(b))
     cats.push(waitBeforeOrder ? 'attente avant la commande' : 'attente des plats');
-  if (/serveur|serveuse|service|personnel|equipe|staff|patron|patronne|gerant|gérant/.test(b)) cats.push('service en salle / personnel');
-  if (/cher|prix|tarif|euro|cout|coût|facture|arnaque/.test(b)) cats.push('prix');
-  if (/accueil|sourire|bienvenue|desagreable|impoli|desobligeant|rude|agressif|malpoli/.test(b)) cats.push('accueil');
-  if (/froid|tiede|brule|brûl|cuit|cru|fade|sec|gras|sauce|cuisson|gout|saveur|plat|cuisine|surgelé|surgele/.test(b)) cats.push('cuisine');
-  if (/sale|proprete|toilette|wc|hygiene|crasseux|crade|degueu|dégoût/.test(b)) cats.push('propreté');
-  if (/portion|quantite|copieux|petit|faim|insuffisant/.test(b)) cats.push('quantité');
-  if (/bruit|bruyant|musique|ambiance|cadre|déco|table|salle/.test(b)) cats.push('ambiance / cadre');
+  if (/\b(serveurs?|serveuses?|service|personnel|equipe|staff|patronn?[es]?|gerant\w*)/.test(b)) cats.push('service en salle / personnel');
+  if (/\b(cher[es]?|chers|prix|tarifs?|euros?|cout\w*|facture|arnaque)/.test(b)) cats.push('prix');
+  if (/\b(accueil|sourires?|bienvenue|desagreable\w*|impoli\w*|desobligeant\w*|rude|agressif\w*|malpoli\w*)/.test(b)) cats.push('accueil');
+  if (/\b(froid\w*|tiede\w*|brule\w*|cuit\w*|cru[ets]?\b|fade|secs?\b|seche[rs]?\b|gras\w*|sauce|cuisson|gout\w*|saveurs?|plat\w*|cuisine|surgele\w*)/.test(b)) cats.push('cuisine');
+  if (/\b(sale\w*|proprete|toilettes?|wc|hygiene|crasseux|crade\w*|degueu\w*)/.test(b)) cats.push('propreté');
+  if (/\b(portions?|quantite|copieux|petit[es]?\b|faim|insuffisant\w*)/.test(b)) cats.push('quantité');
+  if (/\b(bruit|bruyant\w*|musique|ambiance|cadre|deco\w*|salle)/.test(b)) cats.push('ambiance / cadre');
   return cats;
 }
 

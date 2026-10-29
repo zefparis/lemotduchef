@@ -177,8 +177,10 @@ export async function generateReplies(
           : /formule interdite/.test(e) ? 'remplace la tournure bannie par une formulation naturelle et personnelle'
           : /excuse|explication/.test(e) ? 'commence par reconnaître le problème du client, pas par une excuse ou une explication'
           : /tutoiement/.test(e) ? 'vouvoie le client partout'
+          : /ouverture/.test(e) ? 'ouvre par « Bonjour [PRÉNOM] » si l’avis a un auteur, « Bonjour, » sinon'
+          : /invitation à revenir ou à réserver/.test(e) ? 'sur un sujet santé, propose uniquement un échange privé, jamais un retour au restaurant'
           : /étranger|domaine|lien/.test(e) ? 'retire toute coordonnée ou lien non autorisé'
-          : /juridique|mensonge|responsabilité|affirmé|affirme à tort/.test(e) ? 'retire toute affirmation de fait non fournie par l’avis et toute mention juridique'
+          : /juridique|mensonge|responsabilité|affirmé|affirme à tort|inventé/.test(e) ? 'retire toute affirmation de fait non fournie par l’avis et toute mention juridique'
           : null).filter(Boolean).join(' ; ');
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), config.llm.timeoutMs);

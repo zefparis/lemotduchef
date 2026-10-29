@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // Règles du rédacteur sur des cas d'avis réels (LLM mocké — aucun réseau, aucune DB).
 const { checkReply, parseVariants, tooSimilar, wordCount, withSignature, cleanReply } = await import('../src/llm/rules.js');
 const { mockVariants } = await import('../src/llm/provider.js');
-const { buildUserPrompt, signatureOf, assignedStrengths, authorDisplayName } = await import('../src/llm/prompt.js');
+const { buildUserPrompt, signatureOf, assignedStrengths, authorDisplayName, reviewCategories } = await import('../src/llm/prompt.js');
 const { SAMPLE_CASES, SAMPLE_PROFILE } = await import('../src/llm/sampleCases.js');
 
 const sig = signatureOf(SAMPLE_PROFILE);
@@ -375,4 +375,27 @@ test('noms : pseudonymes et initiales → salutation neutre, prénom seul sinon'
   assert.equal(authorDisplayName({ author_name: 'Julie Martin' }), 'Julie', 'prénom seul, jamais le nom complet');
   assert.equal(authorDisplayName({ author_name: 'Jean-Pierre' }), 'Jean-Pierre');
   assert.equal(authorDisplayName({ author_name: 'ben' }), 'ben');
+});
+
+test('catégories : pas de faux positif par sous-chaîne (« excellent » ≠ « lent »)', () => {
+  const cats = reviewCategories('service excellent, accueil chaleureux, table agréable');
+  assert.ok(!cats.some(c => /attente/.test(c)), 'pas de « lent » via « excellent » : ' + cats);
+  assert.ok(!cats.some(c => /prix/.test(c)), 'pas de « cher » via « chaleureux » : ' + cats);
+  assert.ok(!cats.some(c => /ambiance/.test(c)), 'pas de « table » via « agréable » : ' + cats);
+  // Les vrais mots restent détectés.
+  assert.deepEqual(reviewCategories('service lent et prix cher'), ['attente des plats', 'service en salle / personnel', 'prix']);
+});
+
+test('santé : jamais d’invitation à revenir ou à réserver, contact privé exigé', () => {
+  const c = byKey('commande');
+  const health = { ...c.review, body: 'J’ai été malade toute la nuit, intoxication évidente.', context_tags: ['health'] };
+  const back = `Bonjour Nadia, nous vous invitons à nous contacter directement. ${pad(20)} Revenez vite nous voir.\n${sig}`;
+  assert.match(checkReply(back, c.profile, health).errors.join(), /jamais d’invitation à revenir/);
+  const book = `Bonjour Nadia, contactez-nous directement. ${pad(25)} N'oubliez pas de réserver.\n${sig}`;
+  assert.match(checkReply(book, c.profile, health).errors.join(), /jamais d’invitation à revenir/);
+  const ok = `Bonjour Nadia, cela nous touche et nous vous invitons à nous contacter directement. ${pad(28)}\n${sig}`;
+  assert.equal(checkReply(ok, c.profile, health).ok, true, 'contact privé seul = conforme');
+  // « Passez nous voir » (sans « re- ») est aussi une invitation au retour.
+  const see = `Bonjour Nadia, contactez-nous directement. ${pad(22)} Passez nous voir quand vous voulez.\n${sig}`;
+  assert.match(checkReply(see, c.profile, health).errors.join(), /jamais d’invitation à revenir/);
 });

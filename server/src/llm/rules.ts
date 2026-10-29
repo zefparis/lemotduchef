@@ -355,9 +355,11 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
     || /\b[a-z0-9][a-z0-9-]*\.(?:com|fr|net|org|io|dev|co|eu|info|biz|site|online|shop|app|rest|restaurant)\b/i.test(sansEmail))
     errors.push('lien ou nom de domaine dans la réponse');
 
-  // Santé : pas d'aveu de responsabilité, invitation au contact privé.
+  // Santé : pas d'aveu de responsabilité, invitation au contact privé
+  // obligatoire, et JAMAIS d'invitation à revenir ou à réserver.
   if (isHealthTopic(r)) {
     if (ADMISSION.test(t)) errors.push('reconnaissance de responsabilité sur un sujet santé');
+    if (RETURN_RE.test(t) || /r[ée]serv|passe[zr]?\s+(nous|chez|au|à)\b/i.test(t)) errors.push('sujet santé : jamais d’invitation à revenir ou à réserver');
     if (!CONTACT_INVITE.test(t)) errors.push('sujet santé sans invitation à un contact privé');
   }
   // Avis négatif : la chute invite toujours à revenir ou à reprendre contact
