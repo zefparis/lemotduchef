@@ -55,32 +55,32 @@
     <span class="brand-id">Le Mot du Chef<small>réponses aux avis Google</small></span>
   </a>
   <nav class="site-nav" aria-label="Navigation principale">
-    <a href="#methode">Comment ça marche</a>
-    <a href="#exemple">Exemple</a>
-    <a href="#offre">Offres</a>
-    <a href="#faq">Questions</a>
+    <a href="#methode" data-i18n="nav.method">Comment ça marche</a>
+    <a href="#exemple" data-i18n="nav.example">Exemple</a>
+    <a href="#offre" data-i18n="nav.offer">Offres</a>
+    <a href="#faq" data-i18n="nav.faq">Questions</a>
     <button class="btn-icon theme-toggle" type="button" aria-label="Changer de thème"></button>
-    <button class="btn btn-quiet btn-sm" data-auth>Se connecter</button>
-    <button class="btn btn-dark btn-sm" data-open><span class="cta-full">Créer un compte</span><span class="cta-short">Essai gratuit</span></button>
+    <button class="btn btn-quiet btn-sm" data-auth data-i18n="nav.login">Se connecter</button>
+    <button class="btn btn-dark btn-sm" data-open><span class="cta-full" data-i18n="nav.signup">Créer un compte</span><span class="cta-short" data-i18n="nav.signup">Essai gratuit</span></button>
   </nav>
 </header>
 
 <main id="landing">
   <section class="hero">
     <div class="hero-copy">
-      <p class="eyebrow"><i></i>Pour les restaurateurs indépendants</p>
-      <h1>Ne laissez plus un avis injuste <em>parler à votre place.</em></h1>
-      <p class="lead">Le Mot du Chef rédige avec vous, en quelques secondes, une réponse posée et professionnelle à chaque avis Google pour les clients qui la liront demain. Vous relisez, vous ajustez, vous publiez.</p>
+      <p class="eyebrow"><i></i><span data-i18n="hero.eyebrow">Pour les restaurateurs indépendants</span></p>
+      <h1 data-i18n="hero.title">Ne laissez plus un avis injuste <em>parler à votre place.</em></h1>
+      <p class="lead" data-i18n="hero.lead">Le Mot du Chef rédige avec vous, en quelques secondes, une réponse posée et professionnelle à chaque avis Google pour les clients qui la liront demain. Vous relisez, vous ajustez, vous publiez.</p>
       <div class="actions">
-        <button class="btn btn-primary" data-open>Essayer gratuitement<svg class="icon"><use href="#i-arrow"/></svg></button>
-        <button class="btn btn-outline" data-auth>Se connecter</button>
+        <button class="btn btn-primary" data-open><span data-i18n="hero.cta">Essayer gratuitement</span><svg class="icon"><use href="#i-arrow"/></svg></button>
+        <button class="btn btn-outline" data-auth data-i18n="hero.login">Se connecter</button>
       </div>
-      <p class="subtle"><span data-free-replies>—</span> réponses offertes chaque mois · sans carte bancaire · rien n'est publié sans vous</p>
+      <p class="subtle"><span data-free-replies>—</span> <span data-i18n="hero.subtle">réponses offertes chaque mois · sans carte bancaire · rien n'est publié sans vous</span></p>
       <ul class="hero-tags" aria-label="Types d'établissements">
-        <li>Restaurants</li>
-        <li>Brasseries</li>
-        <li>Pizzerias</li>
-        <li>Traiteurs</li>
+        <li data-i18n="hero.tag1">Restaurants</li>
+        <li data-i18n="hero.tag2">Brasseries</li>
+        <li data-i18n="hero.tag3">Pizzerias</li>
+        <li data-i18n="hero.tag4">Traiteurs</li>
       </ul>
     </div>
 
@@ -88,19 +88,19 @@
       <ul class="feature-list">
         <li>
           <span class="feature-icon"><svg class="icon"><use href="#i-msg"/></svg></span>
-          <div><strong>Trois réponses, votre ton</strong><p>Sobre, chaleureux ou direct : le rédacteur connaît votre maison, vos points forts et votre signature.</p></div>
+          <div><strong data-i18n="hero.f1.title">Trois réponses, votre ton</strong><p data-i18n="hero.f1.body">Sobre, chaleureux ou direct : le rédacteur connaît votre maison, vos points forts et votre signature.</p></div>
         </li>
         <li>
           <span class="feature-icon"><svg class="icon"><use href="#i-check"/></svg></span>
-          <div><strong>Toujours courtois, jamais sur la défensive</strong><p>Les faits sont rétablis avec tact. Pas d'accusation, pas de menace, aucune donnée personnelle sur le client.</p></div>
+          <div><strong data-i18n="hero.f2.title">Toujours courtois, jamais sur la défensive</strong><p data-i18n="hero.f2.body">Les faits sont rétablis avec tact. Pas d'accusation, pas de menace, aucune donnée personnelle sur le client.</p></div>
         </li>
         <li>
           <span class="feature-icon"><svg class="icon"><use href="#i-flag"/></svg></span>
-          <div><strong>Avis suspect ? Un guide honnête</strong><p>Indicateurs simples et texte de signalement prêt à copier — en vous disant clairement ce que Google retire, et ce qu'il ne retire pas.</p></div>
+          <div><strong data-i18n="hero.f3.title">Avis suspect ? Un guide honnête</strong><p data-i18n="hero.f3.body">Indicateurs simples et texte de signalement prêt à copier — en vous disant clairement ce que Google retire, et ce qu'il ne retire pas.</p></div>
         </li>
         <li>
           <span class="feature-icon"><svg class="icon"><use href="#i-qr"/></svg></span>
-          <div><strong>Plus d'avis de clients satisfaits</strong><p>Chevalet de table et encart d'addition avec QR code vers votre fiche Google — pour tous vos clients, sans tri ni contrepartie.</p></div>
+          <div><strong data-i18n="hero.f4.title">Plus d'avis de clients satisfaits</strong><p data-i18n="hero.f4.body">Chevalet de table et encart d'addition avec QR code vers votre fiche Google — pour tous vos clients, sans tri ni contrepartie.</p></div>
         </li>
       </ul>
     </div>
@@ -108,54 +108,54 @@
 
   <section class="method" id="methode">
     <div class="method-intro">
-      <p class="eyebrow"><i></i>Trois étapes</p>
-      <h2>Collez l'avis,<br>choisissez votre réponse.</h2>
-      <p class="section-lead">Le Mot du Chef ne publie rien à votre place : il prépare, vous décidez. La V1 fonctionne par copier-coller depuis votre fiche Google.</p>
+      <p class="eyebrow"><i></i><span data-i18n="method.eyebrow">Trois étapes</span></p>
+      <h2 data-i18n="method.title">Collez l'avis,<br>choisissez votre réponse.</h2>
+      <p class="section-lead" data-i18n="method.lead">Le Mot du Chef ne publie rien à votre place : il prépare, vous décidez. La V1 fonctionne par copier-coller depuis votre fiche Google.</p>
     </div>
     <div class="steps">
       <article>
         <span class="step-num">01</span>
         <div class="step-icon"><svg class="icon"><use href="#i-store"/></svg></div>
-        <h3>Décrivez votre maison</h3>
-        <p>Nom, ville, cuisine, points forts, ton souhaité et signature (« Marc, chef et propriétaire »). Deux minutes, une seule fois.</p>
+        <h3 data-i18n="method.step1.title">Décrivez votre maison</h3>
+        <p data-i18n="method.step1.body">Nom, ville, cuisine, points forts, ton souhaité et signature (« Marc, chef et propriétaire »). Deux minutes, une seule fois.</p>
       </article>
       <article>
         <span class="step-num">02</span>
         <div class="step-icon"><svg class="icon"><use href="#i-msg"/></svg></div>
-        <h3>Collez l'avis</h3>
-        <p>Texte, note et prénom tel qu'affiché. Pour un avis négatif, précisez le contexte en un clic : complet ce soir-là, client inconnu, prix affichés, sujet santé…</p>
+        <h3 data-i18n="method.step2.title">Collez l'avis</h3>
+        <p data-i18n="method.step2.body">Texte, note et prénom tel qu'affiché. Pour un avis négatif, précisez le contexte en un clic : complet ce soir-là, client inconnu, prix affichés, sujet santé…</p>
       </article>
       <article>
         <span class="step-num">03</span>
         <div class="step-icon"><svg class="icon"><use href="#i-copy"/></svg></div>
-        <h3>Choisissez, ajustez, publiez</h3>
-        <p>Trois variantes modifiables. Copiez celle qui vous ressemble, ouvrez votre fiche Google et collez-la. Cochez « publiée » pour garder l'historique.</p>
+        <h3 data-i18n="method.step3.title">Choisissez, ajustez, publiez</h3>
+        <p data-i18n="method.step3.body">Trois variantes modifiables. Copiez celle qui vous ressemble, ouvrez votre fiche Google et collez-la. Cochez « publiée » pour garder l'historique.</p>
       </article>
     </div>
   </section>
 
   <section class="example" id="exemple">
     <div class="method-intro">
-      <p class="eyebrow"><i></i>Avant / après</p>
-      <h2>Ce que lisent vos futurs clients.</h2>
+      <p class="eyebrow"><i></i><span data-i18n="example.eyebrow">Avant / après</span></p>
+      <h2 data-i18n="example.title">Ce que lisent vos futurs clients.</h2>
       <p class="section-lead"><strong>Exemple fictif</strong> : l'avis ci-dessous est inventé pour illustrer la méthode ; aucun restaurant ni client réel n'est concerné. La réponse « après » a été produite par Le Mot du Chef à partir d'un profil d'exemple.</p>
     </div>
     <div class="example-grid">
       <article class="example-card example-review">
-        <p class="example-label">L'avis (fictif)</p>
-        <p class="stars" aria-label="1 étoile sur 5"><span class="on">★</span><span>★</span><span>★</span><span>★</span><span>★</span></p>
-        <p class="example-quote">« Attente de 45 minutes pour un plat froid et un serveur qui nous ignore. Prix exagérés pour ce que c'est. Jamais plus. »</p>
-        <p class="example-meta">— Kévin, il y a 3 jours</p>
+        <p class="example-label" data-i18n="example.review_label">L'avis (fictif)</p>
+        <p class="stars" aria-label="1 étoile sur 5" data-i18n-aria-hidden="true"><span class="on">★</span><span>★</span><span>★</span><span>★</span><span>★</span></p>
+        <p class="example-quote" data-i18n="example.review">« Attente de 45 minutes pour un plat froid et un serveur qui nous ignore. Prix exagérés pour ce que c'est. Jamais plus. »</p>
+        <p class="example-meta" data-i18n="example.review_meta">— Kévin, il y a 3 jours</p>
       </article>
       <article class="example-card example-before">
-        <p class="example-label">Avant — réponse écrite à chaud</p>
-        <p class="example-quote">« Vous êtes venu un samedi soir complet et vous avez été prévenu de l'attente, votre plat n'était pas froid, et nos prix sont affichés. Ce genre d'avis est injuste pour une petite équipe qui fait de son mieux. »</p>
-        <p class="example-why">Factuelle mais défensive : un futur client lit « ils contestent, ils se justifient ».</p>
+        <p class="example-label" data-i18n="example.before_label">Avant — réponse écrite à chaud</p>
+        <p class="example-quote" data-i18n="example.before">« Vous êtes venu un samedi soir complet et vous avez été prévenu de l'attente, votre plat n'était pas froid, et nos prix sont affichés. Ce genre d'avis est injuste pour une petite équipe qui fait de son mieux. »</p>
+        <p class="example-why" data-i18n="example.before_why">Factuelle mais défensive : un futur client lit « ils contestent, ils se justifient ».</p>
       </article>
       <article class="example-card example-after">
-        <p class="example-label">Après — avec Le Mot du Chef</p>
+        <p class="example-label" data-i18n="example.after_label">Après — avec Le Mot du Chef</p>
         <p class="example-quote">« Bonjour Kévin, merci pour votre retour. Samedi soir, nous étions complets et vous avez attendu trop longtemps : vous avez raison, ce n'est pas l'accueil que nous voulons offrir. Pour le plat tiède, j'en ai parlé avec la cuisine dès le lendemain, ça ne doit pas arriver. Nos prix sont affichés à l'entrée parce que tout est fait maison, avec des produits frais. Si vous nous laissez une seconde chance, venez plutôt en semaine, c'est plus calme et je passerai vous saluer.<br>Marc, chef et propriétaire »</p>
-        <p class="example-why">Il reconnaît, il explique sans se justifier, il invite à revenir. C'est cette réponse que liront vos futurs clients.</p>
+        <p class="example-why" data-i18n="example.after_why">Il reconnaît, il explique sans se justifier, il invite à revenir. C'est cette réponse que liront vos futurs clients.</p>
       </article>
     </div>
     <p class="reassure"><svg class="icon"><use href="#i-check"/></svg>Vous gardez la main : chaque réponse vous est proposée, vous la relisez, l'ajustez et la publiez vous-même. Elle est écrite dans votre style, signée de votre nom.</p>
@@ -163,35 +163,35 @@
 
   <section class="offer" id="offre">
     <div class="offer-copy">
-      <p class="eyebrow eyebrow-light"><i></i>Nos offres</p>
-      <h2>Commencez gratuitement, passez en Pro quand les avis s'enchaînent.</h2>
-      <p>L'offre Gratuit vous donne chaque mois quelques réponses sans carte bancaire. L'offre Pro lève la limite, débloque les supports imprimables de collecte d'avis et l'historique complet.</p>
-      <p class="offer-note">Paiement sécurisé par Stripe · code promo accepté à la souscription · résiliable à tout moment depuis votre espace.</p>
+      <p class="eyebrow eyebrow-light"><i></i><span data-i18n="offer.eyebrow">Nos offres</span></p>
+      <h2 data-i18n="offer.title">Commencez gratuitement, passez en Pro quand les avis s'enchaînent.</h2>
+      <p data-i18n="offer.lead">L'offre Gratuit vous donne chaque mois quelques réponses sans carte bancaire. L'offre Pro lève la limite, débloque les supports imprimables de collecte d'avis et l'historique complet.</p>
+      <p class="offer-note" data-i18n="offer.note">Paiement sécurisé par Stripe · code promo accepté à la souscription · résiliable à tout moment depuis votre espace.</p>
     </div>
     <div class="price" aria-label="Tarifs des offres">
-      <p class="price-label">Nos offres</p>
+      <p class="price-label" data-i18n="offer.price_label">Nos offres</p>
       <div class="price-plans">
         <div class="price-plan">
-          <strong>Gratuit</strong>
+          <strong data-i18n="offer.free.name">Gratuit</strong>
           <p><b>0 €</b></p>
           <small><span data-free-replies>—</span> réponses par mois · historique <span data-free-history>—</span> jours · sans carte</small>
         </div>
         <div class="price-plan">
-          <strong>Pro</strong>
+          <strong data-i18n="offer.pro.name">Pro</strong>
           <p><b><span data-price="pro_monthly">—</span></b> / mois</p>
           <small><span data-price="pro_yearly">—</span> / an · réponses illimitées · chevalets et encarts PDF · historique complet</small>
         </div>
       </div>
       <button class="btn btn-primary btn-block" data-open>Créer un compte gratuit<svg class="icon"><use href="#i-arrow"/></svg></button>
-      <small class="price-note">Sans engagement · changement d'offre à tout moment</small>
+      <small class="price-note" data-i18n="offer.terms">Sans engagement · changement d'offre à tout moment</small>
       <small class="price-note" data-legal="vatMention"></small>
     </div>
   </section>
 
   <section class="faq" id="faq">
     <div class="faq-intro">
-      <p class="eyebrow"><i></i>Questions fréquentes</p>
-      <h2>Ce qu'il faut savoir avant de commencer.</h2>
+      <p class="eyebrow"><i></i><span data-i18n="faq.eyebrow">Questions fréquentes</span></p>
+      <h2 data-i18n="faq.title">Ce qu'il faut savoir avant de commencer.</h2>
     </div>
     <div class="faq-list">
       <details>
@@ -225,7 +225,7 @@
     </div>
   </section>
 
-  <p class="limits">Compte sécurisé · données hébergées sur notre serveur en France · gratuit pour démarrer · résiliable à tout moment.</p>
+  <p class="limits" data-i18n="limits">Compte sécurisé · données hébergées sur notre serveur en France · gratuit pour démarrer · résiliable à tout moment.</p>
 
   <footer class="site-footer">
     <a class="brand" href="#">
@@ -1116,6 +1116,7 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="markets.js"></script>
+<script src="i18n.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>

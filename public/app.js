@@ -11,11 +11,54 @@
 // Chaîne vide = même origine (auto-hébergement, dev local).
 const API_BASE = (window.LMC_API_URL || '').replace(/\/+$/, '');
 
+/* ---------- i18n : marché par domaine, langue FR/EN ----------
+   window.LMC_MARKETS (markets.js) → marché détecté par hostname.
+   Langue : préférence stockée (localStorage / user.lang) > langue du
+   marché > 'fr'. Toutes les chaînes vivent dans i18n.js. */
+const MARKETS = window.LMC_MARKETS || {};
+const hostName = location.hostname.toLowerCase();
+const MARKET_ID = Object.keys(MARKETS.markets || {}).find(m =>
+  (MARKETS.markets[m].domains || []).includes(hostName)) || MARKETS.default || 'fr';
+const MARKET = (MARKETS.markets || {})[MARKET_ID] || {};
+const LOCALES = { fr: 'fr-FR', en: 'en-US' };
+// Au boot : localStorage > langue du marché > 'fr' (la langue du compte
+// est appliquée après /api/me).
+let LANG = localStorage.getItem('lmc-lang') || MARKET.lang || 'fr';
+const DICTS = window.LMC_I18N || {};
+function t(key, vars) {
+  const d = DICTS[LANG] || DICTS.fr || {};
+  let s = d[key] ?? (DICTS.fr || {})[key] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
+  return s;
+}
+const setLang = (l) => { if (DICTS[l]) { LANG = l; localStorage.setItem('lmc-lang', l); applyI18n(); } };
+function applyI18n(root = document) {
+  root.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.dataset.i18n); });
+  root.querySelectorAll('[data-i18n-attr]').forEach(el => {
+    for (const [attr, key] of Object.entries(JSON.parse(el.dataset.i18nAttr))) el.setAttribute(attr, t(key));
+  });
+  document.title = t('meta.title');
+  const md = document.querySelector('meta[name="description"]'); if (md) md.content = t('meta.description');
+  document.documentElement.lang = LANG;
+  $$('.lang-btn').forEach(b => b.classList.toggle('is-active', b.dataset.lang === LANG));
+}
+// Sélecteur FR/EN injecté dans chaque nav publique.
+function mountLangSelector() {
+  $$('.site-nav, .legal-nav').forEach(nav => {
+    if (nav.querySelector('.lang-switch')) return;
+    const w = document.createElement('span'); w.className = 'lang-switch';
+    w.innerHTML = ['fr', 'en'].map(l =>
+      `<button class="lang-btn${l === LANG ? ' is-active' : ''}" data-lang="${l}" type="button">${l.toUpperCase()}</button>`).join('');
+    w.addEventListener('click', e => { const b = e.target.closest('.lang-btn'); if (b) setLang(b.dataset.lang); });
+    nav.appendChild(w);
+  });
+}
+
 const $  = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmtDate = s => s ? new Date(String(s).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-const fmtDateTime = s => new Date(s).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const fmtDate = s => s ? new Date(String(s).slice(0, 10) + 'T12:00:00').toLocaleDateString(LOCALES[LANG] || 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+const fmtDateTime = s => new Date(s).toLocaleString(LOCALES[LANG] || 'fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const icon = (id, cls = 'icon') => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 const stars = n => `<span class="stars" aria-label="${n} sur 5">${[1, 2, 3, 4, 5].map(i => `<span${i <= n ? ' class="on"' : ''}>★</span>`).join('')}</span>`;
 const words = s => (String(s).trim().match(/[\p{L}\p{N}’'-]+/gu) || []).length;
@@ -1031,6 +1074,8 @@ $('#admin-delete-confirm').onclick = async () => {
     signupEnabled = !!appConfig.signupEnabled;
     cgvVersion = appConfig.cgvVersion ?? '';
   } catch { signupEnabled = false; }
+  mountLangSelector();
+  applyI18n();
   fillLegal(); fillConfig();
   $('#auth-tabs').hidden = !signupEnabled;
   $('#tab-signup').hidden = !signupEnabled;
@@ -1051,6 +1096,8 @@ $('#admin-delete-confirm').onclick = async () => {
     const me = await api('/me');
     if (me?.user) {
       session = me;
+      // Langue du compte : appliquée seulement sans préférence explicite.
+      if (me.user.lang && !localStorage.getItem('lmc-lang')) setLang(me.user.lang);
       if (me.restaurant) {
         mode = 'live'; await refresh(); show('app'); render();
         if (location.pathname === '/admin' && me.admin) { enterAdmin(); return; }
