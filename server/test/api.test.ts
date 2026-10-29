@@ -379,7 +379,10 @@ test('génération : 3 variantes, journalisation des tokens, variante non confor
     // Les variantes fautives passent par la réécriture (qui peut modifier le
     // motif final) puis restent affichées marquées « à relire », éditables.
     assert.ok(r2.json().rejected.length >= 2, 'rejets consignés : ' + JSON.stringify(r2.json().rejected));
-    assert.ok(r2.json().variants.filter((v: any) => v.needsReview && v.text).length >= 1, 'variantes « à relire » affichées avec leur texte');
+    // Positions non conformes : marquées « à relire » — avec leur texte
+    // quand le défaut est de style, vides quand l'erreur est bloquante
+    // (divulgation/fait), jamais silencieusement conformes.
+    assert.ok(r2.json().variants.filter((v: any) => v.needsReview).length >= 2, 'positions marquées : ' + JSON.stringify(r2.json().variants.map((v: any) => ({ nr: v.needsReview, t: v.text.slice(0, 40) }))));
     assert.ok(!users.some(u => u.includes('Julie')), 'le prénom réel ne part jamais au modèle, corrections comprises');
     assert.ok(calls >= 2, "tentatives supplémentaires pour compléter");
     // Aucune variante conforme → 502 propre, sans décompte du quota.

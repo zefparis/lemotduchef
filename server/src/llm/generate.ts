@@ -60,6 +60,13 @@ export async function generateReplies(
   };
   // Référentiel des règles : sans le nom quand il n'est pas réinséré.
   const effectiveReview: PromptReview = includeName ? review : { ...review, author_name: '' };
+  // Ouverture déterministe : « Bonjour, » + prénom autorisé → insertion du
+  // marqueur sans appel LLM. (« Bonjour, » reste valide quand le nom est
+  // neutralisé : pseudo, initiales.)
+  const fixOpening = (t: string): string =>
+    author && /^bonjour\s*[,.;]/i.test(t.trimStart())
+      ? t.replace(/^(\s*bonjour)\s*[,.;]/i, `$1 ${AUTHOR_MARKER},`)
+      : t;
   // Point fort imposé par variante, décidé par le code (rotation historique) :
   // variante 1 factuelle → aucun ; variantes 2 et 3 → chacune le sien.
   const strengths = assignedStrengths(profile, avoid.length);
@@ -164,7 +171,7 @@ export async function generateReplies(
       if (hasEmail0 && emailVariants >= 2) { rejected.push(`variante ${i + 1} : email dans trop de variantes`); continue; }
       const hasReservation0 = mentionsReservation(textM);
       if (hasReservation0 && reservationUsed) { rejected.push(`variante ${i + 1} : « réservez » déjà utilisé`); continue; }
-      let cur = textM;
+      let cur = fixOpening(textM);
       let c = checkReply(cur, profile, effectiveReview, { allowedStrength: strengths[i] });
       // Réécriture ciblée : jusqu'à 2 essais pour corriger les règles enfreintes
       // (style corrigible comme erreur factuelle/divulgation), même sens et
@@ -193,7 +200,7 @@ export async function generateReplies(
             maxTokens: 400,
           }, ctrl.signal);
           inputTokens += r2.inputTokens; outputTokens += r2.outputTokens;
-          const cand = withSignature(cleanReply(JSON.parse(r2.text).variants?.[0] ?? r2.text), sig);
+          const cand = fixOpening(withSignature(cleanReply(JSON.parse(r2.text).variants?.[0] ?? r2.text), sig));
           const c2 = checkReply(cand, profile, effectiveReview, { allowedStrength: strengths[i] });
           if (c2.ok || c2.errors.length < c.errors.length) { cur = cand; c = c2; }
         } catch { break; }

@@ -359,7 +359,10 @@ export function checkReply(text: string, p: PromptProfile, r: PromptReview,
   // obligatoire, et JAMAIS d'invitation à revenir ou à réserver.
   if (isHealthTopic(r)) {
     if (ADMISSION.test(t)) errors.push('reconnaissance de responsabilité sur un sujet santé');
-    if (RETURN_RE.test(t) || /r[ée]serv|passe[zr]?\s+(nous|chez|au|à)\b/i.test(t)) errors.push('sujet santé : jamais d’invitation à revenir ou à réserver');
+    // « Revenir sur un point » = revisiter un sujet, pas retourner au
+    // restaurant — retiré avant le contrôle des invitations au retour.
+    const tNoRevisit = t.replace(/revenir sur [^.,;!\n]*/gi, '');
+    if (RETURN_RE.test(tNoRevisit) || /r[ée]serv|passe[zr]?\s+(nous|chez|au|à)\b/i.test(t)) errors.push('sujet santé : jamais d’invitation à revenir ou à réserver');
     if (!CONTACT_INVITE.test(t)) errors.push('sujet santé sans invitation à un contact privé');
   }
   // Avis négatif : la chute invite toujours à revenir ou à reprendre contact

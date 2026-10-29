@@ -398,4 +398,19 @@ test('santé : jamais d’invitation à revenir ou à réserver, contact privé 
   // « Passez nous voir » (sans « re- ») est aussi une invitation au retour.
   const see = `Bonjour Nadia, contactez-nous directement. ${pad(22)} Passez nous voir quand vous voulez.\n${sig}`;
   assert.match(checkReply(see, c.profile, health).errors.join(), /jamais d’invitation à revenir/);
+  // « Revenir sur un point » = revisiter un sujet, pas une invitation.
+  const revisit = `Bonjour Nadia, contactez-nous directement. ${pad(18)} Nous pourrons revenir sur ce qui s'est passé ensemble.\n${sig}`;
+  assert.equal(checkReply(revisit, c.profile, health).ok, true, '« revenir sur » ≠ invitation au retour');
+});
+
+test('ouverture : « Bonjour, » neutre valide pour pseudo/initiales, prénom exigé sinon', () => {
+  const c = byKey('commande'); // auteur « Nadia »
+  const pseudo = { ...c.review, author_name: 'Le Gourmet 34' };
+  const neutral = `Bonjour, votre retour est pris en compte ${pad(35)}. Revenez nous voir.\n${sig}`;
+  assert.equal(checkReply(neutral, c.profile, pseudo).ok, true, '« Bonjour, » accepté pour un pseudo');
+  // Avec un vrai prénom, « Bonjour, » seul reste une faute (corrigée en code
+  // par insertion du marqueur [PRÉNOM], accepté par la règle).
+  assert.match(checkReply(neutral, c.profile, c.review).errors.join(), /ouverture sans le prénom/);
+  const marked = neutral.replace('Bonjour,', 'Bonjour [PRÉNOM],');
+  assert.equal(checkReply(marked, c.profile, c.review).ok, true, '[PRÉNOM] inséré = conforme');
 });
