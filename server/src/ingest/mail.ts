@@ -86,8 +86,11 @@ export function parseForwardConfirmation(msg: ParsedMail): { code: string; link:
   if (!/transfert|forward|redirect/i.test(msg.subject ?? '')) return null;
   const text = (msg.text || (typeof msg.html === 'string' ? msg.html.replace(/<[^>]+>/g, ' ') : '') || '').replace(/\s+/g, ' ');
   const urls = text.match(/https?:\/\/[^\s"<>]+/g) ?? [];
-  const link = urls.find(u => /google\.com/i.test(u) && /confirm|fwd|transfert|transfer/i.test(u))
-    ?? urls.find(u => /google\.com/i.test(u)) ?? '';
+  // Validation : lien « vf- » (Workspace : souvent le seul lien, sans code)
+  // ou URL explicite de confirmation. Jamais le lien « uf- » d'annulation.
+  const link = urls.find(u => /google\.com/i.test(u) && /\/vf-/i.test(u))
+    ?? urls.find(u => /google\.com/i.test(u) && /confirm|fwd|transfert|transfer/i.test(u) && !/\/uf-/i.test(u))
+    ?? '';
   const code = /(?:code[^A-Za-z0-9]{0,10})([A-Z0-9-]{6,20})/i.exec(text)?.[1]
     ?? /\b(\d{3}[- ]?\d{3}[- ]?\d{3})\b/.exec(text)?.[1] ?? '';
   return { code, link };
@@ -183,32 +186,46 @@ export async function ingestRawEmail(raw: string, log: Log): Promise<IngestResul
 /* ---------- Boucle IMAP ---------- */
 async function pollOnce(log: Log): Promise<number> {
   const c = config.mailIngest;
-  const client = new ImapFlow({ host: c.host, port: c.port, secure: c.tls, auth: { user: c.user, pass: c.pass }, logger: false });
+  // Nouvelle connexion à chaque relève : OVH coupe les sessions inactives —
+  // réutiliser une connexion morte faisait échouer le FETCH. Timeouts bornés
+  // pour qu'une connexion figée ne bloque jamais les relèves suivantes.
+  const client = new ImapFlow({
+    host: c.host, port: c.port, secure: c.tls, auth: { user: c.user, pass: c.pass }, logger: false,
+    connectionTimeout: 20_000, greetingTimeout: 15_000, socketTimeout: 60_000,
+  });
   let n = 0;
-  await client.connect();
-  const lock = await client.getMailboxLock('INBOX');
   try {
-    for await (const m of client.fetch({ seen: false }, { source: true, uid: true })) {
-      try {
-        await ingestRawEmail(m.source?.toString('utf8') ?? '', log);
-        await client.messageFlagsAdd(m.uid, ['\\Seen'], { uid: true });
-        if (c.processedFolder) await client.messageMove(m.uid, c.processedFolder, { uid: true }).catch(() => {});
-        n++;
-      } catch (err) { log.warn({ err }, 'ingest: message non traité'); }
-    }
-  } finally { lock.release(); await client.logout().catch(() => {}); }
+    await client.connect();
+    const lock = await client.getMailboxLock('INBOX');
+    try {
+      for await (const m of client.fetch({ seen: false }, { source: true, uid: true })) {
+        try {
+          await ingestRawEmail(m.source?.toString('utf8') ?? '', log);
+          await client.messageFlagsAdd(m.uid, ['\\Seen'], { uid: true });
+          if (c.processedFolder) await client.messageMove(m.uid, c.processedFolder, { uid: true }).catch(() => {});
+          n++;
+        } catch (err) { log.warn({ err }, 'ingest: message non traité'); }
+      }
+    } finally { lock.release(); }
+  } finally { await client.logout().catch(() => {}); }
   return n;
 }
 
 let timer: NodeJS.Timeout | null = null;
 let running = false;
+let failures = 0;
 export function startIngestLoop(log: Log) {
   if (!ingestEnabled()) { log.info({}, 'ingest mail : désactivé (MAIL_INGEST_ENABLED)'); return; }
   const tick = async () => {
     if (running) return;
     running = true;
-    try { const n = await pollOnce(log); if (n) log.info({ n }, 'ingest: emails traités'); }
-    catch (err) { log.warn({ err }, 'ingest: relève IMAP en échec'); }
+    try { const n = await pollOnce(log); failures = 0; if (n) log.info({ n }, 'ingest: emails traités'); }
+    catch (err) {
+      failures++;
+      // Bruit de fond toléré (coupures OVH) : warn seulement si ça persiste.
+      if (failures >= 3) log.warn({ err, failures }, 'ingest: relève IMAP en échec répété');
+      else log.info({ err: (err as Error)?.message, failures }, 'ingest: relève en échec, nouvelle tentative à la prochaine');
+    }
     finally { running = false; }
   };
   timer = setInterval(tick, Math.max(30, config.mailIngest.pollIntervalSec) * 1000);

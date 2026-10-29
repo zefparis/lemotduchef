@@ -93,6 +93,27 @@ test('ingestRawEmail : confirmation Gmail enregistrée, lien jamais visité', as
   assert.match(rows[0].code, /123/);
 });
 
+const RAW_CONFIRM_WS = `Delivered-To: avis+abcd1234@lemotduchef.fr
+From: forwarding-noreply@google.com
+Subject: Redirection des e-mails — Confirmez l'adresse
+Message-ID: <fwdws@google.com>
+Content-Type: text/plain; charset=utf-8
+
+Pour activer la redirection, validez ici :
+https://mail.google.com/mail/vf-ABC123def456?hl=fr
+Pour annuler : https://mail.google.com/mail/uf-XYZ789?hl=fr
+L'équipe example.com
+`;
+
+test('ingestRawEmail : confirmation Workspace — lien vf- seul retenu, uf- jamais', async () => {
+  const r = await ingestRawEmail(RAW_CONFIRM_WS, silentLog);
+  assert.equal(r.status, 'ok');
+  const { rows } = await pool.query('SELECT code, link FROM ingest_confirmations WHERE company_id=$1 ORDER BY created_at DESC', [companyId]);
+  const last = rows[0];
+  assert.match(last.link, /\/vf-/, 'le lien de validation vf- est retenu');
+  assert.ok(!/uf-/.test(last.link), 'le lien d’annulation uf- n’est jamais conservé');
+});
+
 test('ingestRawEmail : avis transféré → review source email + dédoublonnage', async () => {
   const r1 = await ingestRawEmail(RAW_FWD, silentLog);
   assert.equal(r1.status, 'ok', r1.detail);
