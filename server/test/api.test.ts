@@ -447,6 +447,21 @@ test('génération : erreurs LLM propres (timeout, upstream) et profil requis', 
   assert.equal(rows[0].status, 'failed');
 });
 
+test('CORS preflight : chaque méthode utilisée par les routes passe', async () => {
+  // GET, POST, PATCH, PUT, DELETE = méthodes réellement enregistrées sur /api.
+  for (const m of ['GET', 'POST', 'PATCH', 'PUT', 'DELETE']) {
+    const r = await app.inject({ method: 'OPTIONS', url: '/api/restaurant',
+      headers: { origin: 'https://lemotduchef.test', 'access-control-request-method': m } });
+    assert.ok([200, 204].includes(r.statusCode), `preflight ${m} → ${r.statusCode}`);
+    assert.equal(r.headers['access-control-allow-origin'], 'https://lemotduchef.test', `origin acceptée pour ${m}`);
+    assert.match(String(r.headers['access-control-allow-methods'] ?? ''), new RegExp(`\\b${m}\\b`), `${m} autorisée en preflight`);
+  }
+  // Origine étrangère : jamais d'en-tête permissif.
+  const bad = await app.inject({ method: 'OPTIONS', url: '/api/restaurant',
+    headers: { origin: 'https://evil.example', 'access-control-request-method': 'PATCH' } });
+  assert.notEqual(bad.headers['access-control-allow-origin'], 'https://evil.example');
+});
+
 test('génération : erreur LLM → 502 propre avec CORS conservés', async () => {
   const cookie = await signup('cors502@x.fr'); const cid = await createRestaurant(cookie);
   await makePro(cid);

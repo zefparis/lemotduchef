@@ -78,6 +78,9 @@ export async function buildApp(opts: { retention?: boolean; logStream?: NodeJS.W
     await app.register(cors, {
       origin: (origin, cb) => cb(null, !origin || config.corsOrigins.includes(origin)),
       credentials: true,
+      // Toutes les méthodes réellement utilisées par les routes
+      // (GET/POST/PATCH/PUT/DELETE) + OPTIONS/HEAD implicites du preflight.
+      methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     });
   }
 
