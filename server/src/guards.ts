@@ -6,11 +6,14 @@ import { config } from './config.js';
 // En-tête applicatif exigé sur toute mutation /api (protection CSRF).
 export const CLIENT_HEADER = 'x-lemotduchef-client';
 
+import type { Market } from './markets.js';
+
 declare module 'fastify' {
   interface FastifyRequest {
     userId?: string;
     companyId?: string;
     sessionId?: string;
+    market?: Market;
   }
 }
 
@@ -80,8 +83,10 @@ export async function requireAdmin(req: FastifyRequest, reply: FastifyReply): Pr
 export async function requireCompany(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   await requireSession(req, reply);
   if (reply.sent || !req.userId) return;
-  const { rows } = await pool.query<{ company_id: string }>(
-    'SELECT company_id FROM memberships WHERE user_id = $1 ORDER BY created_at LIMIT 1',
+  const { rows } = await pool.query<{ company_id: string; market: Market }>(
+    `SELECT m.company_id, c.market FROM memberships m
+      JOIN companies c ON c.id = m.company_id
+     WHERE m.user_id = $1 ORDER BY m.created_at LIMIT 1`,
     [req.userId],
   );
   if (!rows.length) {
@@ -89,4 +94,5 @@ export async function requireCompany(req: FastifyRequest, reply: FastifyReply): 
     return;
   }
   req.companyId = rows[0].company_id;
+  req.market = rows[0].market;
 }

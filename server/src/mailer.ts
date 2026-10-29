@@ -1,12 +1,16 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { config } from './config.js';
+import { mailFromFor, type Market } from './markets.js';
 
 export interface OutgoingMail {
   to: string;
   subject: string;
   text: string;
   html?: string;
+  // Résolu côté serveur selon le marché du destinataire (MAIL_FROM par
+  // défaut, MAIL_FROM_ZA / markets.js pour le marché ZA).
+  from?: string;
 }
 
 // Driver « log » : pour dev/tests, capture les emails en mémoire sans réseau.
@@ -36,17 +40,18 @@ function getTransporter(): Transporter {
   return transporter;
 }
 
-export async function sendMail(mail: OutgoingMail): Promise<void> {
+export async function sendMail(mail: OutgoingMail, market: Market = 'fr'): Promise<void> {
   const driver = mailDriver();
   if (driver === 'none') {
     throw new Error('SMTP non configuré : impossible d\'envoyer des emails.');
   }
+  const from = mail.from ?? mailFromFor(market);
   if (driver === 'log') {
-    outbox.push(mail);
+    outbox.push({ ...mail, from });
     console.log(`[mail:log] → ${mail.to} | ${mail.subject}`);
     return;
   }
-  await getTransporter().sendMail({ from: config.smtp.from, ...mail });
+  await getTransporter().sendMail({ ...mail, from });
 }
 
 /* ---------- Gabarit HTML ---------- */

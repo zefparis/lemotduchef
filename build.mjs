@@ -52,6 +52,19 @@ if (themeMatch) {
   }
 }
 
+// public/markets.js est l'unique source de config par marché : le front le
+// charge via <script>, l'API l'extrait comme JSON (server/src/markets.ts).
+// Le build vérifie qu'il reste un JSON valide (clés default/markets.fr/za).
+const marketsSrc = fs.readFileSync(path.join(publicDir, 'markets.js'), 'utf8');
+try {
+  const m = JSON.parse(marketsSrc.slice(marketsSrc.indexOf('{'), marketsSrc.lastIndexOf('}') + 1));
+  if (!m.markets?.fr || !m.markets?.za) throw new Error('clés markets.fr/markets.za absentes');
+} catch (err) {
+  const msg = `public/markets.js n'est pas un JSON exploitable : ${err.message}`;
+  if (strict) { console.error(msg); process.exit(1); }
+  console.warn(msg);
+}
+
 const out = path.join(root, 'dist');
 fs.rmSync(out, { recursive: true, force: true });
 // Exclut public/dist de la copie (artefact de build précédent, cf. ci-dessous).

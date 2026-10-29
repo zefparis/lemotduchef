@@ -4,6 +4,7 @@ import { pool } from './db.js';
 import { config } from './config.js';
 import { sendMail, EMAIL_TEMPLATES } from './mailer.js';
 import { CGV_VERSION, recordCgvAcceptance, isPublicAuthCall } from './legal.js';
+import { marketFromHeaders, frontUrlFor, type Market, isMarket } from './markets.js';
 
 // Anti-bombardement par e-mail : les envois transactionnels (réinitialisation,
 // vérification) sont plafonnés par ADRESSE, en plus du rate-limit par IP de
@@ -22,6 +23,18 @@ function emailThrottle(key: string): boolean {
   hits.push(now); mailBuckets.set(key, hits); return true;
 }
 
+// Marché d'un destinataire d'email : la valeur stockée sur le compte fait
+// foi ; à défaut, l'Origin/Host de la requête courante (inscription), sinon
+// le marché par défaut.
+async function mailMarket(user: { email: string; market?: string }, request?: Request): Promise<Market> {
+  if (isMarket(user?.market)) return user.market;
+  if (user?.email) {
+    const { rows } = await pool.query<{ market: string }>('SELECT market FROM "user" WHERE lower(email)=lower($1)', [user.email]);
+    if (isMarket(rows[0]?.market)) return rows[0].market;
+  }
+  return request ? marketFromHeaders(request.headers) : 'fr';
+}
+
 // Authentification gérée par Better Auth (sessions serveur révocables,
 // hachage des mots de passe, cookies HttpOnly). Aucune crypto maison.
 export const auth = betterAuth({
@@ -35,10 +48,11 @@ export const auth = betterAuth({
     autoSignIn: true,
     // Connexion bloquée tant que l'email n'est pas vérifié.
     requireEmailVerification: true,
-    sendResetPassword: async ({ user, token }: { user: { email: string }; token: string }) => {
-      // Le lien pointe vers le FRONT (SPA), qui poste ensuite le nouveau mot de passe.
-      const url = `${config.frontUrl}/reinitialiser?token=${encodeURIComponent(token)}`;
-      await sendMail({ to: user.email, subject: 'Le Mot du Chef — réinitialisation du mot de passe', ...EMAIL_TEMPLATES.resetPassword(url) });
+    sendResetPassword: async ({ user, token }: { user: { email: string; market?: string }; token: string }, request?: Request) => {
+      // Le lien pointe vers le FRONT (SPA) du marché du compte.
+      const market = await mailMarket(user, request);
+      const url = `${frontUrlFor(market)}/reinitialiser?token=${encodeURIComponent(token)}`;
+      await sendMail({ to: user.email, subject: 'Le Mot du Chef — réinitialisation du mot de passe', ...EMAIL_TEMPLATES.resetPassword(url) }, market);
     },
     resetPasswordTokenExpiresIn: 60 * 60, // 1 h, usage unique géré par Better Auth
   },
@@ -46,21 +60,29 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     expiresIn: 60 * 60 * 24, // lien de vérification valable 24 h
-    sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
+    sendVerificationEmail: async ({ user, url }: { user: { email: string; market?: string }; url: string }, request?: Request) => {
       // url pointe sur l'API (vérification serveur) ; la redirection finale
-      // renvoie vers le front après succès.
+      // renvoie vers le front du marché après succès.
+      const market = await mailMarket(user, request);
       const u = new URL(url);
-      u.searchParams.set('callbackURL', config.frontUrl + '/?verifie=1');
-      await sendMail({ to: user.email, subject: 'Le Mot du Chef — confirmez votre email', ...EMAIL_TEMPLATES.verify(u.toString()) });
+      u.searchParams.set('callbackURL', frontUrlFor(market) + '/?verifie=1');
+      await sendMail({ to: user.email, subject: 'Le Mot du Chef — confirmez votre email', ...EMAIL_TEMPLATES.verify(u.toString()) }, market);
     },
   },
   user: {
+    // Colonnes propres (migration 0017) — jamais saisies par le client :
+    // le marché vient du domaine de la requête, la langue de l'interface.
+    additionalFields: {
+      market: { type: 'string', required: false, defaultValue: 'fr', input: false },
+      lang: { type: 'string', required: false, defaultValue: '', input: false },
+    },
     changeEmail: {
       enabled: true,
-      sendChangeEmailVerification: async ({ newEmail, url }: { newEmail: string; url: string }) => {
+      sendChangeEmailVerification: async ({ user, newEmail, url }: { user: { email: string; market?: string }; newEmail: string; url: string }, request?: Request) => {
+        const market = await mailMarket(user, request);
         const u = new URL(url);
-        u.searchParams.set('callbackURL', config.frontUrl + '/?verifie=1');
-        await sendMail({ to: newEmail, subject: 'Le Mot du Chef — confirmez votre nouvelle adresse', ...EMAIL_TEMPLATES.changeEmail(u.toString()) });
+        u.searchParams.set('callbackURL', frontUrlFor(market) + '/?verifie=1');
+        await sendMail({ to: newEmail, subject: 'Le Mot du Chef — confirmez votre nouvelle adresse', ...EMAIL_TEMPLATES.changeEmail(u.toString()) }, market);
       },
     },
     deleteUser: {
@@ -110,6 +132,19 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: [config.baseUrl, ...config.corsOrigins],
+  // Marché fixé à la création du compte, déduit du domaine de la requête
+  // (Origin du front, sinon Host). Jamais fourni par le client : le champ
+  // additionalFields.market est input:false, seul ce hook l'écrit.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user, ctx) => {
+          const market = marketFromHeaders(ctx?.request?.headers ?? new Headers());
+          return { data: { ...user, market } };
+        },
+      },
+    },
+  },
   // Un compte suspendu ne peut plus se connecter ; l'inscription publique
   // exige l'acceptation de la version courante des CGV.
   hooks: {

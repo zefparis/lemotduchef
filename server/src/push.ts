@@ -1,6 +1,7 @@
 import webPush from 'web-push';
 import { config } from './config.js';
 import { pool } from './db.js';
+import { companyMarket, marketConfig, localMinutes, type Market } from './markets.js';
 
 // Envoi Web Push (VAPID). Désactivé proprement sans clés : toute la
 // fonctionnalité reste dormant tant que VAPID_PUBLIC/PRIVATE_KEY ne sont
@@ -29,10 +30,11 @@ export async function loadPushSettings(companyId: string): Promise<PushSettings>
 }
 
 // « Heures de silence » : si définies, aucune notification pendant la plage
-// (traversée de minuit gérée : 22h → 7h).
-function inQuietHours(s: PushSettings, now = new Date()): boolean {
+// (traversée de minuit gérée : 22h → 7h). Évaluées dans le fuseau du marché
+// du restaurant (Europe/Paris ou Africa/Johannesburg), pas celui du serveur.
+export function inQuietHours(s: PushSettings, timezone: string, now = new Date()): boolean {
   if (!s.quiet_start || !s.quiet_end) return false;
-  const t = now.getHours() * 60 + now.getMinutes();
+  const t = localMinutes(now, timezone);
   const toMin = (h: string) => { const [H, M] = h.split(':').map(Number); return H * 60 + M; };
   const a = toMin(s.quiet_start), b = toMin(s.quiet_end);
   return a === b ? true : a < b ? (t >= a && t < b) : (t >= a || t < b);
@@ -75,7 +77,8 @@ export async function sendPushDirect(companyId: string, p: RawPush, log: { warn:
 export async function notifyRepliesReady(companyId: string, p: PushPayload, log: { warn: (o: unknown, m?: string) => void }): Promise<number> {
   if (!pushEnabled()) return 0;
   const s = await loadPushSettings(companyId);
-  if (!s.enabled || p.rating > s.rating_max || inQuietHours(s)) return 0;
+  const market: Market = await companyMarket(companyId);
+  if (!s.enabled || p.rating > s.rating_max || inQuietHours(s, marketConfig(market).timezone)) return 0;
   const stars = '★'.repeat(p.rating) + '☆'.repeat(5 - p.rating);
   return sendPushDirect(companyId, s.hide_content
     ? { title: `Nouvel avis ${p.rating}★ — 3 réponses prêtes`, body: 'Ouvrez pour choisir et publier.', url: `/?avis=${p.reviewId}`, tag: `review-${p.reviewId}` }

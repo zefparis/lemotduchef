@@ -103,6 +103,34 @@ export const config = {
       pro_yearly: process.env.STRIPE_PRICE_PRO_YEARLY ?? '',
     },
   },
+  // Domaines supplémentaires de détection FR (préprod, tests) — le marché
+  // ZA a l'équivalent ZA_DOMAINS ci-dessous.
+  frDomains: (process.env.FR_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+  // ── Marché ZA (compléments de public/markets.js) ──
+  // Domaine pas encore arrêté : ZA_DOMAINS ajoute les domaines de détection
+  // sans rebuild du front (ex. "lemotduchef.co.za,www.lemotduchef.co.za").
+  zaDomains: (process.env.ZA_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+  zaFrontUrl: (process.env.ZA_FRONT_URL ?? '').replace(/\/$/, ''),
+  zaMailFrom: process.env.MAIL_FROM_ZA ?? '',
+  zaReviewMailAddress: (process.env.REVIEW_MAIL_ADDRESS_ZA ?? '').toLowerCase(),
+  // Paiement ZA : Paystack en priorité (provider par défaut du marché) ;
+  // clés Stripe ZA dédiées acceptées aussi si le compte les ouvre.
+  paystack: {
+    secretKey: process.env.PAYSTACK_ZA_SECRET_KEY ?? '',
+    publicKey: process.env.PAYSTACK_ZA_PUBLIC_KEY ?? '',
+    plans: {
+      pro_monthly: process.env.PAYSTACK_ZA_PLAN_MONTHLY ?? '',
+      pro_yearly: process.env.PAYSTACK_ZA_PLAN_YEARLY ?? '',
+    },
+  },
+  stripeZa: {
+    secretKey: process.env.STRIPE_ZA_SECRET_KEY ?? '',
+    webhookSecret: process.env.STRIPE_ZA_WEBHOOK_SECRET ?? '',
+    prices: {
+      pro_monthly: process.env.STRIPE_ZA_PRICE_PRO_MONTHLY ?? '',
+      pro_yearly: process.env.STRIPE_ZA_PRICE_PRO_YEARLY ?? '',
+    },
+  },
   // Offre Gratuit : nombre de générations de réponses par mois civil et par
   // restaurant (une génération = 3 variantes). Appliqué côté serveur.
   freeMonthlyReplies: positiveInt('FREE_MONTHLY_REPLIES', 5),

@@ -7,6 +7,7 @@ import { isPro } from '../stripe.js';
 import { chevaletPdf, encartPdf, qrPngBuffer } from '../pdf.js';
 import type { CollectContent } from '../pdf.js';
 import { loadProfile } from './profile.js';
+import { companyMarket, reviewMailAddressFor } from '../markets.js';
 
 const DEFAULT_TITLE = 'Votre avis compte';
 const DEFAULT_MESSAGE = 'Un instant pour partager votre expérience sur Google nous aide énormément. Merci de votre visite !';
@@ -17,6 +18,8 @@ const PLEDGE = 'Le QR code mène directement à la page d’avis Google, pour to
 
 // Code d'ingestion email : généré à la première demande, stable ensuite.
 // Unique par restaurant (index partiel en base), insensible à la casse.
+// Le domaine de l'adresse dépend du marché (avis@… du domaine ZA quand il
+// sera configuré ; repli sur l'adresse FR tant que ce n'est pas le cas).
 async function ingestAddress(companyId: string): Promise<string | null> {
   const { rows } = await pool.query<{ ingest_code: string | null }>('SELECT ingest_code FROM companies WHERE id=$1', [companyId]);
   let code = rows[0]?.ingest_code;
@@ -27,7 +30,10 @@ async function ingestAddress(companyId: string): Promise<string | null> {
     code = r.rows[0]?.ingest_code ?? code;
     if (!code) { const again = await pool.query<{ ingest_code: string | null }>('SELECT ingest_code FROM companies WHERE id=$1', [companyId]); code = again.rows[0]?.ingest_code; }
   }
-  return code ? `${config.mailIngest.address.split('@')[0]}+${code}@${config.mailIngest.address.split('@')[1]}` : null;
+  if (!code) return null;
+  const address = reviewMailAddressFor(await companyMarket(companyId)) || config.mailIngest.address;
+  const [local, domain] = address.split('@');
+  return `${local}+${code}@${domain}`;
 }
 
 const HELP_STEPS = [

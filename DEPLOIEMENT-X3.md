@@ -68,6 +68,25 @@ STRIPE_WEBHOOK_SECRET=whsec_...              # signing secret du webhook (§4)
 STRIPE_PORTAL_RETURN_URL=https://lemotduchef.fr
 STRIPE_PRICE_PRO_MONTHLY=price_...
 STRIPE_PRICE_PRO_YEARLY=price_...
+
+# Marché ZA — compléments de public/markets.js (source unique de la config
+# par marché : langue, devise, fuseau, société éditrice, provider de paiement).
+# Tant que le domaine ZA n'est pas arrêté, ces valeurs restent vides : le
+# marché ZA est alors injoignable (détection par domaine uniquement).
+ZA_DOMAINS=lemotduchef.co.za,www.lemotduchef.co.za   # à renseigner à l'achat
+ZA_FRONT_URL=https://lemotduchef.co.za             # liens des emails ZA
+MAIL_FROM_ZA=Le Mot du Chef <noreply@lemotduchef.co.za>
+REVIEW_MAIL_ADDRESS_ZA=avis@lemotduchef.co.za      # boîte de réception des avis
+# Paiement ZA : Paystack en priorité ; clés Stripe ZA si le compte les ouvre.
+PAYSTACK_ZA_SECRET_KEY=
+PAYSTACK_ZA_PUBLIC_KEY=
+PAYSTACK_ZA_PLAN_MONTHLY=
+PAYSTACK_ZA_PLAN_YEARLY=
+STRIPE_ZA_SECRET_KEY=
+STRIPE_ZA_WEBHOOK_SECRET=
+STRIPE_ZA_PRICE_PRO_MONTHLY=
+STRIPE_ZA_PRICE_PRO_YEARLY=
+# CORS : ajouter les deux origines du front ZA (apex + www) à CORS_ORIGINS.
 ```
 
 `BASE_URL` en https active automatiquement les cookies `Secure`. `TRUST_PROXY=true`

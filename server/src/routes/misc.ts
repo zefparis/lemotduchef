@@ -9,6 +9,7 @@ import { CONTEXT_TAGS, TONES } from '../llm/prompt.js';
 import { llmConfigured } from '../llm/provider.js';
 import { FREE_MONTHLY_LIMIT } from '../stripe.js';
 import { availableSources } from '../sources/index.js';
+import { marketFromRequest, marketConfig, userMarket } from '../markets.js';
 
 export default async function miscRoutes(app: FastifyInstance) {
   app.get('/api/health', async () => {
@@ -21,30 +22,47 @@ export default async function miscRoutes(app: FastifyInstance) {
 
   // Configuration publique minimale lue par le frontend au démarrage.
   // L'interrupteur en base (back-office) est prioritaire sur l'env.
-  app.get('/api/config', async () => ({
-    signupEnabled: await signupEnabledNow(),
-    cgvVersion: CGV_VERSION,
-    freeMonthlyReplies: FREE_MONTHLY_LIMIT,
-    freeHistoryDays: config.freeHistoryDays,
-    reviewRetentionMonths: config.reviewRetentionMonths,
-    contextTags: CONTEXT_TAGS,
-    tones: Object.keys(TONES),
-    sources: availableSources(),
-    llmReady: llmConfigured(),
-  }));
+  // Le marché est déduit du domaine de la requête (Origin), pas du client.
+  app.get('/api/config', async (req) => {
+    const market = marketFromRequest(req);
+    const m = marketConfig(market);
+    return {
+      signupEnabled: await signupEnabledNow(),
+      cgvVersion: CGV_VERSION,
+      freeMonthlyReplies: FREE_MONTHLY_LIMIT,
+      freeHistoryDays: config.freeHistoryDays,
+      reviewRetentionMonths: config.reviewRetentionMonths,
+      contextTags: CONTEXT_TAGS,
+      tones: Object.keys(TONES),
+      sources: availableSources(),
+      llmReady: llmConfigured(),
+      market,
+      lang: m.lang,
+      languages: m.languages,
+      currency: m.currency,
+      timezone: m.timezone,
+      brand: m.brand,
+      tagline: m.tagline,
+      paymentProvider: m.payment.provider,
+      company: m.company,
+      legalRoutes: m.legalRoutes,
+    };
+  });
 
   app.get('/api/me', { preHandler: requireSession }, async (req) => {
-    const { rows } = await pool.query<{ id: string; name: string; city: string; onboarded: boolean }>(
-      `SELECT c.id, c.name, COALESCE(p.city,'') AS city, (p.company_id IS NOT NULL) AS onboarded
+    const { rows } = await pool.query<{ id: string; name: string; city: string; onboarded: boolean; market: string }>(
+      `SELECT c.id, c.name, COALESCE(p.city,'') AS city, (p.company_id IS NOT NULL) AS onboarded, c.market
        FROM companies c
        JOIN memberships m ON m.company_id = c.id
        LEFT JOIN restaurant_profiles p ON p.company_id = c.id
        WHERE m.user_id = $1 ORDER BY m.created_at LIMIT 1`, [req.userId]);
-    const { rows: users } = await pool.query<{ name: string; email: string }>(
-      'SELECT name, email FROM "user" WHERE id=$1', [req.userId]);
+    const { rows: users } = await pool.query<{ name: string; email: string; market: string; lang: string }>(
+      'SELECT name, email, market, lang FROM "user" WHERE id=$1', [req.userId]);
     const admin = !!users[0] && config.adminEmails.has(users[0].email.toLowerCase());
     const cgv_current = await cgvAccepted(req.userId!);
-    return { user: users[0] ?? null, restaurant: rows[0] ?? null, session_id: req.sessionId, admin, cgv_current };
+    const market = await userMarket(req.userId!);
+    const lang = users[0]?.lang || marketConfig(market).lang;
+    return { user: users[0] ? { ...users[0], lang } : null, restaurant: rows[0] ?? null, session_id: req.sessionId, admin, cgv_current, market };
   });
 
   // Onboarding : création du restaurant (compte + profil) à la première
@@ -57,11 +75,12 @@ export default async function miscRoutes(app: FastifyInstance) {
       'SELECT 1 FROM memberships WHERE user_id=$1 LIMIT 1', [req.userId]);
     if (existing.length)
       return reply.code(409).send({ error: 'Un restaurant est déjà associé à ce compte.' });
+    const market = await userMarket(req.userId!);
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       const { rows } = await client.query<{ id: string }>(
-        'INSERT INTO companies (name) VALUES ($1) RETURNING id', [p.name]);
+        'INSERT INTO companies (name, market) VALUES ($1,$2) RETURNING id', [p.name, market]);
       const id = rows[0].id;
       await client.query(
         `INSERT INTO memberships (company_id, user_id, role) VALUES ($1,$2,'owner')`, [id, req.userId]);

@@ -6,6 +6,7 @@ import { auth } from '../auth.js';
 import { settingValue, setSetting } from '../settings.js';
 import { config } from '../config.js';
 import { priceInfo } from '../stripe.js';
+import { isMarket } from '../markets.js';
 import crypto from 'node:crypto';
 
 // Journal d'audit : métadonnées uniquement — jamais de contenu métier
@@ -72,7 +73,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     const order = COMPANY_SORTS[(req.query as any)?.sort] ?? COMPANY_SORTS.created_at;
     const { rows } = await pool.query(
       `SELECT c.id, c.name, COALESCE(p.city,'') AS city, c.created_at::text,
-              c.plan, c.subscription_status,
+              c.plan, c.subscription_status, c.market,
               (SELECT count(*) FROM memberships m WHERE m.company_id=c.id) AS users_count,
               (SELECT count(*) FROM reviews r WHERE r.company_id=c.id) AS reviews_count,
               (SELECT count(*) FROM generations g WHERE g.company_id=c.id AND g.created_at >= date_trunc('month', now())) AS generations_month,
@@ -88,7 +89,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     const q = String((req.query as any)?.search ?? '').trim();
     const { rows } = await pool.query(
       `SELECT u.id, u.name, u.email, u."emailVerified" AS email_verified,
-              u."createdAt"::text AS created_at, u.suspended_at::text,
+              u."createdAt"::text AS created_at, u.suspended_at::text, u.market,
               c.name AS company_name,
               (SELECT max(s."updatedAt") FROM session s WHERE s."userId"=u.id)::text AS last_seen
        FROM "user" u
@@ -194,6 +195,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     const b = req.body as any;
     const email = String(b?.email ?? '').trim().toLowerCase();
     const name = String(b?.name ?? '').trim();
+    const market = isMarket(b?.market) ? b.market : 'fr';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200)
       return reply.code(400).send({ error: 'Email invalide.' });
     if (!name || name.length > 100)
@@ -209,8 +211,10 @@ export default async function adminRoutes(app: FastifyInstance) {
       req.log.warn({ err }, 'admin account creation failed');
       return reply.code(502).send({ error: 'Création impossible (SMTP indisponible ?).' });
     }
-    // Compte créé par l'exploitant : considéré comme vérifié d'office.
-    await pool.query('UPDATE "user" SET "emailVerified"=true WHERE lower(email)=$1', [email]);
+    // Compte créé par l'exploitant : considéré comme vérifié d'office, avec
+    // le marché indiqué (le domaine de la requête admin n'est pas un signal
+    // fiable — l'exploitant travaille depuis le front FR).
+    await pool.query('UPDATE "user" SET "emailVerified"=true, market=$2 WHERE lower(email)=$1', [email, market]);
     try {
       await auth.api.requestPasswordReset({ body: { email, redirectTo: config.frontUrl + '/reinitialiser' } });
     } catch (err) {
