@@ -502,11 +502,22 @@ $('#report-copy').onclick = async () => {
 };
 
 function renderVariants(g) {
+  const tipFor = (w = []) => {
+    const s = w.join(' ');
+    if (/prénom|ouverture/.test(s)) return 'Astuce : ajoutez le prénom du client en ouverture.';
+    if (/tutoiement/.test(s)) return 'Astuce : passez au vouvoiement.';
+    if (/triplette|énumération/.test(s)) return 'Astuce : un point par phrase, c’est plus fluide.';
+    if (/invitation|contact privé/.test(s)) return 'Astuce : terminez en invitant à revenir ou à échanger en privé.';
+    if (/excuse|explication/.test(s)) return 'Astuce : commencez par ce qu’a vécu le client, pas par l’explication.';
+    if (/sincèrement|formule|tournure|navré|ressenti/.test(s)) return 'Astuce : reformulez une expression pour la rendre plus personnelle.';
+    if (/signature/.test(s)) return 'Astuce : signez la réponse de votre nom.';
+    if (/hors cible|longueur/.test(s)) return 'Astuce : ajustez la longueur si besoin.';
+    return 'Astuce : une petite retouche peut la rendre encore plus naturelle.';
+  };
   const block = $('#variants-block');
   block.hidden = false;
   const u = g.usage || {};
-  const validCount = g.variants.filter(v => v.text).length;
-  $('#variants-meta').textContent = `${validCount} proposition(s) · relisez et ajustez avant de publier` + (g.rejected?.length ? ` · ${g.rejected.length} écartée(s) par les règles` : '');
+  $('#variants-meta').textContent = 'Trois propositions — relisez et ajustez avant de publier';
   const maps = profile?.google_maps_url;
   const og = $('#open-google');
   og.hidden = !maps; if (maps) og.href = maps;
@@ -514,10 +525,10 @@ function renderVariants(g) {
     <article class="variant" data-idx="${i}">
       <div class="variant-head">
         <strong>Proposition ${i + 1}</strong>
-        <small data-meta${v.text ? '' : ' hidden'}><span data-words>${words(v.text)}</span> mots${v.warnings?.length ? ` · <span class="warn" title="${esc(v.warnings.join(' · '))}">à vérifier</span>` : ''}</small>
+        <small data-meta${v.text ? '' : ' hidden'}><span data-words>${words(v.text)}</span> mots</small>
       </div>
-      ${v.needsReview ? `<p class="variant-flag warn">${v.text ? `à relire — ${esc(v.warnings?.join(' · ') || 'variante hors règles de style')}` : 'à revoir — écartée par les règles, rédigez ou régénérez'}</p>` : ''}
-      <textarea rows="8" data-variant${v.needsReview ? ' placeholder="Variante non conforme — écrivez votre réponse ou régénérez."' : ''}>${esc(v.text)}</textarea>
+      <textarea rows="8" data-variant${v.needsReview ? ' placeholder="Écrivez votre réponse ou régénérez."' : ''}>${esc(v.text)}</textarea>
+      ${v.needsReview ? `<p class="variant-tip">${esc(v.text ? tipFor(v.warnings) : 'Pas de proposition pour cette carte — écrivez la vôtre ou régénérez.')}</p>` : ''}
       <p class="ai-note">${icon('i-info')}Réponse proposée par une IA — relisez-la avant de la publier</p>
       <div class="variant-actions">
         <button class="btn btn-primary btn-sm" data-copy="${i}">${icon('i-copy')}Copier</button>
