@@ -61,6 +61,13 @@ export async function generateReplies(
   const greetRe = pack ? new RegExp(`^(?:${pack.greeting.source})[^,.!?\n]*[,.!?\n]\\s*`, 'i') : undefined;
   const translationNote = (langName: string) =>
     `\nAlso fill translations[] with each variant translated into ${langName} for the restaurateur's internal display — same order, same count; never alter the reply text itself.`;
+  // La langue de l'avis est retenue même si la génération produit moins de
+  // 2 variantes (statut unbilled → pas de transaction finale).
+  await pool.query('UPDATE reviews SET lang=$2 WHERE id=$1', [reviewId, replyLang]);
+  // « Réservez » : en français le motif historique, ailleurs le motif
+  // d'invitation propre à la langue (un simple « reservation » de l'avis
+  // ne doit pas compter).
+  const hasReservation = (t: string) => pack ? pack.reservation.test(t) : mentionsReservation(t);
   // Minimisation RGPD : le modèle reçoit le marqueur [PRÉNOM], jamais le nom.
   // Réinséré ici uniquement si le restaurateur l'a demandé ; sinon retiré.
   const author = authorDisplayName(review);
@@ -186,7 +193,7 @@ export async function generateReplies(
       if (slots.some(a => a && !a.needsReview && tooSimilar(a.text, disp(textM), greetRe))) { rejected.push(`variante ${i + 1} : trop proche d’une autre`); continue; }
       const hasEmail0 = mentionsContactEmail(textM, profile);
       if (hasEmail0 && emailVariants >= 2) { rejected.push(`variante ${i + 1} : email dans trop de variantes`); continue; }
-      const hasReservation0 = mentionsReservation(textM);
+      const hasReservation0 = hasReservation(textM);
       if (hasReservation0 && reservationUsed) { rejected.push(`variante ${i + 1} : « réservez » déjà utilisé`); continue; }
       let cur = fixOpening(textM);
       let tr = trRaw;
@@ -234,8 +241,8 @@ export async function generateReplies(
       if (slots.some(a => a && !a.needsReview && tooSimilar(a.text, disp(cur), greetRe))) { rejected.push(`variante ${i + 1} : trop proche d’une autre`); continue; }
       const hasEmail = mentionsContactEmail(cur, profile);
       if (hasEmail && emailVariants >= 2) { rejected.push(`variante ${i + 1} : email dans trop de variantes`); continue; }
-      const hasReservation = mentionsReservation(cur);
-      if (hasReservation && reservationUsed) { rejected.push(`variante ${i + 1} : « réservez » déjà utilisé`); continue; }
+      const hasRes = hasReservation(cur);
+      if (hasRes && reservationUsed) { rejected.push(`variante ${i + 1} : « réservez » déjà utilisé`); continue; }
       if (!c.ok) {
         rejected.push(`variante ${i + 1} : ${c.errors.join(', ')}`);
         // Erreur factuelle, divulgation ou mention juridique : jamais
@@ -248,7 +255,7 @@ export async function generateReplies(
       }
       slots[i] = { idx: i, text: disp(cur), translation: disp(tr) || undefined, warnings: c.warnings, words: c.words };
       if (hasEmail) emailVariants++;
-      if (hasReservation) reservationUsed = true;
+      if (hasRes) reservationUsed = true;
     }
   }
   const durationMs = Date.now() - started;

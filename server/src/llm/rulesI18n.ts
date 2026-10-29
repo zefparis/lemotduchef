@@ -82,9 +82,13 @@ export function checkReplyLang(text: string, p: PromptProfile, r: PromptReview,
         && !new RegExp(`^${g}\\s+${a}(?![\\p{L}\\p{N}])`, 'u').test(nb))
       errors.push('ouverture sans le prénom de l’auteur');
   }
-  // Signataire jamais cité à la 3e personne dans le corps.
+  // Signataire jamais cité à la 3e personne dans le corps. Un nom ou rôle
+  // CONTENU dans le nom du restaurant (« Marcel » dans « Chez Marcel »)
+  // n'est pas contrôlable — on le retire du contrôle.
   const reviewAndAuthor = norm(`${r.body} ${r.author_name}`);
-  for (const who of [p.signature_name, p.signature_role].filter(s => s && s.trim().length > 2)) {
+  const pName = norm(p.name);
+  for (const who of [p.signature_name, p.signature_role]
+    .filter(s => s && s.trim().length > 2 && !pName.includes(norm(s).trim()))) {
     const w = norm(who).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim();
     if (w && new RegExp(`\\b${w}\\b`).test(nb) && !reviewAndAuthor.includes(w))
       { errors.push('signataire cité à la 3e personne'); break; }

@@ -30,6 +30,7 @@ export interface LangPack {
   closingFormulas: RegExp;                    // formules de politesse détectées en signature
   triadAnd: string;                           // mot de coordination pour la triplette
   clauseMark: RegExp;                         // sujets/auxiliaires disqualifiant la triplette
+  reservation: RegExp;                        // invitation à réserver (impérative, pas le nom « réservation »)
 }
 
 const en: LangPack = {
@@ -43,8 +44,10 @@ const en: LangPack = {
     'we take your review seriously', 'we are deeply sorry', 'devastated to hear',
     'your feelings', 'this feeling', 'we would like to clarify', 'knowingly',
     'in full transparency', 'unacceptable', 'do not hesitate', "don't hesitate",
-    'thank you for taking the time', 'we hear your disappointment',
-    'we understand your disappointment', 'rest assured',
+    'thank you for taking the time', 'thank you for sharing your experience',
+    'thank you for sharing', 'we value your feedback', 'we appreciate your feedback',
+    'thank you for your valuable feedback', 'thanks for taking the time',
+    'we hear your disappointment', 'we understand your disappointment', 'rest assured',
   ],
   impatience: /(impatient|impatience|bad faith|dishonest|exaggerat|you are exaggerating|not truthful)/i,
   internalClaims: [
@@ -70,6 +73,7 @@ const en: LangPack = {
   closingFormulas: /kind regards|best regards|warm regards|sincerely|yours (sincerely|truly)|regards|cheers|the team|all the best/i,
   triadAnd: ' and ',
   clauseMark: /\b(i|you|he|she|it|we|they|this|that|there|who|when|as|since|because|which|where|if|but|so|nor|for|is|are|was|were|am|be|been|being|will|would|shall|should|must|can|could|may|might|do|does|did|done|have|has|had|come|go|let|hope|wish|invite|look|see|feel|stay|remain|seem|seems|deserve|expect|aim|strive)\b/i,
+  reservation: /\b(book|booking) (ahead|a table|your table|early)|book a table|reserve a table|make a (booking|reservation)|secure your (table|spot)|booking ahead/i,
 };
 
 const af: LangPack = {
@@ -81,7 +85,10 @@ const af: LangPack = {
   banned: [
     'regtig jammer', 'ons neem jou terugvoer ernstig', 'jou terugvoer tel',
     'ons is diep jammer', 'jou gevoel', 'volle deursigtigheid', 'mielie',
-    'moenie huiwer', 'dankie dat jy die tyd geneem', 'ons hoor jou teleurstelling',
+    'moenie huiwer', 'dankie dat jy die tyd geneem', 'dankie dat u die tyd geneem',
+    'dankie vir die deel van u ervaring', 'dankie vir die deel van jou ervaring',
+    'ons waardeer jou terugvoer', 'ons waardeer u terugvoer',
+    'dankie vir u waardevolle terugvoer', 'ons hoor jou teleurstelling',
     'ons verstaan jou teleurstelling', 'wees verseker',
   ],
   impatience: /(ongeduld|slegte trou|oneerlik|oordryf|jy oordryf)/i,
@@ -108,6 +115,7 @@ const af: LangPack = {
   closingFormulas: /vriendelike groete|beste wense|groete|die span|als die beste/i,
   triadAnd: ' en ',
   clauseMark: /\b(ek|jy|hy|sy|dit|ons|hulle|hierdie|daardie|daar|wie|wanneer|as|sedert|omdat|wat|waar|as|maar|so|nog|vir|is|was|word|sal|sou|moet|kan|mag|doen|het|kom|gaan|laat|hoop|wens|genooi|kyk|sien|voel|bly|blyk|verdien|verwag|streef)\b/i,
+  reservation: /bespreek (vooruit|vooraf|'n tafel|vroeër)|maak 'n bespreking|bespreking vooruit|reserveer 'n tafel|boek vooruit/i,
 };
 
 const de: LangPack = {
@@ -120,6 +128,9 @@ const de: LangPack = {
     'aufrichtig leid', 'wir nehmen ihr feedback ernst', 'ihr feedback zählt',
     'wir bedauern zutiefst', 'ihr empfinden', 'in voller transparenz',
     'inakzeptabel', 'zögern sie nicht', 'vielen dank, dass sie sich die zeit',
+    'danke, dass sie sich die zeit', 'vielen dank für das teilen',
+    'danke für das teilen', 'wir schätzen ihr feedback',
+    'vielen dank für ihr wertvolles feedback', 'wir danken ihnen für ihre erfahrung',
     'wir hören ihre enttäuschung', 'wir verstehen ihre enttäuschung',
     'seien sie versichert',
   ],
@@ -147,6 +158,7 @@ const de: LangPack = {
   closingFormulas: /freundliche grüße|mit freundlichen grüßen|beste grüße|herzliche grüße|viele grüße|das team|alles gute/i,
   triadAnd: ' und ',
   clauseMark: /\b(ich|du|er|sie|es|wir|ihr|sie|dies|das|dass|wer|wenn|als|da|weil|welch|wo|ob|aber|so|noch|für|ist|sind|war|waren|bin|bist|sein|wird|werde|wird|würde|muss|müssen|kann|können|darf|dürfen|soll|sollen|habe|haben|hat|hatte|hatten|komme|kommen|gehe|gehen|lassen|hoffen|wünschen|einladen|sehen|fühlen|bleiben|scheinen|verdienen|erwarten|streben)\b/i,
+  reservation: /reservieren sie|einen tisch reservieren|buchen sie (einen|ihren) tisch|im voraus buchen|rechtzeitig buchen|reserviert (ihren )?tisch/i,
 };
 
 const nl: LangPack = {
@@ -159,6 +171,9 @@ const nl: LangPack = {
     'oprecht spijt', 'wij nemen uw feedback serieus', 'uw feedback telt',
     'wij zijn diep bedroefd', 'uw gevoel', 'in volledige transparantie',
     'onaanvaardbaar', 'aarzel niet', 'bedankt dat u de tijd nam',
+    'bedankt voor het delen van uw ervaring', 'bedankt voor het delen',
+    'we waarderen uw feedback', 'wij waarderen uw feedback',
+    'bedankt voor uw waardevolle feedback',
     'wij horen uw teleurstelling', 'wij begrijpen uw teleurstelling',
     'wees gerust',
   ],
@@ -186,6 +201,7 @@ const nl: LangPack = {
   closingFormulas: /vriendelijke groeten|met vriendelijke groet|beste groeten|hartelijke groeten|het team|alle goeds/i,
   triadAnd: ' en ',
   clauseMark: /\b(ik|je|hij|zij|het|wij|jullie|zij|dit|dat|wie|wanneer|als|omdat|welk|waar|of|maar|dus|nog|voor|is|zijn|was|waren|ben|bent|wordt|worden|zal|zullen|zou|zouden|moet|moeten|kan|kunnen|mag|mogen|doe|doen|heb|hebben|heeft|had|hadden|kom|komen|ga|gaan|laat|laten|hoop|hopen|wens|wensen|nodig|nodigen|zie|zien|voel|voelen|blijf|blijven|lijkt|lijken|verdien|verdienen|verwacht|verwachten|streef|streven)\b/i,
+  reservation: /reserveer (een|uw) tafel|reserveren van tevoren|boek (een|uw) tafel|vooraf reserveren|van tevoren boeken|reserveer vooraf/i,
 };
 
 const es: LangPack = {
@@ -198,6 +214,9 @@ const es: LangPack = {
     'sinceramente lo sentimos', 'tomamos su comentario en serio', 'su comentario cuenta',
     'lamentamos profundamente', 'su sentimiento', 'con total transparencia',
     'inaceptable', 'no dude', 'gracias por tomarse el tiempo',
+    'gracias por dedicarnos su tiempo', 'gracias por compartir su experiencia',
+    'gracias por compartir', 'valoramos su comentario', 'apreciamos su comentario',
+    'gracias por su valioso comentario', 'gracias por su valoración',
     'escuchamos su decepción', 'entendemos su decepción', 'esté seguro',
   ],
   impatience: /(impaciente|mala fe|deshonesto|exagera|usted exagera|exagerado)/i,
@@ -224,6 +243,7 @@ const es: LangPack = {
   closingFormulas: /atentamente|cordialmente|un saludo|saludos|mejores deseos|el equipo|cordiales saludos/i,
   triadAnd: ' y ',
   clauseMark: /\b(yo|tú|él|ella|ello|nosotros|vosotros|ellos|ellas|esto|eso|aquello|quien|cuando|como|porque|pues|donde|si|pero|así|ni|para|es|son|era|eran|está|están|ser|fue|fueron|será|seré|seremos|serán|sea|sean|había|hemos|habéis|han|habrá|voy|va|van|vamos|vengo|viene|vienen|espero|esperamos|quisiera|deseo|deseamos|invito|invitamos|veo|ven|siento|permanezco|parezco|merezco|espero)\b/i,
+  reservation: /reserve (una|su) mesa|reservar (una|su) mesa|haga su reserva|reservar con antelación|haga (una )?reserva|reserve con tiempo/i,
 };
 
 const it: LangPack = {
@@ -236,6 +256,9 @@ const it: LangPack = {
     'sinceramente spiacente', 'prendiamo il suo feedback sul serio', 'il suo feedback conta',
     'siamo profondamente dispiaciuti', 'il suo sentimento', 'in piena trasparenza',
     'inaccettabile', 'non esiti', 'grazie per aver dedicato del tempo',
+    'grazie per averci dedicato del tempo', 'grazie per aver condiviso la sua esperienza',
+    'grazie per aver condiviso', 'apprezziamo il suo feedback',
+    'grazie per il suo prezioso feedback', 'grazie per la sua recensione',
     'sentiamo la sua delusione', 'comprendiamo la sua delusione', 'stia certo',
   ],
   impatience: /(impaziente|malafede|disonesto|esagera|lei esagera|esagerato)/i,
@@ -262,6 +285,7 @@ const it: LangPack = {
   closingFormulas: /cordiali saluti|distinti saluti|cordialmente|saluti|i migliori auguri|il team|un caro saluto/i,
   triadAnd: ' e ',
   clauseMark: /\b(io|tu|lui|lei|esso|noi|voi|loro|questo|quello|chi|quando|come|perché|poiché|dove|se|ma|così|né|per|è|sono|era|erano|essere|fu|furono|sarà|sarò|saremo|saranno|sia|siano|avevo|aveva|avevano|abbiamo|avete|hanno|avrò|vado|va|vanno|andiamo|vengo|viene|vengono|spero|speriamo|vorrei|desidero|desideriamo|invito|invitiamo|vedo|vedono|sento|resto|sembr|merit|aspett)\b/i,
+  reservation: /prenoti (un|il) tavolo|prenotare (un|il) tavolo|fare una prenotazione|prenotare in anticipo|prenoti in anticipo|prenotazione anticipata/i,
 };
 
 export const LANG_PACKS: Record<Exclude<ReplyLang, 'fr'>, LangPack> = { en, af, de, nl, es, it };
