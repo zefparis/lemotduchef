@@ -1,6 +1,6 @@
 // Prompt système du rédacteur — versionné : toute modification du texte
 // incrémente PROMPT_VERSION (journalisée dans generations.prompt_version).
-export const PROMPT_VERSION = '2026-10-29.1';
+export const PROMPT_VERSION = '2026-10-29.2';
 // Marqueur neutre remplaçant le prénom de l'auteur dans ce qui est envoyé au
 // modèle (minimisation RGPD) — réinséré après génération si souhaité.
 export const AUTHOR_MARKER = '[PRÉNOM]';
@@ -85,6 +85,7 @@ TON ET CONTENU
 - Ne jamais affirmer de procédures, registres, contrôles ou actions internes non fournis par le profil ou le contexte : pas de « registres de nettoyage », « nous vérifions régulièrement », « procédure », « protocole », « nous travaillons à », « nous revoyons », « nous mettons en place ». Seul engagement autorisé : « nous en parlons avec l'équipe » / « votre retour est transmis à l'équipe ». « Nos registres » uniquement si le contexte indique « jamais venu ».
 - Excuses : franches uniquement si le contexte du restaurateur indique « problème réel » ; sinon, une seule excuse brève (« ce n'est pas notre standard ») au plus, et seulement si la critique est factuelle et plausible (plat froid, erreur de commande, attente) ; aucune excuse si le contexte indique « jamais venu ». Si le contexte indique « prix affichés » : jamais d'excuse SUR LES PRIX — les prix s'expliquent (fait maison, produits frais, carte affichée) sans renvoyer la faute au client ; s'excuser de l'attente, du service ou d'un plat reste permis.
 - Formules interdites : « sincèrement désolés », « nous prenons votre avis au sérieux », « votre avis compte », « nous sommes navrés », « ce ressenti », « votre ressenti », « nous tenons à préciser », « en connaissance de cause », « mérite d'être savouré(e) », « sans précipitation », « n'hésitez pas », « n'hésite pas », « merci d'avoir pris le temps », « votre avis me touche », « je comprends votre déception », « j'entends votre déception », « en toute transparence » ; aucune tournure suggérant que le client est impatient ou de mauvaise foi. « Au plaisir de vous revoir » (ou équivalent) ne doit pas figurer à la fois en ouverture et en clôture.
+- Exemples à ne PAS reproduire : « merci d'avoir pris le temps de nous écrire » → préférer « merci pour votre retour » ; « je suis sincèrement désolé pour ce désagrément » → préférer une reconnaissance factuelle (« ce soir-là, l'attente a été trop longue ») ; aligner « attente, qualité et prix » dans une même phrase → traiter un seul point par phrase.
 - Ne jamais accuser l'auteur de mentir, d'exagérer ni d'être de mauvaise foi. « Nous sommes surpris » ou « surprenant » uniquement si le contexte indique « jamais venu » ou « plat conforme à la description » ; « nos registres » uniquement si « jamais venu ».
 - Ne jamais divulguer d'information personnelle sur le client (nom de famille, date exacte, commande, montant, adresse, email, téléphone). Reprendre uniquement le prénom tel qu'affiché, si fourni.
 - Ne jamais menacer, ne jamais évoquer de suite judiciaire, d'avocat, de plainte, de tribunal, ni de signalement.
@@ -138,8 +139,19 @@ export const isHealthTopic = (r: Pick<PromptReview, 'body' | 'context_tags'>) =>
 export const authorDisplayName = (r: Pick<PromptReview, 'author_name'>): string | null => {
   const name = (r.author_name ?? '').trim();
   if (!name) return null;
+  // Politique conservatrice : pseudonymes et initiales → salutation neutre
+  // « Bonjour, ». Rejetés : chiffres (« Le Gourmet 34 », « Mimi du 30 »),
+  // points abréviatifs (« J. Martin », « R. »), tournures d'article ou de
+  // pseudo (« Le Gourmand », « du Sud »), 3 mots et plus.
+  if (/\d|\./.test(name)) return null;
   if (/^(anonyme|anonymous|inconnu|client|google|user|utilisateur|membre)\b/i.test(name)) return null;
-  return name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/gi, '').length >= 2 ? name : null;
+  if (/^(le|la|les|l['’]|du|de|des|au|aux|un|une|le_|mimi du)\s/i.test(name)) return null;
+  const parts = name.split(/\s+/);
+  if (parts.length >= 3) return null;
+  // Prénom seul, jamais le nom complet (« Julie Martin » → « Julie »,
+  // « Jean-Pierre » reste entier).
+  const first = parts[0];
+  return first.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/gi, '').length >= 2 ? first : null;
 };
 
 // Le point fort attribué par le code n'est jamais obligatoire : le modèle peut

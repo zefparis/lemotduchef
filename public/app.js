@@ -505,7 +505,7 @@ function renderVariants(g) {
   const block = $('#variants-block');
   block.hidden = false;
   const u = g.usage || {};
-  const validCount = g.variants.filter(v => !v.needsReview).length;
+  const validCount = g.variants.filter(v => v.text).length;
   $('#variants-meta').textContent = `${validCount} proposition(s) · relisez et ajustez avant de publier` + (g.rejected?.length ? ` · ${g.rejected.length} écartée(s) par les règles` : '');
   const maps = profile?.google_maps_url;
   const og = $('#open-google');
@@ -516,7 +516,7 @@ function renderVariants(g) {
         <strong>Proposition ${i + 1}</strong>
         <small data-meta${v.text ? '' : ' hidden'}><span data-words>${words(v.text)}</span> mots${v.warnings?.length ? ` · <span class="warn" title="${esc(v.warnings.join(' · '))}">à vérifier</span>` : ''}</small>
       </div>
-      ${v.needsReview ? '<p class="variant-flag warn">à revoir — écartée par les règles, rédigez ou régénérez</p>' : ''}
+      ${v.needsReview ? `<p class="variant-flag warn">${v.text ? `à relire — ${esc(v.warnings?.join(' · ') || 'variante hors règles de style')}` : 'à revoir — écartée par les règles, rédigez ou régénérez'}</p>` : ''}
       <textarea rows="8" data-variant${v.needsReview ? ' placeholder="Variante non conforme — écrivez votre réponse ou régénérez."' : ''}>${esc(v.text)}</textarea>
       <p class="ai-note">${icon('i-info')}Réponse proposée par une IA — relisez-la avant de la publier</p>
       <div class="variant-actions">

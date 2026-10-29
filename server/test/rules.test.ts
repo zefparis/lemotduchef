@@ -367,3 +367,12 @@ test('aucune URL ni nom de domaine dans une réponse publique (anti-injection)',
   const mail = checkReply(`${body(c)} Écrivez à contact@tabledaurore.fr.\n${sig}`, c.profile, c.review);
   assert.ok(!mail.errors.some(e => /lien ou nom de domaine/.test(e)), 'email du profil non rejeté');
 });
+
+test('noms : pseudonymes et initiales → salutation neutre, prénom seul sinon', () => {
+  for (const n of ['Le Gourmet 34', 'J. Martin', 'R.', 'Mimi du 30', 'Anonyme', 'Client Google', 'Marie Claire Dupont'])
+    assert.equal(authorDisplayName({ author_name: n }), null, `« ${n} » doit donner « Bonjour, » neutre`);
+  assert.equal(authorDisplayName({ author_name: 'Julie' }), 'Julie');
+  assert.equal(authorDisplayName({ author_name: 'Julie Martin' }), 'Julie', 'prénom seul, jamais le nom complet');
+  assert.equal(authorDisplayName({ author_name: 'Jean-Pierre' }), 'Jean-Pierre');
+  assert.equal(authorDisplayName({ author_name: 'ben' }), 'ben');
+});

@@ -32,7 +32,7 @@ async function isAdminAccount(userId: string): Promise<boolean> {
 
 async function variantsOf(reviewId: string, companyId: string) {
   const { rows } = await pool.query(
-    `SELECT v.id, v.generation_id, v.idx, v.text, v.warnings, v.created_at
+    `SELECT v.id, v.generation_id, v.idx, v.text, v.warnings, v.needs_review AS "needsReview", v.created_at
        FROM reply_variants v
       WHERE v.review_id=$1 AND v.company_id=$2
       ORDER BY v.created_at DESC, v.idx ASC LIMIT 9`, [reviewId, companyId]);
