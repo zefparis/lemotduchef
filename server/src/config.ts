@@ -107,12 +107,11 @@ export const config = {
   // ZA a l'équivalent ZA_DOMAINS ci-dessous.
   frDomains: (process.env.FR_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
   // ── Marché ZA (compléments de public/markets.js) ──
-  // Domaine pas encore arrêté : ZA_DOMAINS ajoute les domaines de détection
-  // sans rebuild du front (ex. "lemotduchef.co.za,www.lemotduchef.co.za").
+  // Domaine za.lemotduchef.fr : mêmes boîtes email que le marché FR
+  // (avis@lemotduchef.fr — le code avis+xxxx identifie déjà le restaurant).
+  // ZA_DOMAINS reste utile pour des domaines supplémentaires de test ou un
+  // futur .co.za sans rebuild.
   zaDomains: (process.env.ZA_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
-  zaFrontUrl: (process.env.ZA_FRONT_URL ?? '').replace(/\/$/, ''),
-  zaMailFrom: process.env.MAIL_FROM_ZA ?? '',
-  zaReviewMailAddress: (process.env.REVIEW_MAIL_ADDRESS_ZA ?? '').toLowerCase(),
   // Paiement ZA : Paystack en priorité (provider par défaut du marché) ;
   // clés Stripe ZA dédiées acceptées aussi si le compte les ouvre.
   paystack: {

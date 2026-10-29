@@ -19,6 +19,7 @@ import collectRoutes from './routes/collect.js';
 import pushRoutes from './routes/push.js';
 import { llmConfigured } from './llm/provider.js';
 import { scheduleRetention } from './retention.js';
+import { marketConfig } from './markets.js';
 
 export async function buildApp(opts: { retention?: boolean; logStream?: NodeJS.WritableStream } = {}) {
   // Journalisation sans secrets : cookies, en-têtes d'auth et set-cookie
@@ -59,7 +60,7 @@ export async function buildApp(opts: { retention?: boolean; logStream?: NodeJS.W
   // de thème) ; build.mjs vérifie qu'il correspond au contenu d'index.html.
   const CSP_FRONT = [
     "default-src 'self'", "script-src 'self' 'sha256-INvJATyzdDWfk2hI44VBZvfLcUkppxFRtDscxJ/HZRk='", "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:", `connect-src 'self' ${config.baseUrl}`,
+    "img-src 'self' data: blob:", `connect-src 'self' ${config.baseUrl} ${marketConfig('za').frontUrl}`,
     "object-src 'none'", "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'",
   ].join('; ');
   app.addHook('onSend', async (req, reply) => {

@@ -30,12 +30,10 @@ process.env.STRIPE_WEBHOOK_SECRET = 'whsec_testsecret';
 process.env.STRIPE_PRICE_PRO_MONTHLY = 'price_pro_m';
 process.env.STRIPE_PRICE_PRO_YEARLY = 'price_pro_y';
 process.env.LLM_PROVIDER = 'mock';
-// Marché ZA : domaine de test + surcharges d'environnement (le domaine de
-// production n'est pas encore arrêté — public/markets.js reste la source).
+// Marché ZA : domaine de test ajouté via l'env ; le domaine réel
+// (za.lemotduchef.fr) et les adresses email (même boîte que FR) vivent
+// dans public/markets.js — même domaine d'expédition pour les deux marchés.
 process.env.ZA_DOMAINS = 'za.lemotduchef.test';
-process.env.ZA_FRONT_URL = 'https://za.lemotduchef.test';
-process.env.MAIL_FROM_ZA = 'Le Mot du Chef <noreply@za.lemotduchef.test>';
-process.env.REVIEW_MAIL_ADDRESS_ZA = 'avis@za.lemotduchef.test';
 
 const { buildApp } = await import('../src/app.js');
 const { migrate, pool } = await import('../src/db.js');
@@ -135,10 +133,11 @@ test('signup sur le domaine ZA → compte market=za, entreprise market=za', asyn
   const { cookie, mail } = await signup(email, 'ZA Resto', ZA_ORIGIN);
   const u = await userRow(email);
   assert.equal(u?.market, 'za', 'le compte créé depuis le domaine ZA doit porter market=za');
-  // Expéditeur et lien de vérification propres au marché ZA.
+  // Expéditeur = domaine lemotduchef.fr (même boîte pour les deux marchés) ;
+  // lien de vérification → front za.lemotduchef.fr.
   assert.ok(mail, 'email de vérification capturé');
-  assert.equal(mail!.from, process.env.MAIL_FROM_ZA);
-  assert.match(decodeURIComponent(mail!.text), /za\.lemotduchef\.test\/\?verifie=1/);
+  assert.equal(mail!.from, 'Le Mot du Chef <noreply@lemotduchef.fr>');
+  assert.match(decodeURIComponent(mail!.text), /za\.lemotduchef\.fr\/\?verifie=1/);
   // Création du restaurant : l'entreprise hérite du marché du compte.
   const r = await app.inject({
     method: 'POST', url: '/api/restaurants',
@@ -182,16 +181,17 @@ test('/api/config : le marché suit l’Origin de la requête', async () => {
 
 /* ---------- Emails transactionnels par marché ---------- */
 
-test('sendMail : expéditeur résolu par marché (ZA dédié, repli FR)', async () => {
+test('sendMail : même domaine d\'expédition pour les deux marchés', async () => {
   const n = outbox.length;
   await sendMail({ to: 'x@y.fr', subject: 's', text: 't' }, 'za');
   await sendMail({ to: 'x@y.fr', subject: 's', text: 't' }, 'fr');
-  assert.equal(outbox[n].from, process.env.MAIL_FROM_ZA);
+  // Même boîte lemotduchef.fr pour les deux marchés : l'expéditeur ZA vient
+  // de markets.js (même domaine), celui FR de MAIL_FROM (env prioritaire).
+  assert.equal(outbox[n].from, 'Le Mot du Chef <noreply@lemotduchef.fr>');
   assert.equal(outbox[n + 1].from, process.env.MAIL_FROM);
-  // Sans configuration ZA, les helpers retombent sur les valeurs FR.
-  assert.equal(mailFromFor('za'), process.env.MAIL_FROM_ZA);
-  assert.equal(frontUrlFor('za'), process.env.ZA_FRONT_URL);
-  assert.equal(reviewMailAddressFor('za'), process.env.REVIEW_MAIL_ADDRESS_ZA);
+  assert.equal(mailFromFor('za'), 'Le Mot du Chef <noreply@lemotduchef.fr>');
+  assert.equal(frontUrlFor('za'), 'https://za.lemotduchef.fr');
+  assert.equal(reviewMailAddressFor('za'), 'avis@lemotduchef.fr');
   assert.equal(frontUrlFor('fr'), 'https://lemotduchef.fr');
 });
 

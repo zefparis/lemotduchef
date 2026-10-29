@@ -69,14 +69,14 @@ STRIPE_PORTAL_RETURN_URL=https://lemotduchef.fr
 STRIPE_PRICE_PRO_MONTHLY=price_...
 STRIPE_PRICE_PRO_YEARLY=price_...
 
-# Marché ZA — compléments de public/markets.js (source unique de la config
-# par marché : langue, devise, fuseau, société éditrice, provider de paiement).
-# Tant que le domaine ZA n'est pas arrêté, ces valeurs restent vides : le
-# marché ZA est alors injoignable (détection par domaine uniquement).
-ZA_DOMAINS=lemotduchef.co.za,www.lemotduchef.co.za   # à renseigner à l'achat
-ZA_FRONT_URL=https://lemotduchef.co.za             # liens des emails ZA
-MAIL_FROM_ZA=Le Mot du Chef <noreply@lemotduchef.co.za>
-REVIEW_MAIL_ADDRESS_ZA=avis@lemotduchef.co.za      # boîte de réception des avis
+# Marché ZA — cf. public/markets.js (source unique : langue, devise, fuseau,
+# société éditrice, provider de paiement). Le front ZA est za.lemotduchef.fr,
+# sur le même projet Vercel ; l'API est la même pour les deux marchés
+# (api.lemotduchef.fr) ; la boîte avis@lemotduchef.fr reçoit les avis des
+# deux marchés (le code avis+xxxx identifie le restaurant). Renseigner
+# https://za.lemotduchef.fr dans CORS_ORIGINS ci-dessus.
+# ZA_DOMAINS : domaines supplémentaires de détection (préprod, futur .co.za).
+ZA_DOMAINS=
 # Paiement ZA : Paystack en priorité ; clés Stripe ZA si le compte les ouvre.
 PAYSTACK_ZA_SECRET_KEY=
 PAYSTACK_ZA_PUBLIC_KEY=

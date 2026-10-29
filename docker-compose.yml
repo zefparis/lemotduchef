@@ -88,11 +88,9 @@ services:
       STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:-}
       STRIPE_PRICE_PRO_MONTHLY: ${STRIPE_PRICE_PRO_MONTHLY:-}
       STRIPE_PRICE_PRO_YEARLY: ${STRIPE_PRICE_PRO_YEARLY:-}
-      # Marché ZA (cf. public/markets.js) : domaines, front, email, paiement.
+      # Marché ZA (cf. public/markets.js) : za.lemotduchef.fr — même API et
+      # mêmes boîtes email que FR ; ZA_DOMAINS = domaines supplémentaires.
       ZA_DOMAINS: ${ZA_DOMAINS:-}
-      ZA_FRONT_URL: ${ZA_FRONT_URL:-}
-      MAIL_FROM_ZA: ${MAIL_FROM_ZA:-}
-      REVIEW_MAIL_ADDRESS_ZA: ${REVIEW_MAIL_ADDRESS_ZA:-}
       PAYSTACK_ZA_SECRET_KEY: ${PAYSTACK_ZA_SECRET_KEY:-}
       PAYSTACK_ZA_PUBLIC_KEY: ${PAYSTACK_ZA_PUBLIC_KEY:-}
       PAYSTACK_ZA_PLAN_MONTHLY: ${PAYSTACK_ZA_PLAN_MONTHLY:-}

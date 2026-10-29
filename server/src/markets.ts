@@ -49,18 +49,13 @@ export function marketConfig(market: Market): MarketConfig {
   let m = marketConfigCache.get(market);
   if (m) return m;
   const raw = file.markets[market]!;
-  // Compléments d'environnement, prioritaires sur markets.js : le domaine
-  // ZA n'étant pas encore arrêté, ZA_DOMAINS et les surcharges mail/front
-  // restent pilotables sans rebuild du front. Côté FR, les variables
-  // historiques (FRONT_URL, MAIL_FROM, REVIEW_MAIL_ADDRESS, FR_DOMAINS)
-  // gardent leur rôle — aucune régression sur le marché existant.
+  // Compléments d'environnement : domaines supplémentaires de détection
+  // (tests, préprod, futur .co.za) et surcharges FR historiques
+  // (FRONT_URL, MAIL_FROM, REVIEW_MAIL_ADDRESS — aucune régression).
+  // ZA utilise za.lemotduchef.fr : mêmes boîtes email que le marché FR,
+  // toutes les valeurs ZA vivent dans markets.js.
   const extra = market === 'za'
-    ? {
-        domains: config.zaDomains,
-        frontUrl: config.zaFrontUrl,
-        mailFrom: config.zaMailFrom,
-        reviewMailAddress: config.zaReviewMailAddress,
-      }
+    ? { domains: config.zaDomains, frontUrl: '', mailFrom: '', reviewMailAddress: '' }
     : {
         domains: config.frDomains,
         frontUrl: process.env.FRONT_URL ?? '',

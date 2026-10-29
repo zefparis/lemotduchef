@@ -5,17 +5,14 @@
 // dans les variables d'environnement du serveur, cf. config.ts).
 //
 // ┌─ À RENSEIGNER AVANT LE LANCEMENT ZA ────────────────────────────
-// │ za.domains          : domaine de production (ex. lemotduchef.co.za)
-// │ za.frontUrl         : https://<domaine-za>
-// │ za.apiUrl           : https://api.<domaine-za> (hostname ajouté au
-// │                       tunnel Cloudflare, même service que l'API FR)
-// │ za.mailFrom         : expéditeur des emails transactionnels ZA
-// │ za.reviewMailAddress: adresse de réception des avis (ingestion)
 // │ za.company          : société éditrice sud-africaine (nom, n°
 // │                       d'enregistrement, adresse, email, téléphone)
 // │ za.prices           : identifiants des plans Pro (Paystack d'abord,
 // │                       Stripe si le compte ZA l'ouvre) — montants
 // │                       relus depuis l'API du provider, jamais en dur
+// │ Passage ultérieur à un domaine .co.za : mettre à jour UNIQUEMENT
+// │ za.domains, za.frontUrl, za.mailFrom, za.reviewMailAddress et
+// │ za.legalRoutes ici — aucun changement de code requis.
 // └─────────────────────────────────────────────────────────────────
 window.LMC_MARKETS = {
   "default": "fr",
@@ -55,10 +52,10 @@ window.LMC_MARKETS = {
       "timezone": "Africa/Johannesburg",
       "brand": "Le Mot du Chef",
       "tagline": "replies to Google reviews",
-      "frontUrl": "",
+      "frontUrl": "https://za.lemotduchef.fr",
       "apiUrl": "",
-      "mailFrom": "",
-      "reviewMailAddress": "",
+      "mailFrom": "Le Mot du Chef <noreply@lemotduchef.fr>",
+      "reviewMailAddress": "avis@lemotduchef.fr",
       "payment": { "provider": "paystack" },
       "company": {
         "name": "",
@@ -73,7 +70,7 @@ window.LMC_MARKETS = {
         "cgv": "/terms",
         "privacy": "/privacy"
       },
-      "domains": []
+      "domains": ["za.lemotduchef.fr"]
     }
   }
 };
