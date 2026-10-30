@@ -105,6 +105,36 @@ window.LMC_MARKETS = {
         "privacy": "/privacy"
       },
       "domains": ["ke.lemotduchef.fr"]
+    },
+    "cd": {
+      "lang": "fr",
+      "languages": ["fr", "en"],
+      "locale": "fr-CD",
+      "currency": "USD",
+      "timezone": "Africa/Kinshasa",
+      "brand": "Le Mot du Chef",
+      "tagline": "Réponses aux avis Google pour les restaurateurs",
+      "frontUrl": "https://cd.lemotduchef.fr",
+      "apiUrl": "https://api.lemotduchef.fr",
+      "mailFrom": "Le Mot du Chef <avis@lemotduchef.fr>",
+      "reviewMailAddress": "avis@lemotduchef.fr",
+      "payment": { "provider": "stripe" },
+      "indexable": false,
+      "company": {
+        "name": "IA Solution",
+        "registration": "Sole proprietorship (entreprise individuelle) de Benjamin Barrère — SIREN 438 055 097, RCS Nîmes 438 055 097",
+        "address": "2 rue du Sabotier, 30350 Saint-Bénézet, France",
+        "email": "contact@ia-solution.fr",
+        "phone": "+33 7 63 49 47 78",
+        "vatMention": "TVA non applicable"
+      },
+      "prices": { "pro_monthly": "", "pro_yearly": "" },
+      "legalRoutes": {
+        "mentions": "/mentions-legales",
+        "cgv": "/cgv",
+        "privacy": "/confidentialite"
+      },
+      "domains": ["cd.lemotduchef.fr"]
     }
   }
 };

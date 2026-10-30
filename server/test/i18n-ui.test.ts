@@ -112,6 +112,21 @@ test('EN : marché KE — aucun français, aucun € ni rand, aucune variable', 
   assert.deepEqual(enChecks('https://ke.lemotduchef.fr/'), []);
 });
 
+test('CD : interface française, aucun € ni rand ni KSh à l\'écran', () => {
+  const w = boot('https://cd.lemotduchef.fr/', 'fr');
+  const bad: string[] = [];
+  for (const { where, text } of screenExtracts(w)) {
+    if (text.includes('€')) bad.push(`${where} : symbole € sur le marché CD « ${text.slice(0, 60)} »`);
+    if (/\bR\s?\d/.test(text)) bad.push(`${where} : symbole rand sur CD « ${text.slice(0, 60)} »`);
+    if (/KSh/.test(text)) bad.push(`${where} : KSh sur CD « ${text.slice(0, 60)} »`);
+    if (/\{[a-zA-Z]+\}/.test(text)) bad.push(`${where} : variable non remplacée « ${text.slice(0, 60)} »`);
+    const dup = text.match(/\b([A-Za-zÀ-ÿ]{2,}|[0-9]+)\s+\1\b/i);
+    if (dup) bad.push(`${where} : doublon « ${text.slice(0, 60)} » (« ${dup[1]} »)`);
+    if (/[—–…]/.test(text)) bad.push(`${where} : tiret cadratin/ellipse « ${text.slice(0, 60)} »`);
+  }
+  assert.deepEqual(bad, [], bad.join('\n'));
+});
+
 test('FR : aucun texte anglais oublié, aucun tiret cadratin', () => {
   const w = boot('https://lemotduchef.fr/', 'fr');
   const bad: string[] = [];

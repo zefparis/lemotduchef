@@ -8,9 +8,9 @@ import { pool } from './db.js';
 // <script>). Une config absente ou invalide bloque le boot, comme config.ts.
 // Les secrets (clés de paiement) restent dans l'environnement, jamais ici.
 
-export type Market = 'fr' | 'za' | 'ke';
-export const MARKET_IDS: Market[] = ['fr', 'za', 'ke'];
-export const isMarket = (v: unknown): v is Market => v === 'fr' || v === 'za' || v === 'ke';
+export type Market = 'fr' | 'za' | 'ke' | 'cd';
+export const MARKET_IDS: Market[] = ['fr', 'za', 'ke', 'cd'];
+export const isMarket = (v: unknown): v is Market => v === 'fr' || v === 'za' || v === 'ke' || v === 'cd';
 
 export interface MarketConfig {
   lang: string;
@@ -24,7 +24,7 @@ export interface MarketConfig {
   apiUrl: string;
   mailFrom: string;
   reviewMailAddress: string;
-  payment: { provider: 'stripe' | 'paystack' };
+  payment: { provider: 'stripe' | 'paystack' | 'unipay' };
   indexable?: boolean;
   company: { name: string; registration: string; address: string; email: string; phone: string };
   prices?: Record<string, string>;
@@ -38,8 +38,8 @@ function loadMarketsFile(): MarketsFile {
   const text = fs.readFileSync(file, 'utf8');
   const json = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
   const parsed = JSON.parse(json) as MarketsFile;
-  if (!isMarket(parsed.default) || !parsed.markets?.fr || !parsed.markets?.za || !parsed.markets?.ke)
-    throw new Error('markets.js invalide : clés default/markets.fr/markets.za/markets.ke attendues.');
+  if (!isMarket(parsed.default) || !parsed.markets?.fr || !parsed.markets?.za || !parsed.markets?.ke || !parsed.markets?.cd)
+    throw new Error('markets.js invalide : clés default/markets.fr/markets.za/markets.ke/markets.cd attendues.');
   return parsed;
 }
 
@@ -64,7 +64,9 @@ export function marketConfig(market: Market): MarketConfig {
       }
     : market === 'za'
       ? { domains: config.zaDomains, frontUrl: '', mailFrom: '', reviewMailAddress: '' }
-      : { domains: config.keDomains, frontUrl: '', mailFrom: '', reviewMailAddress: '' };
+      : market === 'ke'
+        ? { domains: config.keDomains, frontUrl: '', mailFrom: '', reviewMailAddress: '' }
+        : { domains: config.cdDomains, frontUrl: '', mailFrom: '', reviewMailAddress: '' };
   m = {
     lang: raw.lang ?? 'fr',
     languages: raw.languages?.length ? raw.languages : ['fr', 'en'],
@@ -77,7 +79,7 @@ export function marketConfig(market: Market): MarketConfig {
     apiUrl: raw.apiUrl || config.baseUrl,
     mailFrom: extra.mailFrom || raw.mailFrom || config.smtp.from,
     reviewMailAddress: extra.reviewMailAddress || raw.reviewMailAddress || config.mailIngest.address,
-    payment: { provider: raw.payment?.provider === 'paystack' ? 'paystack' : 'stripe' },
+    payment: { provider: raw.payment?.provider === 'paystack' || raw.payment?.provider === 'unipay' ? raw.payment.provider : 'stripe' },
     company: { name: '', registration: '', address: '', email: '', phone: '', ...(raw.company ?? {}) },
     prices: raw.prices,
     legalRoutes: raw.legalRoutes ?? { mentions: '/mentions-legales', cgv: '/cgv', privacy: '/confidentialite' },

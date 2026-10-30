@@ -29,6 +29,7 @@ const HEALTH_I18N: Record<Exclude<ReplyLang, 'fr'>, RegExp> = {
   es: /alerg|intoxicación|enferm|vomit|náusea|hospital|urgencias|salmonella|gastroenteritis/i,
   it: /allerg|intossicazione|malat|vomit|nausea|ospedale|pronto soccorso|salmonella|gastroenterite/i,
   sw: /mzio|uozo wa chakula|ugonjwa|kutapisha|kichefuchefu|hospitali|wagonjwa|tumbo laumwa|nimeugua|salmonella/i,
+  ln: /mzio|uozo|malade|vomit|hopitali|nzoto|mpo|mawa|emergence|nazongaki/i,
 };
 
 // Retrait de la salutation pour les contrôles de première phrase.

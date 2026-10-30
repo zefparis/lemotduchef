@@ -326,4 +326,41 @@ const sw: LangPack = {
   reservation: /(hifadhi (meza|nafasi)|kata meza|meza mapema|hifadhi mapema|kata nafasi)/i,
 };
 
-export const LANG_PACKS: Record<Exclude<ReplyLang, 'fr'>, LangPack> = { en, af, de, nl, es, it, sw };
+const ln: LangPack = {
+  greeting: /^(mbote|nzamba|bokoko|bandeko|matondo)/i,
+  greetingWord: 'Mbote',
+  informal: null, // pas de distinction tu/vous en lingala standard
+  forbidden: /\b(mwambi|lokuta|lisekwa|mbeku|polisi|soda|makambo ya mibeko|tribunal)\b/i,
+  apology: /(bolimbisi|limbisa|ndoki|pole|senga bolimbisi|tusoli bolimbisi)/gi,
+  banned: [
+    'matondo mingi', 'tozali na bino', 'lobi na biso', 'tunaoka',
+    'matoyi ya biso', 'tunakangama', 'sala eloko te', 'likambo mabe',
+    'tunavanda', 'matondo na bolamu', 'esengo ya biso', 'kokeya te',
+  ],
+  impatience: /(lokuta|mauvaise foi|kosa biso|koloba lokuta|bozali na mawa)/i,
+  internalClaims: [
+    [/\bbuku\b|\brekodi\b/i, 'registre'],
+    [/\btalá\b|\btotala\b|\btomona\b/i, 'contrôle'],
+    [/\bmombele\b|\bmakambo\b|\blitáli\b/i, 'procédure'],
+    [/\btosali\b|\btokosala\b/i, 'nous travaillons à'],
+    [/\btokobongisa\b|\btokoweka\b/i, 'nous mettons en place'],
+  ],
+  surprise: /\b(tunakamwa|nakamwa|kokamwa)\b/i,
+  analysisLeak: /\b(lolenge|jamii) ya (mauvais|mawa|kokéngisa)\b/i,
+  noDetail: /(ba détaille|eloko te|sans détail|masolo te)/i,
+  warned: /(tokolobi|tokosola|kama tokosoli|tunolobi|tolobaki)/i,
+  factsHint: /(kolyemba|tolobi|koloba|kana)/i,
+  firstSentFact: /(tokolobi|tolobaki|mesa mobimba|bato mingi)/i,
+  blame: /(tolobaki|kama tolobi|tolobi na yo)/i,
+  priceWords: /(ntalo|mbongo|dollars|usd|likolo ya ntalo|bule|matondi)/i,
+  returnInvite: /(kota lisusu|zonga|kota na biso|tokoya|lisusu|suki)/i,
+  commercialGesture: /(punguzo|cadeau|gratuit|rudisha|reduction|mbongo te)/i,
+  contactInvite: /(wasiliana|bungisa|tumia|andika|simu|imeli|na kimya)/i,
+  admission: /\b(mabbe ya biso|tokosala mabe|tokosala mauvais)\b/i,
+  closingFormulas: /na lokumu|na bolingo|matoyi|bandeko|nzambe/i,
+  triadAnd: ' na ',
+  clauseMark: /\b(na|ya|wa|mpe|te|oyo|wana|biso|bango|ngai|yo|soki|ndé|ezali|ezalaki|tosali|tokosala|lingo|malamu|mabe|mingi|ntango|libulu)\b/i,
+  reservation: /(mesa mapema|kita mesa|mesa liboso|hifadhi)/i,
+};
+
+export const LANG_PACKS: Record<Exclude<ReplyLang, 'fr'>, LangPack> = { en, af, de, nl, es, it, sw, ln };

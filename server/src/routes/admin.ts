@@ -51,13 +51,14 @@ export default async function adminRoutes(app: FastifyInstance) {
     const { rows: paying } = await pool.query<{ subscription_price_id: string; status: string }>(
       `SELECT subscription_price_id, subscription_status AS status FROM companies c
         WHERE c.plan <> 'free' AND c.subscription_status IN ('active','trialing','past_due') AND ${cW}`, [mk]);
-    let mrrCentsEur = 0, mrrCentsZar = 0, mrrCentsKes = 0;
+    let mrrCentsEur = 0, mrrCentsZar = 0, mrrCentsKes = 0, mrrCentsUsd = 0;
     for (const p of paying) {
       const info = p.subscription_price_id ? await priceInfo(p.subscription_price_id) : null;
       if (!info?.unit_amount) continue;
       const v = info.interval === 'year' ? Math.round(info.unit_amount / 12) : info.unit_amount;
       if (info.currency === 'zar') mrrCentsZar += v;
       else if (info.currency === 'kes') mrrCentsKes += v;
+      else if (info.currency === 'usd') mrrCentsUsd += v;
       else mrrCentsEur += v;
     }
     return {
@@ -67,7 +68,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       unverified: one(unverified), reviews: one(reviews), suspended: one(suspended),
       generations: one(gens), generationsMonth: Number(gens.rows[0].month),
       inputTokens: Number(gens.rows[0].inp), outputTokens: Number(gens.rows[0].outp),
-      paying: paying.length, mrrCentsEur, mrrCentsZar, mrrCentsKes,
+      paying: paying.length, mrrCentsEur, mrrCentsZar, mrrCentsKes, mrrCentsUsd,
     };
   });
 

@@ -354,9 +354,16 @@ export default async function billingRoutes(app: FastifyInstance) {
     const market = req.market ?? 'fr';
     const priceId = String((req.body as any)?.priceId ?? '');
 
+    const provider = marketConfig(market).payment.provider;
+    // Provider « unipay » (mobile money, marché CD) : emplacement prévu
+    // dans la couche de paiement — NON implémenté ; jamais de repli
+    // Stripe silencieux si le marché y est basculé par configuration.
+    if (provider === 'unipay')
+      return reply.code(503).send({ error: 'Paiement mobile money indisponible pour le moment.' });
+
     // Provider Paystack (désactivé tant que le marché est en provider
     // 'stripe' dans markets.js — voir paystack.ts).
-    if (marketConfig(market).payment.provider === 'paystack') {
+    if (provider === 'paystack') {
       if (!paystackEnabledFor(market))
         return reply.code(503).send({ error: 'Facturation non configurée.' });
       const planCode = planCodeForKey(priceId) ?? priceId;
@@ -420,10 +427,10 @@ export default async function billingRoutes(app: FastifyInstance) {
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       customer: customerId,
-      locale: market === 'fr' ? 'fr' : 'en',
+      locale: market === 'fr' || market === 'cd' ? 'fr' : 'en',
       // Kenya : carte uniquement (pas de mobile money ni de lien de
       // paiement alternatif au Checkout pendant le pilote).
-      ...(market === 'ke' ? { payment_method_types: ['card' as const] } : {}),
+      ...(market === 'ke' || market === 'cd' ? { payment_method_types: ['card' as const] } : {}),
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       // Aucune TVA collectée (franchise, art. 293 B CGI) : pas d'automatic_tax.
@@ -436,7 +443,9 @@ export default async function billingRoutes(app: FastifyInstance) {
         terms_of_service_acceptance: {
           message: market === 'fr'
             ? `En souscrivant, j'accepte les conditions générales de vente : ${cgvUrl}`
-            : `By subscribing, I accept the Terms of Service and Sale: ${cgvUrl}`,
+            : market === 'cd'
+              ? `En souscrivant, j'accepte les conditions générales : ${cgvUrl}`
+              : `By subscribing, I accept the Terms of Service and Sale: ${cgvUrl}`,
         },
       },
       success_url: `${front}/?billing=success`,

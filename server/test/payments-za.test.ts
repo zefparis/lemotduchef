@@ -14,7 +14,7 @@ process.env.NODE_ENV = 'test';
 process.env.RATE_LIMIT_AUTH_MAX = '1000';
 process.env.RATE_LIMIT_GENERATE_MAX = '1000';
 process.env.ADMIN_EMAILS = 'admin@lemotduchef.test';
-process.env.CORS_ORIGINS = 'https://lemotduchef.test,https://za.lemotduchef.test,https://ke.lemotduchef.test';
+process.env.CORS_ORIGINS = 'https://lemotduchef.test,https://za.lemotduchef.test,https://ke.lemotduchef.test,https://cd.lemotduchef.test';
 process.env.FR_DOMAINS = 'lemotduchef.test';
 process.env.ZA_DOMAINS = 'za.lemotduchef.test';
 process.env.SMTP_HOST = 'log';
@@ -29,6 +29,8 @@ process.env.STRIPE_ZA_PRICE_PRO_YEARLY = 'price_za_y';
 process.env.STRIPE_KE_PRICE_PRO_MONTHLY = 'price_ke_m';
 process.env.STRIPE_KE_PRICE_PRO_YEARLY = 'price_ke_y';
 process.env.KE_ORIGIN_TEST = 'https://ke.lemotduchef.test';
+process.env.STRIPE_CD_PRICE_PRO_MONTHLY = 'price_cd_m';
+process.env.STRIPE_CD_PRICE_PRO_YEARLY = 'price_cd_y';
 process.env.PAYSTACK_ZA_SECRET_KEY = 'sk_test_paystack';
 process.env.PAYSTACK_ZA_PLAN_MONTHLY = 'PLN_test_m';
 process.env.PAYSTACK_ZA_PLAN_YEARLY = 'PLN_test_y';
@@ -53,6 +55,7 @@ const PASSWORD = 'Test1234!xYz';
 const H = { 'content-type': 'application/json', 'x-lemotduchef-client': '1', host: 'localhost:3510' };
 const ZA = 'https://za.lemotduchef.test';
 const KE = 'https://ke.lemotduchef.test';
+const CD = 'https://cd.lemotduchef.test';
 const cookieOf = (r: any) => (r.headers['set-cookie'] || []).map((c: string) => c.split(';')[0]).join('; ');
 const stripeClient = new Stripe('sk_test_fake');
 
@@ -188,6 +191,31 @@ describe('paiement marché ZA', () => {
       assert.deepEqual(p.payment_method_types, ['card'], 'carte uniquement au Kenya');
       assert.match(p.success_url, /^https:\/\/ke\.lemotduchef\.fr\//);
       assert.match(p.custom_text.terms_of_service_acceptance.message, /Terms of Service and Sale.*\/terms/);
+    } finally {
+      [s.customers.list, s.customers.create, s.checkout.sessions.create] = [origList, origCreate, origSess] as any;
+    }
+  });
+
+  test('CD : checkout carte seule, locale fr, prix USD, CGV', async () => {
+    const cookie = await signupZa('checkout@cd.test', false);
+    await makeCompany(cookie, 'Resto CD', false);
+    await pool.query(`UPDATE companies SET market='cd' WHERE name='Resto CD'`);
+    const s = stripe()!;
+    const calls: any[] = [];
+    const origList = s.customers.list, origCreate = s.customers.create, origSess = s.checkout.sessions.create;
+    s.customers.list = async () => ({ data: [] }) as any;
+    s.customers.create = async (p: any) => ({ id: 'cus_cd_1', ...p }) as any;
+    s.checkout.sessions.create = async (p: any) => { calls.push(p); return { id: 'cs_cd', url: 'https://checkout.stripe.test/cs_cd' } as any; };
+    try {
+      const r = await app.inject({ method: 'POST', url: '/api/billing/checkout',
+        headers: { ...H, cookie, origin: CD }, payload: { priceId: 'price_cd_m' } });
+      assert.equal(r.statusCode, 200, r.body);
+      const p = calls[0];
+      assert.equal(p.locale, 'fr');
+      assert.equal(p.line_items[0].price, 'price_cd_m');
+      assert.deepEqual(p.payment_method_types, ['card'], 'carte uniquement en RDC');
+      assert.match(p.success_url, /^https:\/\/cd\.lemotduchef\.fr\//);
+      assert.match(p.custom_text.terms_of_service_acceptance.message, /conditions générales.*\/cgv/);
     } finally {
       [s.customers.list, s.customers.create, s.checkout.sessions.create] = [origList, origCreate, origSess] as any;
     }

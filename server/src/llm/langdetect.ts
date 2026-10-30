@@ -4,12 +4,12 @@
 // En cas d'ambiguïté ou d'avis trop court/vide : repli sur la langue du
 // marché (fr ou en), jamais une langue inventée.
 
-export type ReplyLang = 'fr' | 'en' | 'af' | 'de' | 'nl' | 'es' | 'it' | 'sw';
-export const REPLY_LANGS: ReplyLang[] = ['fr', 'en', 'af', 'de', 'nl', 'es', 'it', 'sw'];
+export type ReplyLang = 'fr' | 'en' | 'af' | 'de' | 'nl' | 'es' | 'it' | 'sw' | 'ln';
+export const REPLY_LANGS: ReplyLang[] = ['fr', 'en', 'af', 'de', 'nl', 'es', 'it', 'sw', 'ln'];
 
 export const LANG_NAMES: Record<ReplyLang, string> = {
   fr: 'français', en: 'anglais', af: 'afrikaans', de: 'allemand',
-  nl: 'néerlandais', es: 'espagnol', it: 'italien', sw: 'swahili',
+  nl: 'néerlandais', es: 'espagnol', it: 'italien', sw: 'swahili', ln: 'lingala',
 };
 
 // Listes pondérées : mots très distinctifs ×3, distinctifs ×2, communs ×1.
@@ -74,6 +74,14 @@ const WORDS: Record<ReplyLang, Record<string, number>> = {
     ober: 3, serveerster: 3, kaart: 1, keuken: 2, gezellig: 3, schoon: 2,
     vies: 2, minuten: 2, nooit: 2, altijd: 1, weer: 1, terug: 1, je: 1,
     jouw: 1, jou: 1,
+  },
+  ln: {
+    na: 3, ya: 3, mpe: 3, te: 2, mbote: 3, botika: 2, misala: 2,
+    biloko: 2, boko: 1, oyo: 3, wana: 2, wapi: 3, soki: 3, lisusu: 3,
+    ndako: 1, mesa: 3, bato: 2, bango: 2, ngai: 3, yo: 2, biso: 2,
+    mingi: 3, mabe: 2, malamu: 3, kitoko: 2, ezali: 3, ezalaki: 2,
+    nakotala: 1, nalati: 2, bolingo: 1, mbongo: 2, ntalo: 2, matali: 2,
+    libulu: 2, lili: 1, ponga: 1, sali: 1, sala: 1, loba: 1, mpo: 2,
   },
   sw: {
     na: 3, ya: 3, kwa: 3, sana: 3, ni: 1, kwenye: 2, ili: 2, ndio: 2,

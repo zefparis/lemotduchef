@@ -113,6 +113,7 @@ export const config = {
   // futur .co.za sans rebuild.
   zaDomains: (process.env.ZA_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
   keDomains: (process.env.KE_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+  cdDomains: (process.env.CD_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
   // Paiement ZA : Paystack en priorité (provider par défaut du marché) ;
   // clés Stripe ZA dédiées acceptées aussi si le compte les ouvre.
   paystack: {
@@ -137,6 +138,15 @@ export const config = {
     prices: {
       pro_monthly: process.env.STRIPE_KE_PRICE_PRO_MONTHLY ?? '',
       pro_yearly: process.env.STRIPE_KE_PRICE_PRO_YEARLY ?? '',
+    },
+  },
+  // Marché CD : même compte Stripe que FR/ZA/KE ; ids de prix USD,
+  // carte uniquement. Provider « unipay » (mobile money) prévu dans la
+  // couche paiement — non implémenté tant que non configuré.
+  stripeCd: {
+    prices: {
+      pro_monthly: process.env.STRIPE_CD_PRICE_PRO_MONTHLY ?? '',
+      pro_yearly: process.env.STRIPE_CD_PRICE_PRO_YEARLY ?? '',
     },
   },
   // Offre Gratuit : nombre de générations de réponses par mois civil et par

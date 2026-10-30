@@ -240,8 +240,11 @@ function tab(id) {
 }
 
 /* ---------- Pages légales (publiques) ---------- */
+// Articles légaux par marché : cd utilise les routes FR avec ses propres
+// articles (-cd) ; za/ke utilisent les routes EN (-za/-ke).
 const LEGAL_SUFFIX = MARKET_ID === 'fr' ? 'za' : MARKET_ID;
-const LEGAL_PATHS = { '/mentions-legales': 'legal-mentions', '/cgv': 'legal-cgv', '/confidentialite': 'legal-privacy',
+const FR_SUFFIX = MARKET_ID === 'cd' ? '-cd' : '';
+const LEGAL_PATHS = { '/mentions-legales': `legal-mentions${FR_SUFFIX}`, '/cgv': `legal-cgv${FR_SUFFIX}`, '/confidentialite': `legal-privacy${FR_SUFFIX}`,
   '/legal-notice': `legal-mentions-${LEGAL_SUFFIX}`, '/terms': `legal-cgv-${LEGAL_SUFFIX}`, '/privacy': `legal-privacy-${LEGAL_SUFFIX}` };
 // Liens légaux du pied de page : routes propres au marché (ZA → /legal-notice…).
 function applyLegalRoutes() {
@@ -841,8 +844,9 @@ const fmtPrice = c => c == null ? '—' : new Intl.NumberFormat(MARKET.locale ||
 const fmtPriceEur = c => c == null ? '—' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(c / 100);
 const fmtPriceZar = c => c == null ? '—' : new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(c / 100);
 const fmtPriceKes = c => c == null ? '—' : new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(c / 100);
+const fmtPriceUsd = c => c == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(c / 100);
 const fmtPriceMarket = fmtPrice;
-const mktBadge = m => `<span class="mkt-badge" title="Marché">${esc((m === 'za' || m === 'ke') ? m.toUpperCase() : 'FR')}</span>`;
+const mktBadge = m => `<span class="mkt-badge" title="Marché">${esc((m === 'za' || m === 'ke' || m === 'cd') ? m.toUpperCase() : 'FR')}</span>`;
 
 async function loadBilling() {
   const panel = $('#sub-panel'), body = $('#sub-body');
@@ -1011,7 +1015,7 @@ async function loadAdminStats() {
     { label: 'Emails non vérifiés', value: s.unverified }, { label: 'Comptes suspendus', value: s.suspended },
     { label: 'Avis saisis', value: s.reviews }, { label: 'Générations (total / mois)', value: `${s.generations} / ${s.generationsMonth}` },
     { label: 'Tokens entrée / sortie', value: `${(s.inputTokens / 1000).toFixed(1)}k / ${(s.outputTokens / 1000).toFixed(1)}k` },
-    { label: 'Abonnés payants', value: s.paying ?? 0 }, { label: 'CA mensuel EUR', value: s.mrrCentsEur != null ? fmtPriceEur(s.mrrCentsEur) : '—' }, { label: 'CA mensuel ZAR', value: s.mrrCentsZar != null ? fmtPriceZar(s.mrrCentsZar) : '—' }, { label: 'CA mensuel KES', value: s.mrrCentsKes != null ? fmtPriceKes(s.mrrCentsKes) : '—' },
+    { label: 'Abonnés payants', value: s.paying ?? 0 }, { label: 'CA mensuel EUR', value: s.mrrCentsEur != null ? fmtPriceEur(s.mrrCentsEur) : '—' }, { label: 'CA mensuel ZAR', value: s.mrrCentsZar != null ? fmtPriceZar(s.mrrCentsZar) : '—' }, { label: 'CA mensuel KES', value: s.mrrCentsKes != null ? fmtPriceKes(s.mrrCentsKes) : '—' }, { label: 'CA mensuel USD', value: s.mrrCentsUsd != null ? fmtPriceUsd(s.mrrCentsUsd) : '—' },
   ];
   $('#admin-stats').innerHTML = cards.map(c => `<article class="stat"><div class="stat-head">${icon('i-info')}<p>${c.label}</p></div><strong>${c.value}</strong></article>`).join('');
 }
