@@ -241,6 +241,35 @@ export default async function adminRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
+  /* ---------- Acquisition : source d'arrivée → conversion ---------- */
+  // Par source (signup_source posée à l'inscription : ?src= → référent →
+  // « direct », filtrée [a-z0-9-]{1,40}) sur 7/30/90 jours : inscriptions,
+  // comptes ayant généré ≥ 1 réponse (via leur entreprise), passages en Pro
+  // (entreprise liée avec abonnement actif). Filtre ?market= comme le reste.
+  app.get('/api/admin/acquisition', async (req) => {
+    const mk = isMarket((req.query as any)?.market) ? String((req.query as any).market) : '';
+    const days = [7, 30, 90].includes(Number((req.query as any)?.days)) ? Number((req.query as any).days) : 30;
+    const { rows } = await pool.query(
+      `SELECT COALESCE(NULLIF(u.signup_source,''), 'direct') AS source,
+              count(*) AS signups,
+              count(*) FILTER (WHERE EXISTS (
+                SELECT 1 FROM memberships m
+                 JOIN generations g ON g.company_id = m.company_id
+                 WHERE m.user_id = u.id)) AS activated,
+              count(*) FILTER (WHERE EXISTS (
+                SELECT 1 FROM memberships m
+                 JOIN companies c ON c.id = m.company_id
+                 WHERE m.user_id = u.id AND c.plan <> 'free'
+                   AND c.subscription_status IN ('active','trialing','past_due'))) AS pro
+       FROM "user" u
+       WHERE u."createdAt" >= now() - make_interval(days => $2)
+         AND ($1 = '' OR u.market = $1)
+       GROUP BY 1 ORDER BY signups DESC, source ASC`, [mk, days]);
+    return { days, market: mk || 'all', rows: rows.map(r => ({
+      source: r.source, signups: Number(r.signups),
+      activated: Number(r.activated), pro: Number(r.pro) })) };
+  });
+
   /* ---------- Journal d'audit ---------- */
   app.get('/api/admin/audit', async () => {
     const { rows } = await pool.query(

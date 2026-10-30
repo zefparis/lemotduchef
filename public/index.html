@@ -17,6 +17,7 @@
 <title>Le Mot du Chef — répondez à vos avis Google avec justesse</title>
 <script id="theme-init">(function(){var t=null;try{t=localStorage.getItem('lmc-theme')}catch(e){}var d=t?t==='dark':(window.matchMedia?matchMedia('(prefers-color-scheme: dark)').matches:false);document.documentElement.setAttribute('data-theme',d?'dark':'light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d?'#1a1512':'#8a3b1f');})();</script>
 <link rel="stylesheet" href="style.css">
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
@@ -962,6 +963,22 @@
           <p class="field-error" id="err-invite" hidden></p>
           <div class="form-actions"><button class="btn btn-primary" type="submit" id="invite-btn">Créer et envoyer l'invitation</button></div>
         </form>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div><h3>Acquisition</h3><p>Source d'arrivée et conversion par inscription.</p></div>
+          <div class="tools">
+            <select id="admin-acq-days" aria-label="Période">
+              <option value="7">7 jours</option>
+              <option value="30" selected>30 jours</option>
+              <option value="90">90 jours</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Source</th><th>Inscriptions</th><th>Ayant généré ≥ 1 réponse</th><th>Passés en Pro</th></tr></thead>
+            <tbody id="admin-acquisition"></tbody></table>
+        </div>
       </div>
       <div class="panel">
         <div class="panel-header"><div><h3>Journal d'audit</h3><p>Actions administrateur récentes (200 dernières).</p></div></div>

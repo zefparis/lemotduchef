@@ -20,6 +20,33 @@ const hostName = location.hostname.toLowerCase();
 const MARKET_ID = Object.keys(MARKETS.markets || {}).find(m =>
   (MARKETS.markets[m].domains || []).includes(hostName)) || MARKETS.default || 'fr';
 const MARKET = (MARKETS.markets || {})[MARKET_ID] || {};
+
+// Vercel Web Analytics : file d'événements avant chargement du script
+// officiel (/_vercel/insights, pas de cookie). Les événements posés avant
+// le chargement restent dans vaq.
+window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+const vaEvent = (name, data) => { try { window.va && window.va('event', { name, data }); } catch {} };
+
+// Source d'arrivée : ?src= → référent → « direct », filtrée
+// [a-z0-9-]{1,40} (sinon « autre »), gardée pour la session.
+const SRC_KEY = 'lmc-src';
+const cleanSrc = v => /^[a-z0-9-]{1,40}$/.test(v) ? v : 'autre';
+const arrivalSource = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get('src');
+    let s;
+    if (q != null && q !== '') s = cleanSrc(q.toLowerCase());
+    else {
+      const h = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : '';
+      s = (!h || h === location.hostname) ? 'direct' : cleanSrc(h.split('.')[0].toLowerCase());
+    }
+    try { sessionStorage.setItem(SRC_KEY, s); } catch {}
+    return s;
+  } catch { return 'direct'; }
+})();
+const getSrc = () => { try { return sessionStorage.getItem(SRC_KEY) || arrivalSource; } catch { return arrivalSource; } };
+// Le paramètre src disparaît de l'URL affichée après lecture.
+try { const u = new URL(location.href); if (u.searchParams.has('src')) { u.searchParams.delete('src'); history.replaceState(null, '', u.pathname + u.search + u.hash); } } catch {}
 // Pilote : marché non indexable tant que markets.js le déclare.
 if (MARKET.indexable === false) {
   const m = document.createElement('meta');
@@ -345,12 +372,13 @@ $('#signup-form').onsubmit = async e => {
   e.preventDefault();
   const f = e.target, unbusy = busy($('#signup-btn')), err = $('#err-signup');
   err.hidden = true;
-  const payload = { name: f.elements.name.value.trim(), email: f.elements.email.value.trim(), password: f.elements.password.value, cgvAccepted: true, cgvVersion };
+  const payload = { name: f.elements.name.value.trim(), email: f.elements.email.value.trim(), password: f.elements.password.value, cgvAccepted: true, cgvVersion, signup_source: getSrc() };
   const cgvErr = $('#err-cgv'); cgvErr.hidden = true;
   if (!$('#s-cgv').checked) { setErr(cgvErr, t('msg.cgv_required')); unbusy(); return; }
   if (payload.password.length < 12) { setErr(err, t('msg.pw_min')); unbusy(); return; }
   try {
     await api('/auth/sign-up/email', { method: 'POST', body: payload });
+    vaEvent('signup', { market: MARKET_ID, source: getSrc() });
     sessionStorage.setItem('lmc-pending-restaurant', f.elements.company.value.trim());
     $('#verify-email-addr').textContent = payload.email;
     f.reset();
@@ -1004,7 +1032,7 @@ async function enterAdmin() {
   if (!session?.admin) { history.replaceState(null, '', '/'); return; }
   history.replaceState(null, '', '/admin');
   show('admin');
-  try { await Promise.all([loadAdminStats(), loadAdminCompanies(), loadAdminUsers(), loadAdminSettings(), loadAdminAudit()]); }
+  try { await Promise.all([loadAdminStats(), loadAdminCompanies(), loadAdminUsers(), loadAdminSettings(), loadAdminAcquisition(), loadAdminAudit()]); }
   catch (e) { toast(e.message, 'error'); }
 }
 async function loadAdminStats() {
@@ -1035,7 +1063,7 @@ async function loadAdminCompanies() {
 let adminSearchTimer;
 $('#admin-co-search').oninput = () => { clearTimeout(adminSearchTimer); adminSearchTimer = setTimeout(loadAdminCompanies, 300); };
 $('#admin-co-sort').onchange = loadAdminCompanies;
-$('#admin-market').onchange = e => { adminMarket = e.target.value; Promise.all([loadAdminStats(), loadAdminCompanies(), loadAdminUsers()]).catch(() => {}); };
+$('#admin-market').onchange = e => { adminMarket = e.target.value; Promise.all([loadAdminStats(), loadAdminCompanies(), loadAdminUsers(), loadAdminAcquisition()]).catch(() => {}); };
 async function loadAdminUsers() {
   const search = $('#admin-u-search').value.trim();
   const { users } = await adminApi(`/users?search=${encodeURIComponent(search)}${mkParam()}`);
@@ -1071,6 +1099,17 @@ $('#admin-invite-form').onsubmit = async e => {
   } catch (err2) { setErr(err, err2.message || t('msg.create_fail')); }
   finally { unbusy(); }
 };
+async function loadAdminAcquisition() {
+  const days = $('#admin-acq-days')?.value || '30';
+  const r = await adminApi(`/acquisition?days=${days}${mkParam()}`);
+  $('#admin-acquisition').innerHTML = (r.rows || []).map(row => {
+    const conv = (a, b) => b ? `${Math.round(a / b * 100)} %` : '—';
+    return `<tr><td><strong>${esc(row.source || 'direct')}</strong></td><td>${row.signups}</td>
+      <td>${row.activated} <span class="cell-sub">(${conv(row.activated, row.signups)})</span></td>
+      <td>${row.pro} <span class="cell-sub">(${conv(row.pro, row.signups)})</span></td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="subtle">Aucune inscription sur la période.</td></tr>';
+}
+$('#admin-acq-days').onchange = loadAdminAcquisition;
 async function loadAdminAudit() {
   const { entries } = await adminApi('/audit');
   $('#admin-audit').innerHTML = entries.map(en => `<tr><td>${fmtDateTime(en.created_at)}</td><td>${esc(en.admin_email)}</td><td><strong>${esc(en.action)}</strong></td>
@@ -1158,7 +1197,7 @@ $('#admin-delete-confirm').onclick = async () => {
         // Lien ouvert depuis une notification push : /?avis=<id>.
         const avisId = params.get('avis');
         if (avisId) { history.replaceState(null, '', '/'); reopenReview(avisId); }
-        if (billingResult === 'success') { history.replaceState(null, '', '/'); toast(t('msg.sub_active')); await refresh(); render(); }
+        if (billingResult === 'success') { history.replaceState(null, '', '/'); vaEvent('pro_subscribed', { market: MARKET_ID }); toast(t('msg.sub_active')); await refresh(); render(); }
         else if (billingResult === 'cancel') { history.replaceState(null, '', '/'); toast(t('msg.sub_cancelled'), 'info'); }
         return;
       }

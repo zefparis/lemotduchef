@@ -78,6 +78,9 @@ export const auth = betterAuth({
     additionalFields: {
       market: { type: 'string', required: false, defaultValue: 'fr', input: false },
       lang: { type: 'string', required: false, defaultValue: '', input: false },
+      // Source d'arrivée (front : ?src= → référent → « direct »), filtrée
+      // côté serveur dans le hook de création : [a-z0-9-]{1,40} sinon « autre ».
+      signup_source: { type: 'string', required: false, defaultValue: '', input: true },
     },
     changeEmail: {
       enabled: true,
@@ -144,7 +147,9 @@ export const auth = betterAuth({
       create: {
         before: async (user, ctx) => {
           const market = marketFromHeaders(ctx?.request?.headers ?? new Headers());
-          return { data: { ...user, market } };
+          const src = String(user.signup_source ?? '').toLowerCase();
+          const signup_source = /^[a-z0-9-]{1,40}$/.test(src) ? src : 'autre';
+          return { data: { ...user, market, signup_source } };
         },
       },
     },
