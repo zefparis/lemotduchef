@@ -17,7 +17,7 @@ for (const market of MARKET_IDS) for (const kind of KINDS) for (const lang of LA
     // Bouton <a href> + lien de secours cliquable vers le domaine du marché.
     assert.ok(html.includes(`<a href="${url}"`), `pas de <a href> vers ${host}`);
     assert.ok(html.includes('display:inline-block'), 'bouton stylé manquant');
-    assert.match(html, /alt="Le Mot du Chef"/, 'logo sans alt');
+    assert.ok(!/<img/i.test(html), 'balise <img> dans un email transactionnel');
     // Jamais d'URL d'API ni de domaine autre en clair.
     assert.ok(!html.includes('api.lemotduchef.fr'), 'URL api en clair dans le HTML');
     assert.ok(!text.includes('api.lemotduchef.fr'), 'URL api en clair dans le texte');

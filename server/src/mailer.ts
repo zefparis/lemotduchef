@@ -65,7 +65,7 @@ export async function sendMail(mail: OutgoingMail, market: Market = 'fr'): Promi
 /* ---------- Gabarit HTML ---------- */
 // Logo en PNG uniquement (2x pour les écrans Retina) : les clients mail ne
 // rendent pas les SVG. Hébergé sur le front public.
-const LOGO_URL = `${config.frontUrl}/logo-email.png`;
+// Aucune image : le logo PNG pénalisait mail-tester (HTML_IMAGE_ONLY_24).
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 
 function mailHtml(text: string): string {
@@ -73,7 +73,7 @@ function mailHtml(text: string): string {
     `<p style="margin:0 0 14px;font:15px/1.65 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#241F1C">${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
   return `<div style="background:#FAF6F0;padding:32px 20px">`
     + `<div style="max-width:520px;margin:0 auto;background:#FFFFFF;border:1px solid #EAE2D8;border-radius:14px;padding:32px">`
-    + `<img src="${LOGO_URL}" alt="Le Mot du Chef" width="48" height="48" style="display:block;margin:0 0 20px">`
+    + `<p style="margin:0 0 20px;font:700 20px Georgia,serif;color:#8B3A1F">Le Mot du Chef</p>`
     + paras
     + `<p style="margin:26px 0 0;padding-top:16px;border-top:1px solid #EAE2D8;font:12px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#6F6660">Le Mot du Chef — réponses posées aux avis Google, pour restaurateurs indépendants.</p>`
     + `</div></div>`;
@@ -90,7 +90,7 @@ function buttonMail(kind: 'verify' | 'reset' | 'change', url: string, lang: stri
   const font = `-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif`;
   const html = `<div style="background:#FAF6F0;padding:32px 20px">`
     + `<div style="max-width:520px;margin:0 auto;background:#FFFFFF;border:1px solid #EAE2D8;border-radius:14px;padding:32px">`
-    + `<img src="${LOGO_URL}" alt="Le Mot du Chef" width="48" height="48" style="display:block;margin:0 0 20px">`
+    + `<p style="margin:0 0 20px;font:700 20px Georgia,serif;color:#8B3A1F">Le Mot du Chef</p>`
     + `<p style="margin:0 0 20px;font:15px/1.65 ${font};color:#241F1C">${esc(intro)}</p>`
     + `<p style="margin:0 0 20px"><a href="${esc(url)}" style="display:inline-block;background:#8a3b1f;color:#FFFFFF;font:600 15px/1 ${font};text-decoration:none;padding:13px 22px;border-radius:9px">${esc(cta)}</a></p>`
     + `<p style="margin:0 0 4px;font:12.5px/1.5 ${font};color:#6F6660">${esc(fallback)} <a href="${esc(url)}" style="color:#8A8A98" data-x="">${esc(url)}</a></p>`
