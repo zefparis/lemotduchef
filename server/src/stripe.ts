@@ -12,12 +12,18 @@ export function stripe(): Stripe | null {
 }
 export const stripeEnabled = () => !!config.stripe.secretKey;
 
-// price_id → offre. Seuls les ids fournis par l'env sont acceptés (Pro mensuel / annuel).
+// Prix par marché : même compte Stripe, mêmes clés — seuls les objets
+// prix diffèrent (EUR/fr et ZAR/en pour le marché ZA, ids d'env
+// STRIPE_ZA_PRICE_*). planForPrice connaît les deux jeux d'ids.
+import type { Market } from './markets.js';
+export const pricesFor = (market: Market): Record<string, string> =>
+  market === 'za' ? config.stripeZa.prices : config.stripe.prices;
 const PRICE_TO_PLAN: Record<string, 'pro'> = {};
-for (const id of Object.values(config.stripe.prices)) if (id) PRICE_TO_PLAN[id] = 'pro';
+for (const m of ['fr', 'za'] as const)
+  for (const id of Object.values(pricesFor(m))) if (id) PRICE_TO_PLAN[id] = 'pro';
 export const planForPrice = (priceId: string) => PRICE_TO_PLAN[priceId];
-export const knownPriceIds = () => new Set(Object.values(config.stripe.prices).filter(Boolean));
-export const visiblePriceEntries = () => Object.entries(config.stripe.prices).filter(([, id]) => id);
+export const knownPriceIds = (market: Market = 'fr') => new Set(Object.values(pricesFor(market)).filter(Boolean));
+export const visiblePriceEntries = (market: Market = 'fr') => Object.entries(pricesFor(market)).filter(([, id]) => id);
 
 // Cache des montants des prix lus depuis l'API Stripe (10 min) : les montants
 // affichés restent synchronisés avec le dashboard, jamais codés en dur.
@@ -50,17 +56,20 @@ export async function priceInfo(priceId: string): Promise<PriceInfo | null> {
 export type CompanyBilling = {
   plan: string; subscription_status: string; stripe_customer_id: string | null;
   subscription_price_id: string | null; current_period_end: string | null;
-  cancel_at_period_end: boolean;
+  cancel_at_period_end: boolean; payment_provider: string;
+  paystack_subscription_code: string | null;
 };
 
 export async function companyBilling(companyId: string): Promise<CompanyBilling> {
   const { rows } = await pool.query<CompanyBilling>(
     `SELECT plan, subscription_status, stripe_customer_id, subscription_price_id,
-            current_period_end::text, cancel_at_period_end
+            current_period_end::text, cancel_at_period_end,
+            payment_provider, paystack_subscription_code
      FROM companies WHERE id=$1`, [companyId]);
   return rows[0] ?? {
     plan: 'free', subscription_status: 'none', stripe_customer_id: null,
     subscription_price_id: null, current_period_end: null, cancel_at_period_end: false,
+    payment_provider: 'stripe', paystack_subscription_code: null,
   };
 }
 

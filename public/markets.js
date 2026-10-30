@@ -56,7 +56,7 @@ window.LMC_MARKETS = {
       "apiUrl": "",
       "mailFrom": "Le Mot du Chef <noreply@lemotduchef.fr>",
       "reviewMailAddress": "avis@lemotduchef.fr",
-      "payment": { "provider": "paystack" },
+      "payment": { "provider": "stripe" },
       "company": {
         "name": "",
         "registration": "",

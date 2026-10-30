@@ -5,9 +5,14 @@ import { requireCompany } from '../guards.js';
 import { config } from '../config.js';
 import {
   stripe, stripeEnabled, priceInfo, planForPrice, knownPriceIds, visiblePriceEntries,
-  companyBilling, effectivePlan, monthlyGenerationCount, FREE_MONTHLY_LIMIT,
+  companyBilling, effectivePlan, monthlyGenerationCount, FREE_MONTHLY_LIMIT, pricesFor,
 } from '../stripe.js';
 import { cgvAccepted } from '../legal.js';
+import { frontUrlFor, marketConfig, marketFromRequest } from '../markets.js';
+import {
+  paystackConfigured, paystackEnabledFor, paystackInitialize, paystackFetch,
+  verifyPaystackSignature, planForPaystackCode, planCodeForKey,
+} from '../paystack.js';
 
 // Abonnement Le Mot du Chef via Stripe. Le webhook est la source de vérité :
 // plan/statut/période sont écrits par les événements, jamais par le client.
@@ -62,7 +67,8 @@ async function applySubscription(client: Q, sub: any): Promise<boolean> {
        ${plan ? 'plan = $5,' : ''}
        subscription_price_id = COALESCE($6, subscription_price_id),
        current_period_end = $7,
-       cancel_at_period_end = $8
+       cancel_at_period_end = $8,
+       payment_provider = 'stripe'
      WHERE id = $1`,
     [companyId, customerId ?? null, sub.id ?? null, sub.status ?? 'none',
      ...(plan ? [plan] : []), priceId,
@@ -151,9 +157,68 @@ async function handleStripeEvent(client: Q, event: any, log: AlertLog): Promise<
   }
 }
 
+// Résolution entreprise depuis un événement Paystack : metadata.company_id
+// (posée à l'initialisation) puis abonnement connu par code.
+async function companyIdForPaystack(client: Q, data: any): Promise<string | null> {
+  const metaId = String(data?.metadata?.company_id ?? '');
+  if (/^[0-9a-f-]{36}$/i.test(metaId)) {
+    const { rows } = await client.query('SELECT id FROM companies WHERE id=$1', [metaId]);
+    if (rows[0]?.id) return rows[0].id;
+  }
+  const code = data?.subscription_code ?? data?.subscription?.subscription_code;
+  if (code) {
+    const { rows } = await client.query('SELECT id FROM companies WHERE paystack_subscription_code=$1', [code]);
+    if (rows[0]?.id) return rows[0].id;
+  }
+  return null;
+}
+
+// Événements Paystack : mêmes effets compte que les événements Stripe
+// (plan/statut/résiliation/retour Gratuit — le webhook reste la vérité).
+async function handlePaystackEvent(client: Q, event: any, log: AlertLog): Promise<void> {
+  const data = event.data ?? {};
+  const plan = planForPaystackCode(data.plan_code ?? data.plan?.plan_code);
+  switch (event.event) {
+    case 'subscription.create': {
+      const cid = await companyIdForPaystack(client, data);
+      if (!cid) { log.error({ type: event.event }, 'paystack webhook ALERTE : abonnement orphelin'); break; }
+      await client.query(
+        `UPDATE companies SET plan=$2, subscription_status='active',
+           subscription_id=$3, paystack_subscription_code=$3, payment_provider='paystack',
+           cancel_at_period_end=false WHERE id=$1`,
+        [cid, plan ?? 'pro', data.subscription_code ?? null]);
+      break;
+    }
+    case 'charge.success': {
+      const cid = await companyIdForPaystack(client, data);
+      if (cid) await client.query(`UPDATE companies SET subscription_status='active' WHERE id=$1 AND subscription_status <> 'none'`, [cid]);
+      break;
+    }
+    case 'invoice.payment_failed': {
+      const cid = await companyIdForPaystack(client, data);
+      if (cid) await client.query(`UPDATE companies SET subscription_status='past_due' WHERE id=$1`, [cid]);
+      break;
+    }
+    case 'subscription.not_renew':
+    case 'subscription.disable':
+    case 'subscription.expired': {
+      const cid = await companyIdForPaystack(client, data);
+      if (cid) {
+        await client.query(
+          `UPDATE companies SET plan='free', subscription_status='canceled',
+             subscription_id=NULL, subscription_price_id=NULL,
+             current_period_end=NULL, cancel_at_period_end=false WHERE id=$1`, [cid]);
+      } else {
+        log.error({ type: event.event }, 'paystack webhook ALERTE : résiliation orpheline');
+      }
+      break;
+    }
+  }
+}
+
 export default async function billingRoutes(app: FastifyInstance) {
 
-  /* ---------- Webhook Stripe (corps brut, signature obligatoire) ---------- */
+  /* ---------- Webhooks paiement (corps brut, signature obligatoire) ---------- */
   await app.register(async (wh) => {
     // Parseur dédié : la signature Stripe porte sur le corps BRUT.
     wh.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
@@ -210,11 +275,48 @@ export default async function billingRoutes(app: FastifyInstance) {
       }
       return { received: true };
     });
+
+    // Webhook Paystack : signature HMAC-SHA512 + idempotence transactionnelle
+    // (même mécanique que le webhook Stripe, table dédiée).
+    wh.post('/api/paystack/webhook', async (req: FastifyRequest, reply) => {
+      if (!paystackConfigured()) return reply.code(503).send({ error: 'Provider non configuré.' });
+      const sig = req.headers['x-paystack-signature'];
+      if (!verifyPaystackSignature((req as any).rawBody, typeof sig === 'string' ? sig : undefined))
+        return reply.code(401).send({ error: 'Signature invalide.' });
+      const event: any = req.body;
+      const eventId = String(event.id ?? `${event.event}:${JSON.stringify(event.data).slice(0, 64)}`);
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const { rows: claimed } = await client.query(
+          `INSERT INTO paystack_events (event_id, type, status) VALUES ($1,$2,'processing')
+           ON CONFLICT (event_id) DO NOTHING RETURNING event_id`,
+          [eventId, event.event ?? '']);
+        if (!claimed.length) {
+          const { rows: cur } = await client.query(
+            'SELECT status FROM paystack_events WHERE event_id=$1', [eventId]);
+          if (cur[0]?.status === 'done') {
+            await client.query('ROLLBACK');
+            return { received: true, duplicate: true };
+          }
+        }
+        await handlePaystackEvent(client, event, req.log);
+        await client.query(`UPDATE paystack_events SET status='done', processed_at=now() WHERE event_id=$1`, [eventId]);
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        req.log.error({ err, type: event.event }, 'paystack webhook ALERTE : traitement échoué');
+        return reply.code(500).send({ error: 'Traitement impossible pour le moment.' });
+      } finally {
+        client.release();
+      }
+      return { received: true };
+    });
   });
 
   /* ---------- Prix publics (montants relus depuis Stripe, en cache) ---------- */
-  app.get('/api/billing/prices', async () => {
-    const entries = visiblePriceEntries();
+  app.get('/api/billing/prices', async (req) => {
+    const entries = visiblePriceEntries(marketFromRequest(req));
     const infos = await Promise.all(entries.map(([, id]) => priceInfo(id)));
     const out = entries.map(([key, id], i) => ({
       key, id,
@@ -231,7 +333,7 @@ export default async function billingRoutes(app: FastifyInstance) {
     const b = await companyBilling(req.companyId!);
     const used = await monthlyGenerationCount(req.companyId!);
     const eff = effectivePlan(b);
-    const priceEntries = eff === 'free' ? visiblePriceEntries() : [];
+    const priceEntries = eff === 'free' ? visiblePriceEntries(req.market ?? 'fr') : [];
     const infos = await Promise.all(priceEntries.map(([, id]) => priceInfo(id)));
     const prices = priceEntries.map(([key, id], i) => ({
       key, id, plan: planForPrice(id), interval: key.endsWith('_yearly') ? 'year' : 'month',
@@ -247,12 +349,37 @@ export default async function billingRoutes(app: FastifyInstance) {
     };
   });
 
-  /* ---------- Stripe Checkout (souscription) ---------- */
+  /* ---------- Souscription (Checkout Stripe ou Paystack selon marché) ---------- */
   app.post('/api/billing/checkout', { preHandler: requireCompany }, async (req, reply) => {
+    const market = req.market ?? 'fr';
+    const priceId = String((req.body as any)?.priceId ?? '');
+
+    // Provider Paystack (désactivé tant que le marché est en provider
+    // 'stripe' dans markets.js — voir paystack.ts).
+    if (marketConfig(market).payment.provider === 'paystack') {
+      if (!paystackEnabledFor(market))
+        return reply.code(503).send({ error: 'Facturation non configurée.' });
+      const planCode = planCodeForKey(priceId) ?? priceId;
+      if (!planForPaystackCode(planCode))
+        return reply.code(400).send({ error: 'Offre inconnue.' });
+      if (!(await cgvAccepted(req.userId!)))
+        return reply.code(428).send({ error: 'Acceptez les conditions générales pour souscrire.', code: 'CGV_REQUIRED' });
+      const c = await companyContact(req.companyId!);
+      const email = c?.contact_email || c?.email;
+      if (!email) return reply.code(400).send({ error: 'Adresse email requise pour la souscription.' });
+      try {
+        const r = await paystackInitialize(email, planCode, { company_id: req.companyId! });
+        await pool.query(`UPDATE companies SET payment_provider='paystack' WHERE id=$1`, [req.companyId]);
+        return { url: r.data?.authorization_url };
+      } catch (err) {
+        req.log.warn({ err }, 'paystack transaction/initialize a échoué');
+        return reply.code(502).send({ error: STRIPE_DOWN });
+      }
+    }
+
     const s = stripe();
     if (!s) return reply.code(503).send({ error: 'Facturation non configurée.' });
-    const priceId = String((req.body as any)?.priceId ?? '');
-    if (!knownPriceIds().has(priceId))
+    if (!knownPriceIds(market).has(priceId))
       return reply.code(400).send({ error: 'Offre inconnue.' });
     // Souscription = acceptation des CGV de la version courante (app, avant
     // redirection vers Checkout ; le portail Stripe affiche en plus le lien).
@@ -285,12 +412,15 @@ export default async function billingRoutes(app: FastifyInstance) {
         return reply.code(502).send({ error: STRIPE_DOWN });
       }
       customerId = customer.id;
-      await pool.query('UPDATE companies SET stripe_customer_id=$2 WHERE id=$1', [req.companyId, customerId]);
+      await pool.query(`UPDATE companies SET stripe_customer_id=$2, payment_provider='stripe' WHERE id=$1`, [req.companyId, customerId]);
     }
 
+    const front = frontUrlFor(market);
+    const cgvUrl = `${front}${marketConfig(market).legalRoutes.cgv}`;
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       customer: customerId,
+      locale: market === 'za' ? 'en' : 'fr',
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       // Aucune TVA collectée (franchise, art. 293 B CGI) : pas d'automatic_tax.
@@ -301,11 +431,13 @@ export default async function billingRoutes(app: FastifyInstance) {
       consent_collection: { terms_of_service: 'required' },
       custom_text: {
         terms_of_service_acceptance: {
-          message: `En souscrivant, j'accepte les conditions générales de vente : ${config.frontUrl}/cgv`,
+          message: market === 'za'
+            ? `By subscribing, I accept the terms of sale: ${cgvUrl}`
+            : `En souscrivant, j'accepte les conditions générales de vente : ${cgvUrl}`,
         },
       },
-      success_url: `${config.frontUrl}/?billing=success`,
-      cancel_url: `${config.frontUrl}/?billing=cancel`,
+      success_url: `${front}/?billing=success`,
+      cancel_url: `${front}/?billing=cancel`,
     };
     let session: Stripe.Checkout.Session;
     try {
@@ -329,17 +461,32 @@ export default async function billingRoutes(app: FastifyInstance) {
     return { url: session.url };
   });
 
-  /* ---------- Portail client Stripe (changement d'offre, carte, factures) ---------- */
+  /* ---------- Portail client (Stripe ou lien de gestion Paystack) ---------- */
   app.post('/api/billing/portal', { preHandler: requireCompany }, async (req, reply) => {
+    const b = await companyBilling(req.companyId!);
+    // Le provider mémorisé sur l'abonnement fait foi, pas la config du
+    // marché : un abonné ZA souscrit chez Stripe reste géré par Stripe
+    // même après la bascule du marché vers Paystack.
+    if (b.payment_provider === 'paystack') {
+      if (!paystackConfigured()) return reply.code(503).send({ error: 'Facturation non configurée.' });
+      if (!b.paystack_subscription_code) return reply.code(404).send({ error: 'Aucun abonnement à gérer.' });
+      try {
+        const r = await paystackFetch(`/subscription/${b.paystack_subscription_code}/manage/link`, { method: 'POST' });
+        return { url: r.data?.link };
+      } catch (err) {
+        req.log.warn({ err }, 'paystack manage/link a échoué');
+        return reply.code(502).send({ error: STRIPE_DOWN });
+      }
+    }
+
     const s = stripe();
     if (!s) return reply.code(503).send({ error: 'Facturation non configurée.' });
-    const b = await companyBilling(req.companyId!);
     if (!b.stripe_customer_id) return reply.code(404).send({ error: 'Aucun abonnement à gérer.' });
     let session: Stripe.BillingPortal.Session;
     try {
       session = await s.billingPortal.sessions.create({
         customer: b.stripe_customer_id,
-        return_url: config.stripe.portalReturnUrl || config.frontUrl,
+        return_url: config.stripe.portalReturnUrl || frontUrlFor(req.market ?? 'fr'),
       });
     } catch (err) {
       req.log.warn({ err }, 'stripe billingPortal.sessions.create a échoué');

@@ -170,7 +170,9 @@ test('/api/config : le marché suit l’Origin de la requête', async () => {
   assert.equal(j.lang, 'en');
   assert.equal(j.currency, 'ZAR');
   assert.equal(j.timezone, 'Africa/Johannesburg');
-  assert.equal(j.paymentProvider, 'paystack');
+  // Phase pilote : le marché ZA utilise le compte Stripe FR (mêmes clés) ;
+  // la bascule Paystack se fera par ce seul champ de configuration.
+  assert.equal(j.paymentProvider, 'stripe');
   const fr = await app.inject({ method: 'GET', url: '/api/config', headers: H });
   assert.equal(fr.json().market, 'fr');
   assert.equal(fr.json().currency, 'EUR');
