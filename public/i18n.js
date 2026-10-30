@@ -152,6 +152,7 @@ window.LMC_I18N = {
     "mail.change.cta": "Confirmer mon adresse",
     "mail.button_fallback": "Le bouton ne fonctionne pas ? Copiez ce lien :",
     "mail.footer": "Le Mot du Chef, réponses posées aux avis Google pour restaurateurs indépendants.",
+    "mail.account_exists": "Un compte existe déjà pour cet email sur {site}. Connectez-vous là-bas.",
 
     "push.review.title": "Réponses prêtes",
     "push.review.body": "Vos réponses à l'avis de {author} ({rating}★) sont prêtes, ouvrez votre espace.",
@@ -681,6 +682,7 @@ window.LMC_I18N = {
     "mail.change.cta": "Confirm my email",
     "mail.button_fallback": "Button not working? Copy this link:",
     "mail.footer": "Le Mot du Chef, crafted replies to Google reviews for independent restaurateurs.",
+    "mail.account_exists": "An account already exists for this email on {site}. Sign in there.",
 
     "push.review.title": "Replies ready",
     "push.review.body": "Your replies to {author}'s review ({rating}★) are ready, open your workspace.",

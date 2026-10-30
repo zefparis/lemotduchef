@@ -19,6 +19,7 @@ process.env.BASE_URL = 'http://localhost:3510';
 process.env.BETTER_AUTH_SECRET = 'test-secret-0123456789abcdef0123456789abcdef';
 process.env.NODE_ENV = 'test';
 process.env.RATE_LIMIT_AUTH_MAX = '1000';
+process.env.RATE_LIMIT_SIGNUP_MAX = '1000';
 process.env.RATE_LIMIT_GENERATE_MAX = '1000';
 process.env.ADMIN_EMAILS = 'admin@lemotduchef.test';
 process.env.CORS_ORIGINS = 'https://lemotduchef.test,https://za.lemotduchef.test';
@@ -63,7 +64,8 @@ async function signup(email: string, name = 'Test', origin?: string) {
     headers: { ...H, ...(origin ? { origin } : {}) },
     payload: { email, password: PASSWORD, name, cgvAccepted: true, cgvVersion: CGV_VERSION },
   });
-  assert.equal(r.statusCode, 200, `signup ${email} : ${r.body}`);
+  // 422 EMAIL_USED : le compte existe déjà → repli connexion ci-dessous.
+  assert.ok([200, 422].includes(r.statusCode), `signup ${email} : ${r.body}`);
   let mail = lastMailTo(email, /confirmez votre email|confirm your email/i);
   if (!mail) {
     // Le compte existe déjà (base de test partagée entre suites) : connexion

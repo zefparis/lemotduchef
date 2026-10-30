@@ -31,6 +31,7 @@ process.env.BASE_URL = 'http://localhost:3520';
 process.env.BETTER_AUTH_SECRET = 'test-secret-0123456789abcdef0123456789abcdef';
 process.env.NODE_ENV = 'test';
 process.env.RATE_LIMIT_AUTH_MAX = '6';
+process.env.RATE_LIMIT_SIGNUP_MAX = '1000';
 process.env.RATE_LIMIT_GENERATE_MAX = '10';
 process.env.ADMIN_EMAILS = 'sec-admin@x.fr';
 process.env.SMTP_HOST = 'log';

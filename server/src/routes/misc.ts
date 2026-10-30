@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify';
 import { pool } from '../db.js';
-import { frontUrlFor } from '../markets.js';
 import { requireSession } from '../guards.js';
 import { config } from '../config.js';
 import { signupEnabledNow } from '../settings.js';
@@ -24,15 +23,6 @@ export default async function miscRoutes(app: FastifyInstance) {
   // Configuration publique minimale lue par le frontend au démarrage.
   // L'interrupteur en base (back-office) est prioritaire sur l'env.
   // Le marché est déduit du domaine de la requête (Origin), pas du client.
-  // Rattachement d'un email à un site de marché : utilisé à l'inscription
-  // pour indiquer « vous avez déjà un compte sur X » sans rien révéler
-  // d'autre. Volume faible, aucune donnée sensible renvoyée.
-  app.post('/api/check-email', async (req) => {
-    const email = String((req.body as any)?.email ?? '').toLowerCase().trim().slice(0, 254);
-    const { rows } = await pool.query(`SELECT market FROM "user" WHERE lower(email)=$1 LIMIT 1`, [email]);
-    return { site: rows[0]?.market ? frontUrlFor(rows[0].market) : null };
-  });
-
   app.get('/api/config', async (req) => {
     const market = marketFromRequest(req);
     const m = marketConfig(market);

@@ -10,6 +10,7 @@ process.env.BASE_URL = 'http://localhost:3510';
 process.env.BETTER_AUTH_SECRET = 'test-secret-0123456789abcdef0123456789abcdef';
 process.env.NODE_ENV = 'test';
 process.env.RATE_LIMIT_AUTH_MAX = '1000';
+process.env.RATE_LIMIT_SIGNUP_MAX = '1000';
 process.env.RATE_LIMIT_GENERATE_MAX = '1000';
 process.env.ADMIN_EMAILS = 'admin@lemotduchef.test, quota-admin@x.fr';
 // Une origine autorisée pour vérifier que les erreurs n'écrasent jamais le CORS.
@@ -60,7 +61,8 @@ async function signupRaw(email: string, name = 'Test') {
 // Inscription complète : signup → email de vérification capturé → vérification → session.
 async function signup(email: string, name = 'Test') {
   const r = await signupRaw(email, name);
-  assert.equal(r.statusCode, 200, `signup ${email} : ${r.body}`);
+  // 422 EMAIL_USED : le compte existe déjà → repli connexion ci-dessous.
+  assert.ok([200, 422].includes(r.statusCode), `signup ${email} : ${r.body}`);
   const mail = lastMailTo(email, /confirmez votre email/i);
   assert.ok(mail, `email de vérification envoyé à ${email}`);
   const token = tokenFrom(mail!);

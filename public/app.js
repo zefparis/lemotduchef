@@ -391,11 +391,8 @@ $('#signup-form').onsubmit = async e => {
     f.reset();
     showAuthForm('verify-note');
   } catch (err2) {
-    if (err2.status === 422) {
-      try { const c = await api('/check-email', { method: 'POST', body: { email: payload.email } });
-        if (c?.site) { setErr(err, t('msg.email_used_site', { site: c.site })); unbusy(); return; } } catch {}
-    }
-    setErr(err, err2.status === 422 ? t('msg.email_used') : (err2.message || t('msg.signup_fail')));
+    // 422 : le serveur renvoie le site de rattachement dans son message.
+    setErr(err, err2.message || (err2.status === 422 ? t('msg.email_used') : t('msg.signup_fail')));
   } finally { unbusy(); }
 };
 

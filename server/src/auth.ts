@@ -24,6 +24,15 @@ function emailThrottle(key: string): boolean {
   hits.push(now); mailBuckets.set(key, hits); return true;
 }
 
+const SIGNUP_LIMIT_MAX = config.rateLimitSignup || 10;
+function signupThrottle(ip: string): boolean {
+  const key = `signup|${ip || 'inconnue'}`;
+  const now = Date.now();
+  const hits = (mailBuckets.get(key) ?? []).filter(t => now - t < MAIL_LIMIT_WINDOW_MS);
+  if (hits.length >= SIGNUP_LIMIT_MAX) { mailBuckets.set(key, hits); return false; }
+  hits.push(now); mailBuckets.set(key, hits); return true;
+}
+
 // Marché d'un destinataire d'email : la valeur stockée sur le compte fait
 // foi ; à défaut, l'Origin/Host de la requête courante (inscription), sinon
 // le marché par défaut.
@@ -163,11 +172,26 @@ export const auth = betterAuth({
         // (invitation admin) n'ont pas d'acceptation interactive — le client
         // acceptera les CGV à sa première connexion.
         if (!isPublicAuthCall(ctx.request?.headers)) return;
+        if (!signupThrottle(ctx.request?.headers.get('cf-connecting-ip')
+            ?? ctx.request?.headers.get('x-forwarded-for') ?? ''))
+          throw new APIError('TOO_MANY_REQUESTS', { message: 'Trop de tentatives. Réessayez dans une heure.' });
         if (ctx.body?.cgvAccepted !== true || ctx.body?.cgvVersion !== CGV_VERSION)
           throw new APIError('BAD_REQUEST', {
             message: 'Vous devez accepter les conditions générales de vente pour créer un compte.',
             code: 'CGV_REQUIRED',
           });
+        // Un email = un compte, tous marchés : refus 422 avec le site de
+        // rattachement (langue du compte existant) — rien d'autre révélé,
+        // et l'énumération reste bornée par le débit d'inscription.
+        const email = String(ctx.body?.email ?? '').toLowerCase();
+        if (email) {
+          const { rows } = await pool.query(`SELECT market FROM "user" WHERE lower(email)=$1 AND "emailVerified"=true LIMIT 1`, [email]);
+          if (rows.length)
+            throw new APIError('UNPROCESSABLE_ENTITY', {
+              message: tr(marketLang(rows[0].market), 'mail.account_exists', { site: frontUrlFor(rows[0].market) }),
+              code: 'EMAIL_USED',
+            });
+        }
         return;
       }
       // Plafond par e-mail sur les envois transactionnels (reset, vérification).

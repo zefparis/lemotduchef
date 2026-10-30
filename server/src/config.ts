@@ -52,6 +52,7 @@ export const config = {
   trustProxy: process.env.TRUST_PROXY !== 'false',
   // Débit /api/auth/* par IP (anti force brute). Surchargeable en test.
   rateLimitAuth: Number(process.env.RATE_LIMIT_AUTH_MAX ?? 30),
+  rateLimitSignup: Number(process.env.RATE_LIMIT_SIGNUP_MAX ?? 10),
   // Débit des générations LLM par IP (coût). Surchargeable en test.
   rateLimitGenerate: Number(process.env.RATE_LIMIT_GENERATE_MAX ?? 20),
   // Emails autorisés à administrer (back-office /api/admin/*). Env seule,

@@ -12,6 +12,7 @@ process.env.BASE_URL = 'http://localhost:3510';
 process.env.BETTER_AUTH_SECRET = 'test-secret-0123456789abcdef0123456789abcdef';
 process.env.NODE_ENV = 'test';
 process.env.RATE_LIMIT_AUTH_MAX = '1000';
+process.env.RATE_LIMIT_SIGNUP_MAX = '1000';
 process.env.RATE_LIMIT_GENERATE_MAX = '1000';
 process.env.ADMIN_EMAILS = 'admin@lemotduchef.test';
 process.env.CORS_ORIGINS = 'https://lemotduchef.test,https://za.lemotduchef.test,https://ke.lemotduchef.test,https://cd.lemotduchef.test';
@@ -250,11 +251,13 @@ describe('cloisonnement par marché', () => {
     assert.equal(me.json().user.market, 'za');
   });
 
-  test('/api/check-email : site de rattachement, rien de plus', async () => {
-    const r = await app.inject({ method: 'POST', url: '/api/check-email', headers: H, payload: { email: 'cross@za.test' } });
-    assert.equal(r.json().site, 'https://za.lemotduchef.fr');
-    const r2 = await app.inject({ method: 'POST', url: '/api/check-email', headers: H, payload: { email: 'inconnu@x.fr' } });
-    assert.equal(r2.json().site, null);
+  test('inscription en doublon : 422 avec le site de rattachement', async () => {
+    const r = await app.inject({ method: 'POST', url: '/api/auth/sign-up/email', headers: H,
+      payload: { email: 'cross@za.test', password: PASSWORD, name: 'X', cgvAccepted: true, cgvVersion: CGV_VERSION, signup_source: 'direct' } });
+    assert.equal(r.statusCode, 422, r.body);
+    const msg = r.json().message ?? r.json().error ?? '';
+    assert.match(msg, /za\.lemotduchef\.fr/);
+    assert.match(msg, /Sign in there|Connectez-vous/);
   });
 
   test('checkout refusé quand le domaine ≠ marché du compte', async () => {

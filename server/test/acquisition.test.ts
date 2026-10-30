@@ -7,6 +7,7 @@ process.env.BASE_URL = 'http://localhost:3510';
 process.env.BETTER_AUTH_SECRET = 'test-secret-0123456789abcdef0123456789abcdef';
 process.env.NODE_ENV = 'test';
 process.env.RATE_LIMIT_AUTH_MAX = '1000';
+process.env.RATE_LIMIT_SIGNUP_MAX = '1000';
 process.env.ADMIN_EMAILS = 'admin@lemotduchef.test';
 process.env.CORS_ORIGINS = 'https://lemotduchef.test,https://za.lemotduchef.test';
 process.env.SMTP_HOST = 'log';
