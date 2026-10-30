@@ -1181,6 +1181,11 @@ $('#admin-delete-confirm').onclick = async () => {
     });
   } catch { /* prix non disponibles : « — » affiché */ }
 
+  if (location.pathname === '/verifier' && params.get('token')) {
+    try { await api(`/auth/verify-email?token=${encodeURIComponent(params.get('token'))}`); location.href = '/?verifie=1'; }
+    catch (e) { showAuth('verify-note'); setErr($('#err-verify') || $('#err-login'), e.message || 'Lien invalide ou expiré.'); }
+    return;
+  }
   if (resetToken) { showAuth('reset'); return; }
   if (showLegal(location.pathname)) return;
 

@@ -68,8 +68,8 @@ export const auth = betterAuth({
       const market = await mailMarket(user, request);
       const lang = marketLang(market);
       const u = new URL(url);
-      u.searchParams.set('callbackURL', frontUrlFor(market) + '/?verifie=1');
-      await sendMail({ to: user.email, subject: tr(lang, 'mail.verify.subject'), ...EMAIL_TEMPLATES.verify(u.toString(), lang) }, market);
+      const verifyUrl = `${frontUrlFor(market)}/verifier?token=${encodeURIComponent(u.searchParams.get('token') ?? '')}`;
+      await sendMail({ to: user.email, subject: tr(lang, 'mail.verify.subject'), ...EMAIL_TEMPLATES.verify(verifyUrl, lang) }, market);
     },
   },
   user: {
@@ -88,8 +88,8 @@ export const auth = betterAuth({
         const market = await mailMarket(user, request);
         const lang = marketLang(market);
         const u = new URL(url);
-        u.searchParams.set('callbackURL', frontUrlFor(market) + '/?verifie=1');
-        await sendMail({ to: newEmail, subject: tr(lang, 'mail.change.subject'), ...EMAIL_TEMPLATES.changeEmail(u.toString(), lang) }, market);
+        const changeUrl = `${frontUrlFor(market)}/verifier?token=${encodeURIComponent(u.searchParams.get('token') ?? '')}&type=email`;
+        await sendMail({ to: newEmail, subject: tr(lang, 'mail.change.subject'), ...EMAIL_TEMPLATES.changeEmail(changeUrl, lang) }, market);
       },
     },
     deleteUser: {

@@ -137,7 +137,7 @@ test('signup sur le domaine ZA → compte market=za, entreprise market=za', asyn
   // lien de vérification → front za.lemotduchef.fr.
   assert.ok(mail, 'email de vérification capturé');
   assert.equal(mail!.from, 'Le Mot du Chef <noreply@lemotduchef.fr>');
-  assert.match(decodeURIComponent(mail!.text), /za\.lemotduchef\.fr\/\?verifie=1/);
+  assert.match(decodeURIComponent(mail!.text), /za\.lemotduchef\.fr\/verifier\?token=/);
   // Création du restaurant : l'entreprise hérite du marché du compte.
   const r = await app.inject({
     method: 'POST', url: '/api/restaurants',
