@@ -159,6 +159,27 @@ export default async function adminRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
+  // Le marché d'un compte fait foi (inscription) ; seul l'admin peut le
+  // changer — jamais avec un abonnement actif (un client Stripe = une
+  // devise : résilier d'abord). Changement journalisé.
+  app.post('/api/admin/users/:id/market', async (req, reply) => {
+    const u = await loadUser((req.params as any).id);
+    if (!u) return reply.code(404).send({ error: 'Utilisateur introuvable.' });
+    const mk = (req.body as any)?.market;
+    if (!isMarket(mk)) return reply.code(400).send({ error: 'Marché invalide.' });
+    const prev = (await pool.query<{ market: string }>(`SELECT market FROM "user" WHERE id=$1`, [u.id])).rows[0]?.market;
+    if (mk === prev) return { ok: true };
+    const { rows } = await pool.query(
+      `SELECT 1 FROM memberships m JOIN companies c ON c.id = m.company_id
+       WHERE m.user_id=$1 AND c.plan<>'free' AND c.subscription_status IN ('active','trialing','past_due') LIMIT 1`, [u.id]);
+    if (rows.length)
+      return reply.code(409).send({ error: "Résiliez d'abord l'abonnement : un compte payant ne peut pas changer de marché (un client Stripe = une devise)." });
+    await pool.query(`UPDATE "user" SET market=$1 WHERE id=$2`, [mk, u.id]);
+    await pool.query(`UPDATE companies SET market=$1 WHERE id IN (SELECT company_id FROM memberships WHERE user_id=$2)`, [mk, u.id]);
+    await audit(req, 'user.market', 'user', u.id, { email: u.email, from: prev, to: mk });
+    return { ok: true };
+  });
+
   app.post('/api/admin/users/:id/revoke-sessions', async (req, reply) => {
     const u = await loadUser((req.params as any).id);
     if (!u) return reply.code(404).send({ error: 'Utilisateur introuvable.' });

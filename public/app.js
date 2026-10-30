@@ -144,6 +144,13 @@ function askConfirm(title, text, okLabel = t('msg.confirm')) {
 $('#confirm-ok').onclick = () => { confirmDlg.close(); confirmResolve?.(true); confirmResolve = null; };
 $('#confirm-cancel').onclick = () => { confirmDlg.close(); confirmResolve?.(false); confirmResolve = null; };
 confirmDlg.addEventListener('close', () => { confirmResolve?.(false); confirmResolve = null; });
+document.addEventListener('change', e => {
+  const sel = e.target.closest?.('[data-admin-market]');
+  if (!sel) return;
+  adminApi(`/users/${sel.dataset.id}/market`, { method: 'POST', body: { market: sel.value } })
+    .then(() => { toast('Marché mis à jour.', 'info'); loadAdminUsers(); loadAdminStats(); })
+    .catch(err => { toast(err.message, 'error'); loadAdminUsers(); });
+});
 $$('dialog').forEach(d => d.addEventListener('click', e => {
   if (e.target !== d) return;
   const r = d.getBoundingClientRect();
@@ -384,6 +391,10 @@ $('#signup-form').onsubmit = async e => {
     f.reset();
     showAuthForm('verify-note');
   } catch (err2) {
+    if (err2.status === 422) {
+      try { const c = await api('/check-email', { method: 'POST', body: { email: payload.email } });
+        if (c?.site) { setErr(err, t('msg.email_used_site', { site: c.site })); unbusy(); return; } } catch {}
+    }
     setErr(err, err2.status === 422 ? t('msg.email_used') : (err2.message || t('msg.signup_fail')));
   } finally { unbusy(); }
 };
@@ -1070,7 +1081,7 @@ async function loadAdminUsers() {
   $('#admin-users-count').textContent = `${users.length} utilisateur(s)`;
   $('#admin-users').innerHTML = users.map(u => `<tr${u.suspended_at ? ' class="row-suspended"' : ''}>
     <td><strong>${esc(u.name)}</strong><span class="cell-sub">${esc(u.email)}${u.suspended_at ? ' <span class="badge-suspended">Suspendu</span>' : ''}</span></td>
-    <td>${mktBadge(u.market)} ${esc(u.company_name || '—')}</td>
+    <td><select class="mkt-select" data-admin-market data-id="${esc(u.id)}" title="Marché du compte">${['fr','za','ke','cd'].map(x=>`<option value="${x}" ${x===u.market?'selected':''}>${x.toUpperCase()}</option>`).join('')}</select> ${esc(u.company_name || '—')}</td>
     <td>${u.email_verified ? '<span class="badge-verified">Vérifié</span>' : '<span class="badge-unverified">Non vérifié</span>'}</td>
     <td>${new Date(u.created_at).toLocaleDateString('fr-FR')}</td>
     <td>${u.last_seen ? fmtDateTime(u.last_seen) : '—'}</td>
@@ -1167,6 +1178,7 @@ $('#admin-delete-confirm').onclick = async () => {
   } catch { signupEnabled = false; }
   mountLangSelector();
   applyI18n();
+  if (params.get('rattache') === '1') { history.replaceState(null, '', '/'); toast(t('msg.account_attached', { site: location.origin }), 'info'); }
   applyLegalRoutes();
   fillLegal(); fillConfig();
   $('#auth-tabs').hidden = !signupEnabled;
@@ -1192,6 +1204,16 @@ $('#admin-delete-confirm').onclick = async () => {
   try {
     const me = await api('/me');
     if (me?.user) {
+      // Cloisonnement : un compte vit sur le domaine de SON marché ; on
+      // affiche un message dans sa langue puis on le renvoie chez lui.
+      if (me.user.market && me.user.market !== MARKET_ID && MARKETS.markets[me.user.market]?.frontUrl) {
+        const to = MARKETS.markets[me.user.market].frontUrl;
+        const ml = MARKETS.markets[me.user.market].lang || 'fr';
+        const msg = ((DICTS[ml] || {}).msg_account_attached || (DICTS.fr || {}).msg_account_attached || '').replace('{site}', to);
+        document.body.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font:16px/1.7 Georgia,serif;color:#8a3b1f;background:#faf6f0">${msg}</div>`;
+        setTimeout(() => { location.href = to + '/?rattache=1'; }, 2600);
+        return;
+      }
       session = me;
       // Langue du compte : appliquée seulement sans préférence explicite.
       if (me.user.lang && !localStorage.getItem('lmc-lang')) setLang(me.user.lang);

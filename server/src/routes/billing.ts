@@ -352,6 +352,8 @@ export default async function billingRoutes(app: FastifyInstance) {
   /* ---------- Souscription (Checkout Stripe ou Paystack selon marché) ---------- */
   app.post('/api/billing/checkout', { preHandler: requireCompany }, async (req, reply) => {
     const market = req.market ?? 'fr';
+    if (marketFromRequest(req) !== market)
+      return reply.code(403).send({ error: 'Ce compte est rattaché à un autre site Le Mot du Chef.', code: 'MARKET_MISMATCH' });
     const priceId = String((req.body as any)?.priceId ?? '');
 
     const provider = marketConfig(market).payment.provider;
@@ -495,6 +497,8 @@ export default async function billingRoutes(app: FastifyInstance) {
     if (!s) return reply.code(503).send({ error: 'Facturation non configurée.' });
     if (!b.stripe_customer_id) return reply.code(404).send({ error: 'Aucun abonnement à gérer.' });
     let session: Stripe.BillingPortal.Session;
+    if (marketFromRequest(req) !== req.market)
+      return reply.code(403).send({ error: 'Ce compte est rattaché à un autre site Le Mot du Chef.', code: 'MARKET_MISMATCH' });
     try {
       session = await s.billingPortal.sessions.create({
         customer: b.stripe_customer_id,

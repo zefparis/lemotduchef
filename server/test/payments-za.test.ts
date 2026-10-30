@@ -31,6 +31,8 @@ process.env.STRIPE_KE_PRICE_PRO_YEARLY = 'price_ke_y';
 process.env.KE_ORIGIN_TEST = 'https://ke.lemotduchef.test';
 process.env.STRIPE_CD_PRICE_PRO_MONTHLY = 'price_cd_m';
 process.env.STRIPE_CD_PRICE_PRO_YEARLY = 'price_cd_y';
+process.env.KE_DOMAINS = 'ke.lemotduchef.test';
+process.env.CD_DOMAINS = 'cd.lemotduchef.test';
 process.env.PAYSTACK_ZA_SECRET_KEY = 'sk_test_paystack';
 process.env.PAYSTACK_ZA_PLAN_MONTHLY = 'PLN_test_m';
 process.env.PAYSTACK_ZA_PLAN_YEARLY = 'PLN_test_y';
@@ -227,6 +229,60 @@ describe('paiement marché ZA', () => {
     const r = await app.inject({ method: 'GET', url: '/api/billing', headers: { ...H, cookie } });
     const b = r.json();
     assert.deepEqual(b.prices.map((p: any) => p.id).sort(), ['price_fr_m', 'price_fr_y']);
+  });
+});
+
+describe('cloisonnement par marché', () => {
+  const adminSignin = async () => {
+    await signupZa('admin@lemotduchef.test', false);
+    await pool.query(`UPDATE "user" SET "emailVerified"=true WHERE email='admin@lemotduchef.test'`);
+    const r = await app.inject({ method: 'POST', url: '/api/auth/sign-in/email', headers: H, payload: { email: 'admin@lemotduchef.test', password: PASSWORD } });
+    return { cookie: r.headers['set-cookie']?.[0]?.split(';')[0] ?? '' };
+  };
+
+  test('connexion croisée : session OK, le compte garde son marché', async () => {
+    const cookie = await signupZa('cross@za.test');
+    await pool.query(`UPDATE "user" SET "emailVerified"=true WHERE email='cross@za.test'`);
+    // Sign-in depuis le domaine KE : réussit, mais /api/me renvoie market=za.
+    const r = await app.inject({ method: 'POST', url: '/api/auth/sign-in/email', headers: { ...H, origin: KE }, payload: { email: 'cross@za.test', password: PASSWORD } });
+    assert.equal(r.statusCode, 200);
+    const me = await app.inject({ method: 'GET', url: '/api/me', headers: { ...H, origin: KE, cookie: cookieOf(r) } });
+    assert.equal(me.json().user.market, 'za');
+  });
+
+  test('/api/check-email : site de rattachement, rien de plus', async () => {
+    const r = await app.inject({ method: 'POST', url: '/api/check-email', headers: H, payload: { email: 'cross@za.test' } });
+    assert.equal(r.json().site, 'https://za.lemotduchef.fr');
+    const r2 = await app.inject({ method: 'POST', url: '/api/check-email', headers: H, payload: { email: 'inconnu@x.fr' } });
+    assert.equal(r2.json().site, null);
+  });
+
+  test('checkout refusé quand le domaine ≠ marché du compte', async () => {
+    const cookie = await signupZa('guard@za.test');
+    await makeCompany(cookie, 'Guard ZA', true);
+    const r = await app.inject({ method: 'POST', url: '/api/billing/checkout',
+      headers: { ...H, cookie, origin: KE }, payload: { priceId: 'price_za_m' } });
+    assert.equal(r.statusCode, 403);
+    assert.equal(r.json().code, 'MARKET_MISMATCH');
+  });
+
+  test('admin : marché refusé avec abonnement actif, journalisé sinon', async () => {
+    const cookie = await signupZa('switch@za.test');
+    await makeCompany(cookie, 'Switch ZA', true);
+    const uid = (await pool.query(`SELECT id FROM "user" WHERE email='switch@za.test'`)).rows[0].id;
+    const a = await adminSignin();
+    await pool.query(`UPDATE companies SET plan='pro', subscription_status='active' WHERE name='Switch ZA'`);
+    const r1 = await app.inject({ method: 'POST', url: `/api/admin/users/${uid}/market`,
+      headers: { ...H, ...a }, payload: { market: 'ke' } });
+    assert.equal(r1.statusCode, 409, r1.body);
+    await pool.query(`UPDATE companies SET plan='free', subscription_status='canceled' WHERE name='Switch ZA'`);
+    const r2 = await app.inject({ method: 'POST', url: `/api/admin/users/${uid}/market`,
+      headers: { ...H, ...a }, payload: { market: 'ke' } });
+    assert.equal(r2.statusCode, 200);
+    assert.equal((await pool.query(`SELECT market FROM "user" WHERE id=$1`, [uid])).rows[0].market, 'ke');
+    assert.equal((await pool.query(`SELECT market FROM companies WHERE name='Switch ZA'`)).rows[0].market, 'ke');
+    const log = await pool.query(`SELECT action FROM audit_log WHERE action='user.market' AND target_id=$1`, [uid]);
+    assert.equal(log.rows.length, 1);
   });
 });
 
