@@ -61,6 +61,8 @@ function boot(url: string, lang: string) {
   const { window } = dom;
   window.eval(marketsJs); window.eval(i18nJs);
   window.eval('var $$ = s => [...document.querySelectorAll(s)];' + i18nBlock.replace(/\bconst (LANG)\b/, 'var $1'));
+  // Valeurs réelles de /api/config, injectées comme en production.
+  window.eval('var appConfig = { freeMonthlyReplies: 5, freeHistoryDays: 30, reviewRetentionMonths: 12 };');
   window.eval(`LANG = ${JSON.stringify(lang)}; applyI18n();`);
   return window;
 }
@@ -109,6 +111,8 @@ test('FR : aucun texte anglais oublié, aucun tiret cadratin', () => {
     if (/[—–…]/.test(text)) bad.push(`${where} : tiret cadratin/ellipse dans « ${text.slice(0, 70)} »`);
     const hits = englishHits(text);
     if (hits.length >= 2) bad.push(`${where} : EN « ${text.slice(0, 80)} » → ${hits.slice(0, 6).join(', ')}`);
+    if (/\bR\s?\d/.test(text)) bad.push(`${where} : symbole rand sur le marché FR « ${text.slice(0, 60)} »`);
+    if (/\{[a-zA-Z]+\}/.test(text)) bad.push(`${where} : variable non remplacée « ${text.slice(0, 60)} »`);
   }
   for (const [k, v] of Object.entries(DICTS.fr as Record<string, string>)) {
     if (/[—–…]/.test(v)) bad.push(`dict.fr.${k} : tiret cadratin/ellipse`);

@@ -31,10 +31,15 @@ const LOCALES = { fr: 'fr-FR', en: 'en-US' };
 // est appliquée après /api/me).
 let LANG = localStorage.getItem('lmc-lang') || MARKET.lang || 'fr';
 const DICTS = window.LMC_I18N || {};
+const GLOBAL_VARS = () => {
+  const c = typeof appConfig === 'undefined' ? {} : appConfig;
+  return { n: c.freeMonthlyReplies ?? '—', d: c.freeHistoryDays ?? '—', m: c.reviewRetentionMonths ?? '—' };
+};
 function t(key, vars) {
   const d = DICTS[LANG] || DICTS.fr || {};
   let s = d[key] ?? (DICTS.fr || {})[key] ?? key;
-  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
+  for (const [k, v] of Object.entries({ ...GLOBAL_VARS(), ...(vars || {}) }))
+    s = s.replaceAll(`{${k}}`, String(v));
   return s;
 }
 const setLang = (l) => { if (DICTS[l]) { LANG = l; localStorage.setItem('lmc-lang', l); applyI18n(); } };
@@ -830,9 +835,11 @@ async function deleteReview(id) {
 /* ---------- Abonnement ---------- */
 const PLAN_NAMES = () => ({ free: t('offer.free.name'), pro: t('offer.pro.name') });
 const STATUS_TXT = () => ({ active: t('sub.active'), trialing: t('sub.trialing'), past_due: t('sub.past_due'), canceled: t('sub.canceled'), unpaid: t('sub.unpaid') });
-const fmtPrice = c => c == null ? '—' : (c / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
-const fmtPriceZar = c => c == null ? '—' : 'R ' + (c / 100).toLocaleString('en-ZA', { maximumFractionDigits: 2 });
-const fmtPriceMarket = c => (MARKET.currency === 'ZAR' ? fmtPriceZar(c) : fmtPrice(c));
+const fmtPrice = c => c == null ? '—' : new Intl.NumberFormat(MARKET.locale || 'fr-FR', { style: 'currency', currency: MARKET.currency || 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(c / 100);
+// Admin : formats explicites par devise (CA des deux marchés côte à côte).
+const fmtPriceEur = c => c == null ? '—' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(c / 100);
+const fmtPriceZar = c => c == null ? '—' : new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(c / 100);
+const fmtPriceMarket = fmtPrice;
 const mktBadge = m => `<span class="mkt-badge" title="Marché">${esc(m === 'za' ? 'ZA' : 'FR')}</span>`;
 
 async function loadBilling() {
@@ -1002,7 +1009,7 @@ async function loadAdminStats() {
     { label: 'Emails non vérifiés', value: s.unverified }, { label: 'Comptes suspendus', value: s.suspended },
     { label: 'Avis saisis', value: s.reviews }, { label: 'Générations (total / mois)', value: `${s.generations} / ${s.generationsMonth}` },
     { label: 'Tokens entrée / sortie', value: `${(s.inputTokens / 1000).toFixed(1)}k / ${(s.outputTokens / 1000).toFixed(1)}k` },
-    { label: 'Abonnés payants', value: s.paying ?? 0 }, { label: 'CA mensuel EUR', value: s.mrrCentsEur != null ? fmtPrice(s.mrrCentsEur) : '—' }, { label: 'CA mensuel ZAR', value: s.mrrCentsZar != null ? fmtPriceZar(s.mrrCentsZar) : '—' },
+    { label: 'Abonnés payants', value: s.paying ?? 0 }, { label: 'CA mensuel EUR', value: s.mrrCentsEur != null ? fmtPriceEur(s.mrrCentsEur) : '—' }, { label: 'CA mensuel ZAR', value: s.mrrCentsZar != null ? fmtPriceZar(s.mrrCentsZar) : '—' },
   ];
   $('#admin-stats').innerHTML = cards.map(c => `<article class="stat"><div class="stat-head">${icon('i-info')}<p>${c.label}</p></div><strong>${c.value}</strong></article>`).join('');
 }
@@ -1125,7 +1132,7 @@ $('#admin-delete-confirm').onclick = async () => {
     const { prices } = await api('/billing/prices');
     $$('[data-price]').forEach(el => {
       const p = (prices || []).find(x => x.key === el.dataset.price);
-      if (p?.amount_cents != null) el.textContent = fmtPriceMarket(p.amount_cents);
+      el.textContent = el.dataset.price === 'free' ? fmtPriceMarket(0) : (p?.amount_cents != null ? fmtPriceMarket(p.amount_cents) : el.textContent);
     });
   } catch { /* prix non disponibles : « — » affiché */ }
 
