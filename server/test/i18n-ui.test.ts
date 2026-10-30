@@ -113,6 +113,8 @@ test('FR : aucun texte anglais oublié, aucun tiret cadratin', () => {
     if (hits.length >= 2) bad.push(`${where} : EN « ${text.slice(0, 80)} » → ${hits.slice(0, 6).join(', ')}`);
     if (/\bR\s?\d/.test(text)) bad.push(`${where} : symbole rand sur le marché FR « ${text.slice(0, 60)} »`);
     if (/\{[a-zA-Z]+\}/.test(text)) bad.push(`${where} : variable non remplacée « ${text.slice(0, 60)} »`);
+    const dup = text.match(/\b([A-Za-zÀ-ÿ]{2,}|[0-9]+)\s+\1\b/i);
+    if (dup) bad.push(`${where} : doublon « ${text.slice(0, 60)} » (« ${dup[1]} »)`);
   }
   for (const [k, v] of Object.entries(DICTS.fr as Record<string, string>)) {
     if (/[—–…]/.test(v)) bad.push(`dict.fr.${k} : tiret cadratin/ellipse`);
