@@ -20,6 +20,12 @@ const hostName = location.hostname.toLowerCase();
 const MARKET_ID = Object.keys(MARKETS.markets || {}).find(m =>
   (MARKETS.markets[m].domains || []).includes(hostName)) || MARKETS.default || 'fr';
 const MARKET = (MARKETS.markets || {})[MARKET_ID] || {};
+// Pilote : marché non indexable tant que markets.js le déclare.
+if (MARKET.indexable === false) {
+  const m = document.createElement('meta');
+  m.name = 'robots'; m.content = 'noindex, nofollow';
+  document.head.appendChild(m);
+}
 const LOCALES = { fr: 'fr-FR', en: 'en-US' };
 // Au boot : localStorage > langue du marché > 'fr' (la langue du compte
 // est appliquée après /api/me).
@@ -826,6 +832,7 @@ const PLAN_NAMES = () => ({ free: t('offer.free.name'), pro: t('offer.pro.name')
 const STATUS_TXT = () => ({ active: t('sub.active'), trialing: t('sub.trialing'), past_due: t('sub.past_due'), canceled: t('sub.canceled'), unpaid: t('sub.unpaid') });
 const fmtPrice = c => c == null ? '—' : (c / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
 const fmtPriceZar = c => c == null ? '—' : 'R ' + (c / 100).toLocaleString('en-ZA', { maximumFractionDigits: 2 });
+const fmtPriceMarket = c => (MARKET.currency === 'ZAR' ? fmtPriceZar(c) : fmtPrice(c));
 const mktBadge = m => `<span class="mkt-badge" title="Marché">${esc(m === 'za' ? 'ZA' : 'FR')}</span>`;
 
 async function loadBilling() {
@@ -848,9 +855,9 @@ async function loadBilling() {
     html += '<div class="sub-actions">';
     if (!paid) {
       const labels = { pro_monthly: t('sub.monthly'), pro_yearly: t('sub.yearly') };
-      html += (b.prices || []).map(p => `<button class="btn btn-primary btn-sm" data-subscribe="${p.id}">${labels[p.key] ?? p.key} — ${fmtPrice(p.amount_cents)}${p.interval === 'year' ? t('sub.per_year') : t('sub.per_month')}</button>`).join('')
+      html += (b.prices || []).map(p => `<button class="btn btn-primary btn-sm" data-subscribe="${p.id}">${labels[p.key] ?? p.key} — ${fmtPriceMarket(p.amount_cents)}${p.interval === 'year' ? t('sub.per_year') : t('sub.per_month')}</button>`).join('')
         || `<p class="form-intro">${t('sub.no_offers')}</p>`;
-      const vat = legalValue('vatMention');
+      const vat = MARKET.company?.vatMention ?? legalValue('vatMention');
       html += `<p class="sub-meta">${t('sub.pro_note', { vat: vat ? ` · ${esc(vat)}` : '' })}</p>`;
     }
     if (b.hasCustomer) html += `<button class="btn btn-quiet btn-sm" data-portal>${paid ? t('sub.manage') : t('sub.portal')}${icon('i-arrow')}</button>`;
@@ -1118,7 +1125,7 @@ $('#admin-delete-confirm').onclick = async () => {
     const { prices } = await api('/billing/prices');
     $$('[data-price]').forEach(el => {
       const p = (prices || []).find(x => x.key === el.dataset.price);
-      if (p?.amount_cents != null) el.textContent = fmtPrice(p.amount_cents);
+      if (p?.amount_cents != null) el.textContent = fmtPriceMarket(p.amount_cents);
     });
   } catch { /* prix non disponibles : « — » affiché */ }
 

@@ -25,6 +25,7 @@ export interface MarketConfig {
   mailFrom: string;
   reviewMailAddress: string;
   payment: { provider: 'stripe' | 'paystack' };
+  indexable?: boolean;
   company: { name: string; registration: string; address: string; email: string; phone: string };
   prices?: Record<string, string>;
   legalRoutes: { mentions: string; cgv: string; privacy: string };

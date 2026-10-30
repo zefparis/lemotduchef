@@ -30,12 +30,14 @@ window.LMC_MARKETS = {
       "mailFrom": "Le Mot du Chef <noreply@lemotduchef.fr>",
       "reviewMailAddress": "avis@lemotduchef.fr",
       "payment": { "provider": "stripe" },
+      "indexable": false,
       "company": {
-        "name": "",
-        "registration": "",
-        "address": "",
-        "email": "",
-        "phone": ""
+        "name": "IA Solution",
+        "registration": "Sole proprietorship (entreprise individuelle) of Benjamin Barrère — SIREN 438 055 097, RCS Nîmes 438 055 097",
+        "address": "2 rue du Sabotier, 30350 Saint-Bénézet, France",
+        "email": "contact@ia-solution.fr",
+        "phone": "+33 7 63 49 47 78",
+        "vatMention": "No VAT charged"
       },
       "legalRoutes": {
         "mentions": "/mentions-legales",
@@ -57,12 +59,14 @@ window.LMC_MARKETS = {
       "mailFrom": "Le Mot du Chef <noreply@lemotduchef.fr>",
       "reviewMailAddress": "avis@lemotduchef.fr",
       "payment": { "provider": "stripe" },
+      "indexable": false,
       "company": {
-        "name": "",
-        "registration": "",
-        "address": "",
-        "email": "",
-        "phone": ""
+        "name": "IA Solution",
+        "registration": "Sole proprietorship (entreprise individuelle) of Benjamin Barrère — SIREN 438 055 097, RCS Nîmes 438 055 097",
+        "address": "2 rue du Sabotier, 30350 Saint-Bénézet, France",
+        "email": "contact@ia-solution.fr",
+        "phone": "+33 7 63 49 47 78",
+        "vatMention": "No VAT charged"
       },
       "prices": { "pro_monthly": "", "pro_yearly": "" },
       "legalRoutes": {

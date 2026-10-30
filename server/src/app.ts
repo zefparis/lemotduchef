@@ -19,7 +19,7 @@ import collectRoutes from './routes/collect.js';
 import pushRoutes from './routes/push.js';
 import { llmConfigured } from './llm/provider.js';
 import { scheduleRetention } from './retention.js';
-import { marketConfig } from './markets.js';
+import { marketConfig, marketFromRequest } from './markets.js';
 
 export async function buildApp(opts: { retention?: boolean; logStream?: NodeJS.WritableStream } = {}) {
   // Journalisation sans secrets : cookies, en-têtes d'auth et set-cookie
@@ -71,6 +71,9 @@ export async function buildApp(opts: { retention?: boolean; logStream?: NodeJS.W
       .header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains')
       .header('Content-Security-Policy',
         req.url.startsWith('/api/') || req.url === '/health' ? CSP_API : CSP_FRONT);
+    // Marché non indexable (pilote ZA) : aucun index des pages par les robots.
+    if (marketConfig(marketFromRequest(req)).indexable === false)
+      reply.header('X-Robots-Tag', 'noindex');
   });
 
   // CORS : origines frontend autorisées (CORS_ORIGINS). Cookies inclus
