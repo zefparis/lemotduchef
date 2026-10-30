@@ -255,6 +255,18 @@ describe('provider Paystack (préparé, non activé)', () => {
     assert.equal(b2.plan, 'free'); assert.equal(b2.subscription_status, 'canceled');
   });
 
+  test('deux marchés ne partagent jamais le même price_id Stripe', async () => {
+    const { pricesFor } = await import('../src/stripe.js');
+    const { MARKET_IDS } = await import('../src/markets.js');
+    const seen = new Map<string, string>();
+    for (const m of MARKET_IDS)
+      for (const id of Object.values(pricesFor(m)).filter(Boolean)) {
+        assert.ok(!seen.has(id), `price_id ${id} partagé entre ${seen.get(id)} et ${m} — risque de facturation croisée`);
+        seen.set(id, m);
+      }
+    assert.ok(seen.size >= 4, 'prix présents par marché');
+  });
+
   test('webhook : signature invalide rejetée', async () => {
     const w = await app.inject({ method: 'POST', url: '/api/paystack/webhook',
       headers: { ...H, 'x-paystack-signature': 'deadbeef' }, payload: '{}' });
