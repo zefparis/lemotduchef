@@ -60,7 +60,7 @@ export async function buildApp(opts: { retention?: boolean; logStream?: NodeJS.W
   // de thème) ; build.mjs vérifie qu'il correspond au contenu d'index.html.
   const CSP_FRONT = [
     "default-src 'self'", "script-src 'self' 'sha256-INvJATyzdDWfk2hI44VBZvfLcUkppxFRtDscxJ/HZRk='", "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:", `connect-src 'self' ${config.baseUrl} ${marketConfig('za').frontUrl}`,
+    "img-src 'self' data: blob:", `connect-src 'self' ${config.baseUrl} ${marketConfig('za').frontUrl} ${marketConfig('ke').frontUrl}`,
     "object-src 'none'", "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'",
   ].join('; ');
   app.addHook('onSend', async (req, reply) => {

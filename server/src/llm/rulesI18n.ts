@@ -28,6 +28,7 @@ const HEALTH_I18N: Record<Exclude<ReplyLang, 'fr'>, RegExp> = {
   nl: /allerg|voedselvergiftiging|ziek|overgegeven|misselijk|ziekenhuis|spoedeisend|salmonella|gastro/i,
   es: /alerg|intoxicación|enferm|vomit|náusea|hospital|urgencias|salmonella|gastroenteritis/i,
   it: /allerg|intossicazione|malat|vomit|nausea|ospedale|pronto soccorso|salmonella|gastroenterite/i,
+  sw: /mzio|uozo wa chakula|ugonjwa|kutapisha|kichefuchefu|hospitali|wagonjwa|tumbo laumwa|nimeugua|salmonella/i,
 };
 
 // Retrait de la salutation pour les contrôles de première phrase.

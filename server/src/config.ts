@@ -112,6 +112,7 @@ export const config = {
   // ZA_DOMAINS reste utile pour des domaines supplémentaires de test ou un
   // futur .co.za sans rebuild.
   zaDomains: (process.env.ZA_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+  keDomains: (process.env.KE_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
   // Paiement ZA : Paystack en priorité (provider par défaut du marché) ;
   // clés Stripe ZA dédiées acceptées aussi si le compte les ouvre.
   paystack: {
@@ -128,6 +129,14 @@ export const config = {
     prices: {
       pro_monthly: process.env.STRIPE_ZA_PRICE_PRO_MONTHLY ?? '',
       pro_yearly: process.env.STRIPE_ZA_PRICE_PRO_YEARLY ?? '',
+    },
+  },
+  // Marché KE : même compte Stripe que FR/ZA ; seuls les ids de prix
+  // KES diffèrent (carte uniquement au checkout).
+  stripeKe: {
+    prices: {
+      pro_monthly: process.env.STRIPE_KE_PRICE_PRO_MONTHLY ?? '',
+      pro_yearly: process.env.STRIPE_KE_PRICE_PRO_YEARLY ?? '',
     },
   },
   // Offre Gratuit : nombre de générations de réponses par mois civil et par

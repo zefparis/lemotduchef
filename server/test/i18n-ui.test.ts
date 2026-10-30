@@ -87,8 +87,8 @@ function screenExtracts(w: any): Extracted[] {
   return out;
 }
 
-test('EN : aucun texte français ni tiret cadratin sur aucun écran', () => {
-  const w = boot('https://za.lemotduchef.fr/', 'en');
+function enChecks(url: string) {
+  const w = boot(url, 'en');
   const bad: string[] = [];
   for (const { where, text } of screenExtracts(w)) {
     if (/[—–…]/.test(text)) bad.push(`${where} : tiret cadratin/ellipse dans « ${text.slice(0, 70)} »`);
@@ -101,7 +101,15 @@ test('EN : aucun texte français ni tiret cadratin sur aucun écran', () => {
     const hits = frenchHits(v.replace(/<[^>]+>/g, ' '));
     if (hits.length) bad.push(`dict.en.${k} : FR « ${v.slice(0, 70)} » → ${hits.slice(0, 5).join(', ')}`);
   }
-  assert.deepEqual(bad, [], bad.join('\n'));
+  return bad;
+}
+
+test('EN : aucun texte français ni tiret cadratin sur aucun écran', () => {
+  assert.deepEqual(enChecks('https://za.lemotduchef.fr/'), []);
+});
+
+test('EN : marché KE — aucun français, aucun € ni rand, aucune variable', () => {
+  assert.deepEqual(enChecks('https://ke.lemotduchef.fr/'), []);
 });
 
 test('FR : aucun texte anglais oublié, aucun tiret cadratin', () => {

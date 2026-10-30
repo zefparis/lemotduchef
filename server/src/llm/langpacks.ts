@@ -288,4 +288,42 @@ const it: LangPack = {
   reservation: /prenoti (un|il) tavolo|prenotare (un|il) tavolo|fare una prenotazione|prenotare in anticipo|prenoti in anticipo|prenotazione anticipata/i,
 };
 
-export const LANG_PACKS: Record<Exclude<ReplyLang, 'fr'>, LangPack> = { en, af, de, nl, es, it };
+const sw: LangPack = {
+  greeting: /^(habari|jambo|hujambo|karibu|asante|mambo|niaje)/i,
+  greetingWord: 'Habari',
+  informal: null, // pas de distinction tu/vous en swahili standard
+  forbidden: /\b(mwongo|uongo|kiniga|kesi|wakili|mahakamani|polisi|hatua ya kisheria|fidia ya kisheria)\b/i,
+  apology: /(pole sana|tunasikitika|nasikitika sana|samahani sana|tunaomba msamaha|nasikitika)/gi,
+  banned: [
+    'tunathamini maoni yako', 'asante kwa maoni yako', 'maoni yako ni muhimu',
+    'asante kwa kutoa muda', 'asante kwa muda wako', 'pole sana sana',
+    'tunasikiliza', 'usisite kuwasiliana', 'hakuna shaka', 'ukishangaa',
+    'tunaheshimu', 'pole kwa', 'asante kwa kutueleza', 'tunajali hisia zako',
+  ],
+  impatience: /(upuzi|ukaidi|uongo|huongea uongo|kupiga moyo|kukosha|siyo kweli)/i,
+  internalClaims: [
+    [/\brekodi\b/i, 'registre'],
+    [/\bukaguzi\b|\bkagua\b|\btunakagua\b/i, 'contrôle'],
+    [/\btaratibu\b|\btaratibu\s/i, 'procédure'],
+    [/\btunafanya kazi\b|\btunajitahidi\b/i, 'nous travaillons à'],
+    [/\btumefanya mabadiliko\b|\btunaweka mapya\b/i, 'nous mettons en place'],
+  ],
+  surprise: /\b(tunashangaa|nashangaa|kunishangaza|kushangaza)\b/i,
+  analysisLeak: /\b(aina|jamii) ya (malalamiko|lalamiko|maoni)\b|maoni (yako|haya) (yanahusu|yanangalia)/i,
+  noDetail: /(hakuna maelezo|bila maelezo|hayana maelezo|maelezo machache)/i,
+  warned: /(uli(wa)?onywa|tulikuonya|tulikujulisha|kama tulivyokubaliana|kama ilivyotajwa|tulikuambia)/i,
+  factsHint: /(kuliwaonya|onywa|julishwa|kubaliana|tulikuambia|kama ilivyosemekana)/i,
+  firstSentFact: /(tulikuonya|tulikujulisha|tulikuambia|zimejaa|meza zilikuwa zimejaa)/i,
+  blame: /(tulikuambia|kama tulivyosema|tulikuonya|kama tulivyokubaliana|ulivyosema)/i,
+  priceWords: /(bei|gharama|shilingi|kes|bili|malipo|nafuu|ghali|pesa)/i,
+  returnInvite: /(karibu tena|njoo tena|rudi tena|tunakukaribisha|tutaonana|mara nyingine|tutakusubiri|karibu sana)/i,
+  commercialGesture: /(punguzo|zawadi|bure|fidia|rudisha pesa|rudishi|koponi|offers|mbili kwa moja)/i,
+  contactInvite: /(wasiliana|piga simu|tutumie|andika|barua pepe|binafsi|moja kwa moja)/i,
+  admission: /\b(kosa letu|tunakubali makosa|ni hatia yetu|tuna jukumu|uozo wa chakula|ugonjwa kutoka)\b/i,
+  closingFormulas: /kwa heshima|heri ya|salamu zangu|baraka|kwa salamu|kwa heshima kubwa|tuko tayari/i,
+  triadAnd: ' na ',
+  clauseMark: /\b(ni|na|ya|wa|la|za|kwa|kwenye|wewe|mimi|sisi|ninyi|yeye|huu|hii|hiyo|lakini|au|kama|tuna|una|ana|tena|pia|tu|kila|hapa|ilikuwa|itakuwa|ilikuwepo|nili|tuli|wame)\b/i,
+  reservation: /(hifadhi (meza|nafasi)|kata meza|meza mapema|hifadhi mapema|kata nafasi)/i,
+};
+
+export const LANG_PACKS: Record<Exclude<ReplyLang, 'fr'>, LangPack> = { en, af, de, nl, es, it, sw };

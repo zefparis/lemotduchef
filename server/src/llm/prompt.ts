@@ -231,6 +231,7 @@ const ADDRESS_FORM_I18N: Record<Exclude<ReplyLang, 'fr'>, { formal: string; info
   nl: { formal: 'address the customer formally with "u", never "je"', informal: 'address the customer informally with "je"' },
   es: { formal: 'address the customer formally with "usted", never "tú"', informal: 'address the customer informally with "tú"' },
   it: { formal: 'address the customer formally with "Lei" (capitalised), never "tu"', informal: 'address the customer informally with "tu"' },
+  sw: { formal: 'address the customer politely (Swahili has no tu/vous distinction — use "wewe"/"wewe tena" politely throughout)', informal: 'address the customer informally (friendly "wewe")' },
 };
 
 const GREETING_RULE: Record<Exclude<ReplyLang, 'fr'>, string> = {
@@ -240,6 +241,7 @@ const GREETING_RULE: Record<Exclude<ReplyLang, 'fr'>, string> = {
   nl: 'Start with "Beste [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim), otherwise "Beste" alone.',
   es: 'Start with "Hola [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim), otherwise "Hola" alone.',
   it: 'Start with "Buongiorno [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim), otherwise "Buongiorno" alone.',
+  sw: 'Start with "Habari [PRÉNOM]" if the "Author" line shows the [PRÉNOM] marker (write it verbatim), otherwise "Habari" alone.',
 };
 
 export function systemPromptFor(lang: ReplyLang): string {
@@ -296,6 +298,7 @@ const TONES_I18N: Record<Exclude<ReplyLang, 'fr'>, Record<string, string>> = {
   nl: { chaleureux: 'warm en persoonlijk', sobre: 'sober en feitelijk', dynamique: 'levendig en positief' },
   es: { chaleureux: 'cálido y personal', sobre: 'sobrio y factual', dynamique: 'vivo y positivo' },
   it: { chaleureux: 'caldo e personale', sobre: 'sobrio e fattuale', dynamique: 'vivo e positivo' },
+  sw: { chaleureux: 'ya kiasi na ya kibinafsi', sobre: 'ya utulivu na ukweli', dynamique: 'ya furaha na matumaini' },
 };
 
 export function buildUserPromptLang(p: PromptProfile, r: PromptReview, avoid: string[],

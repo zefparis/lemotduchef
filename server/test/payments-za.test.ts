@@ -14,7 +14,7 @@ process.env.NODE_ENV = 'test';
 process.env.RATE_LIMIT_AUTH_MAX = '1000';
 process.env.RATE_LIMIT_GENERATE_MAX = '1000';
 process.env.ADMIN_EMAILS = 'admin@lemotduchef.test';
-process.env.CORS_ORIGINS = 'https://lemotduchef.test,https://za.lemotduchef.test';
+process.env.CORS_ORIGINS = 'https://lemotduchef.test,https://za.lemotduchef.test,https://ke.lemotduchef.test';
 process.env.FR_DOMAINS = 'lemotduchef.test';
 process.env.ZA_DOMAINS = 'za.lemotduchef.test';
 process.env.SMTP_HOST = 'log';
@@ -26,6 +26,9 @@ process.env.STRIPE_PRICE_PRO_MONTHLY = 'price_fr_m';
 process.env.STRIPE_PRICE_PRO_YEARLY = 'price_fr_y';
 process.env.STRIPE_ZA_PRICE_PRO_MONTHLY = 'price_za_m';
 process.env.STRIPE_ZA_PRICE_PRO_YEARLY = 'price_za_y';
+process.env.STRIPE_KE_PRICE_PRO_MONTHLY = 'price_ke_m';
+process.env.STRIPE_KE_PRICE_PRO_YEARLY = 'price_ke_y';
+process.env.KE_ORIGIN_TEST = 'https://ke.lemotduchef.test';
 process.env.PAYSTACK_ZA_SECRET_KEY = 'sk_test_paystack';
 process.env.PAYSTACK_ZA_PLAN_MONTHLY = 'PLN_test_m';
 process.env.PAYSTACK_ZA_PLAN_YEARLY = 'PLN_test_y';
@@ -49,6 +52,7 @@ const { CGV_VERSION } = await import('../src/legal.js');
 const PASSWORD = 'Test1234!xYz';
 const H = { 'content-type': 'application/json', 'x-lemotduchef-client': '1', host: 'localhost:3510' };
 const ZA = 'https://za.lemotduchef.test';
+const KE = 'https://ke.lemotduchef.test';
 const cookieOf = (r: any) => (r.headers['set-cookie'] || []).map((c: string) => c.split(';')[0]).join('; ');
 const stripeClient = new Stripe('sk_test_fake');
 
@@ -133,7 +137,7 @@ describe('paiement marché ZA', () => {
       assert.equal(p.locale, 'en');
       assert.equal(p.line_items[0].price, 'price_za_m');
       assert.match(p.success_url, /^https:\/\/za\.lemotduchef\.fr\//);
-      assert.match(p.custom_text.terms_of_service_acceptance.message, /terms of sale.*\/terms/);
+      assert.match(p.custom_text.terms_of_service_acceptance.message, /Terms of Service and Sale.*\/terms/);
       assert.equal((await billingOf(cid)).payment_provider, 'stripe');
       // Un prix FR refusé pour une entreprise ZA (séparation des jeux de prix).
       const bad = await app.inject({ method: 'POST', url: '/api/billing/checkout',
@@ -162,6 +166,31 @@ describe('paiement marché ZA', () => {
     await app.inject(whStripe(del));
     const b2 = await billingOf(cid);
     assert.equal(b2.plan, 'free'); assert.equal(b2.subscription_status, 'canceled');
+  });
+
+  test('KE : checkout carte seule, locale en, prix KES', async () => {
+    const cookie = await signupZa('checkout@ke.test');
+    await makeCompany(cookie, 'Resto KE', false);
+    await pool.query(`UPDATE companies SET market='ke' WHERE name='Resto KE'`);
+    const s = stripe()!;
+    const calls: any[] = [];
+    const origList = s.customers.list, origCreate = s.customers.create, origSess = s.checkout.sessions.create;
+    s.customers.list = async () => ({ data: [] }) as any;
+    s.customers.create = async (p: any) => ({ id: 'cus_ke_1', ...p }) as any;
+    s.checkout.sessions.create = async (p: any) => { calls.push(p); return { id: 'cs_ke', url: 'https://checkout.stripe.test/cs_ke' } as any; };
+    try {
+      const r = await app.inject({ method: 'POST', url: '/api/billing/checkout',
+        headers: { ...H, cookie, origin: KE }, payload: { priceId: 'price_ke_m' } });
+      assert.equal(r.statusCode, 200, r.body);
+      const p = calls[0];
+      assert.equal(p.locale, 'en');
+      assert.equal(p.line_items[0].price, 'price_ke_m');
+      assert.deepEqual(p.payment_method_types, ['card'], 'carte uniquement au Kenya');
+      assert.match(p.success_url, /^https:\/\/ke\.lemotduchef\.fr\//);
+      assert.match(p.custom_text.terms_of_service_acceptance.message, /Terms of Service and Sale.*\/terms/);
+    } finally {
+      [s.customers.list, s.customers.create, s.checkout.sessions.create] = [origList, origCreate, origSess] as any;
+    }
   });
 
   test('FR : aucun changement — mêmes prix EUR, locale fr', async () => {

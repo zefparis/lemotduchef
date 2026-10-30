@@ -420,7 +420,10 @@ export default async function billingRoutes(app: FastifyInstance) {
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       customer: customerId,
-      locale: market === 'za' ? 'en' : 'fr',
+      locale: market === 'fr' ? 'fr' : 'en',
+      // Kenya : carte uniquement (pas de mobile money ni de lien de
+      // paiement alternatif au Checkout pendant le pilote).
+      ...(market === 'ke' ? { payment_method_types: ['card' as const] } : {}),
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       // Aucune TVA collectée (franchise, art. 293 B CGI) : pas d'automatic_tax.
@@ -431,9 +434,9 @@ export default async function billingRoutes(app: FastifyInstance) {
       consent_collection: { terms_of_service: 'required' },
       custom_text: {
         terms_of_service_acceptance: {
-          message: market === 'za'
-            ? `By subscribing, I accept the terms of sale: ${cgvUrl}`
-            : `En souscrivant, j'accepte les conditions générales de vente : ${cgvUrl}`,
+          message: market === 'fr'
+            ? `En souscrivant, j'accepte les conditions générales de vente : ${cgvUrl}`
+            : `By subscribing, I accept the Terms of Service and Sale: ${cgvUrl}`,
         },
       },
       success_url: `${front}/?billing=success`,

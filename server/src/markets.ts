@@ -8,9 +8,9 @@ import { pool } from './db.js';
 // <script>). Une config absente ou invalide bloque le boot, comme config.ts.
 // Les secrets (clés de paiement) restent dans l'environnement, jamais ici.
 
-export type Market = 'fr' | 'za';
-export const MARKET_IDS: Market[] = ['fr', 'za'];
-export const isMarket = (v: unknown): v is Market => v === 'fr' || v === 'za';
+export type Market = 'fr' | 'za' | 'ke';
+export const MARKET_IDS: Market[] = ['fr', 'za', 'ke'];
+export const isMarket = (v: unknown): v is Market => v === 'fr' || v === 'za' || v === 'ke';
 
 export interface MarketConfig {
   lang: string;
@@ -38,8 +38,8 @@ function loadMarketsFile(): MarketsFile {
   const text = fs.readFileSync(file, 'utf8');
   const json = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
   const parsed = JSON.parse(json) as MarketsFile;
-  if (!isMarket(parsed.default) || !parsed.markets?.fr || !parsed.markets?.za)
-    throw new Error('markets.js invalide : clés default/markets.fr/markets.za attendues.');
+  if (!isMarket(parsed.default) || !parsed.markets?.fr || !parsed.markets?.za || !parsed.markets?.ke)
+    throw new Error('markets.js invalide : clés default/markets.fr/markets.za/markets.ke attendues.');
   return parsed;
 }
 
@@ -55,14 +55,16 @@ export function marketConfig(market: Market): MarketConfig {
   // (FRONT_URL, MAIL_FROM, REVIEW_MAIL_ADDRESS — aucune régression).
   // ZA utilise za.lemotduchef.fr : mêmes boîtes email que le marché FR,
   // toutes les valeurs ZA vivent dans markets.js.
-  const extra = market === 'za'
-    ? { domains: config.zaDomains, frontUrl: '', mailFrom: '', reviewMailAddress: '' }
-    : {
+  const extra = market === 'fr'
+    ? {
         domains: config.frDomains,
         frontUrl: process.env.FRONT_URL ?? '',
         mailFrom: process.env.MAIL_FROM ?? '',
         reviewMailAddress: process.env.REVIEW_MAIL_ADDRESS ?? '',
-      };
+      }
+    : market === 'za'
+      ? { domains: config.zaDomains, frontUrl: '', mailFrom: '', reviewMailAddress: '' }
+      : { domains: config.keDomains, frontUrl: '', mailFrom: '', reviewMailAddress: '' };
   m = {
     lang: raw.lang ?? 'fr',
     languages: raw.languages?.length ? raw.languages : ['fr', 'en'],

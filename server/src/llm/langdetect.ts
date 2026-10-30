@@ -4,12 +4,12 @@
 // En cas d'ambiguïté ou d'avis trop court/vide : repli sur la langue du
 // marché (fr ou en), jamais une langue inventée.
 
-export type ReplyLang = 'fr' | 'en' | 'af' | 'de' | 'nl' | 'es' | 'it';
-export const REPLY_LANGS: ReplyLang[] = ['fr', 'en', 'af', 'de', 'nl', 'es', 'it'];
+export type ReplyLang = 'fr' | 'en' | 'af' | 'de' | 'nl' | 'es' | 'it' | 'sw';
+export const REPLY_LANGS: ReplyLang[] = ['fr', 'en', 'af', 'de', 'nl', 'es', 'it', 'sw'];
 
 export const LANG_NAMES: Record<ReplyLang, string> = {
   fr: 'français', en: 'anglais', af: 'afrikaans', de: 'allemand',
-  nl: 'néerlandais', es: 'espagnol', it: 'italien',
+  nl: 'néerlandais', es: 'espagnol', it: 'italien', sw: 'swahili',
 };
 
 // Listes pondérées : mots très distinctifs ×3, distinctifs ×2, communs ×1.
@@ -74,6 +74,17 @@ const WORDS: Record<ReplyLang, Record<string, number>> = {
     ober: 3, serveerster: 3, kaart: 1, keuken: 2, gezellig: 3, schoon: 2,
     vies: 2, minuten: 2, nooit: 2, altijd: 1, weer: 1, terug: 1, je: 1,
     jouw: 1, jou: 1,
+  },
+  sw: {
+    na: 3, ya: 3, kwa: 3, sana: 3, ni: 1, kwenye: 2, ili: 2, ndio: 2,
+    chakula: 3, huduma: 3, meza: 3, mhudumu: 3, wafanyakazi: 3,
+    lakini: 2, nzuri: 2, mbaya: 2, pole: 2, asante: 3, karibu: 3,
+    tena: 2, ninyi: 2, bila: 2, kama: 1, wakati: 1, bei: 2, malipo: 2,
+    nilikuwa: 3, tulikuwa: 3, kusubiri: 2, muda: 1, haraka: 2,
+    polepole: 2, habari: 3, mimi: 2, wewe: 2, sisi: 2, kweli: 2,
+    pesa: 2, nafuu: 2, ghali: 2, vizuri: 2, vibaya: 2, hivyo: 2,
+    siku: 1, jambo: 2, mazuri: 2, mazima: 1, kipindi: 1, nilipata: 2,
+    wakatiu: 1, tu: 1, kila: 1, hapa: 1, huko: 1, ndani: 1, nje: 1,
   },
   es: {
     el: 3, la: 3, los: 2, las: 2, y: 1, en: 1, de: 1, que: 2, un: 2,

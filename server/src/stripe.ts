@@ -17,9 +17,9 @@ export const stripeEnabled = () => !!config.stripe.secretKey;
 // STRIPE_ZA_PRICE_*). planForPrice connaît les deux jeux d'ids.
 import type { Market } from './markets.js';
 export const pricesFor = (market: Market): Record<string, string> =>
-  market === 'za' ? config.stripeZa.prices : config.stripe.prices;
+  market === 'za' ? config.stripeZa.prices : market === 'ke' ? config.stripeKe.prices : config.stripe.prices;
 const PRICE_TO_PLAN: Record<string, 'pro'> = {};
-for (const m of ['fr', 'za'] as const)
+for (const m of ['fr', 'za', 'ke'] as const)
   for (const id of Object.values(pricesFor(m))) if (id) PRICE_TO_PLAN[id] = 'pro';
 export const planForPrice = (priceId: string) => PRICE_TO_PLAN[priceId];
 export const knownPriceIds = (market: Market = 'fr') => new Set(Object.values(pricesFor(market)).filter(Boolean));
