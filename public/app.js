@@ -825,6 +825,8 @@ async function deleteReview(id) {
 const PLAN_NAMES = () => ({ free: t('offer.free.name'), pro: t('offer.pro.name') });
 const STATUS_TXT = () => ({ active: t('sub.active'), trialing: t('sub.trialing'), past_due: t('sub.past_due'), canceled: t('sub.canceled'), unpaid: t('sub.unpaid') });
 const fmtPrice = c => c == null ? '—' : (c / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
+const fmtPriceZar = c => c == null ? '—' : 'R ' + (c / 100).toLocaleString('en-ZA', { maximumFractionDigits: 2 });
+const mktBadge = m => `<span class="mkt-badge" title="Marché">${esc(m === 'za' ? 'ZA' : 'FR')}</span>`;
 
 async function loadBilling() {
   const panel = $('#sub-panel'), body = $('#sub-body');
@@ -975,6 +977,8 @@ $('#delete-account-confirm').onclick = async () => {
 };
 
 /* ---------- Back-office administration ---------- */
+let adminMarket = '';
+const mkParam = () => adminMarket ? `&market=${adminMarket}` : '';
 const adminApi = (path, opts) => api('/admin' + path, opts);
 async function enterAdmin() {
   if (!session?.admin) { history.replaceState(null, '', '/'); return; }
@@ -984,26 +988,26 @@ async function enterAdmin() {
   catch (e) { toast(e.message, 'error'); }
 }
 async function loadAdminStats() {
-  const s = await adminApi('/stats');
+  const s = await adminApi(`/stats?x=1${mkParam()}`);
   const cards = [
     { label: 'Restaurants', value: s.companies }, { label: 'Utilisateurs', value: s.users },
     { label: 'Inscriptions 7 j', value: s.signups7 }, { label: 'Inscriptions 30 j', value: s.signups30 },
     { label: 'Emails non vérifiés', value: s.unverified }, { label: 'Comptes suspendus', value: s.suspended },
     { label: 'Avis saisis', value: s.reviews }, { label: 'Générations (total / mois)', value: `${s.generations} / ${s.generationsMonth}` },
     { label: 'Tokens entrée / sortie', value: `${(s.inputTokens / 1000).toFixed(1)}k / ${(s.outputTokens / 1000).toFixed(1)}k` },
-    { label: 'Abonnés payants', value: s.paying ?? 0 }, { label: 'Revenu mensuel récurrent', value: s.mrrCents != null ? fmtPrice(s.mrrCents) : '—' },
+    { label: 'Abonnés payants', value: s.paying ?? 0 }, { label: 'CA mensuel EUR', value: s.mrrCentsEur != null ? fmtPrice(s.mrrCentsEur) : '—' }, { label: 'CA mensuel ZAR', value: s.mrrCentsZar != null ? fmtPriceZar(s.mrrCentsZar) : '—' },
   ];
   $('#admin-stats').innerHTML = cards.map(c => `<article class="stat"><div class="stat-head">${icon('i-info')}<p>${c.label}</p></div><strong>${c.value}</strong></article>`).join('');
 }
 async function loadAdminCompanies() {
   const search = $('#admin-co-search').value.trim(), sort = $('#admin-co-sort').value;
-  const { companies } = await adminApi(`/companies?search=${encodeURIComponent(search)}&sort=${sort}`);
+  const { companies } = await adminApi(`/companies?search=${encodeURIComponent(search)}&sort=${sort}${mkParam()}`);
   $('#admin-companies-count').textContent = `${companies.length} restaurant(s)`;
   $('#admin-companies').innerHTML = companies.map(c => {
     const paidPlan = ['active', 'trialing', 'past_due'].includes(c.subscription_status) && c.plan !== 'free';
     const sub = paidPlan && c.subscription_status !== 'active' ? ` · ${STATUS_TXT[c.subscription_status] ?? c.subscription_status}` : '';
     return `<tr><td><strong>${esc(c.name)}</strong></td><td>${esc(c.city || '—')}</td>
-      <td><span class="plan-badge${paidPlan ? '' : ' free'}">${paidPlan ? 'Pro' : 'Gratuit'}</span>${esc(sub)}</td>
+      <td>${mktBadge(c.market)} <span class="plan-badge${paidPlan ? '' : ' free'}">${paidPlan ? 'Pro' : 'Gratuit'}</span>${esc(sub)}</td>
       <td>${new Date(c.created_at).toLocaleDateString('fr-FR')}</td><td>${c.reviews_count}</td><td>${c.generations_month}</td>
       <td>${c.last_activity ? fmtDateTime(c.last_activity) : '—'}</td></tr>`;
   }).join('') || '<tr><td colspan="7" class="subtle">Aucun restaurant.</td></tr>';
@@ -1011,13 +1015,14 @@ async function loadAdminCompanies() {
 let adminSearchTimer;
 $('#admin-co-search').oninput = () => { clearTimeout(adminSearchTimer); adminSearchTimer = setTimeout(loadAdminCompanies, 300); };
 $('#admin-co-sort').onchange = loadAdminCompanies;
+$('#admin-market').onchange = e => { adminMarket = e.target.value; Promise.all([loadAdminStats(), loadAdminCompanies(), loadAdminUsers()]).catch(() => {}); };
 async function loadAdminUsers() {
   const search = $('#admin-u-search').value.trim();
-  const { users } = await adminApi(`/users?search=${encodeURIComponent(search)}`);
+  const { users } = await adminApi(`/users?search=${encodeURIComponent(search)}${mkParam()}`);
   $('#admin-users-count').textContent = `${users.length} utilisateur(s)`;
   $('#admin-users').innerHTML = users.map(u => `<tr${u.suspended_at ? ' class="row-suspended"' : ''}>
     <td><strong>${esc(u.name)}</strong><span class="cell-sub">${esc(u.email)}${u.suspended_at ? ' <span class="badge-suspended">Suspendu</span>' : ''}</span></td>
-    <td>${esc(u.company_name || '—')}</td>
+    <td>${mktBadge(u.market)} ${esc(u.company_name || '—')}</td>
     <td>${u.email_verified ? '<span class="badge-verified">Vérifié</span>' : '<span class="badge-unverified">Non vérifié</span>'}</td>
     <td>${new Date(u.created_at).toLocaleDateString('fr-FR')}</td>
     <td>${u.last_seen ? fmtDateTime(u.last_seen) : '—'}</td>

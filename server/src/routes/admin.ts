@@ -24,39 +24,48 @@ export default async function adminRoutes(app: FastifyInstance) {
   app.addHook('preHandler', requireAdmin);
 
   /* ---------- Tableau de bord ---------- */
-  app.get('/api/admin/stats', async () => {
+  // ?market=fr|za : tous les compteurs sont bornés au marché (les lignes
+  // avis/générations/tokens passent par la jointure companies).
+  // Le CA est TOUJOURS séparé par devise : mrrCentsEur et mrrCentsZar ne
+  // se somment jamais.
+  app.get('/api/admin/stats', async (req) => {
+    const mk = isMarket((req.query as any)?.market) ? String((req.query as any).market) : '';
+    const cW = `($1 = '' OR c.market=$1)`;
+    const uW = `($1 = '' OR u.market=$1)`;
     const [companies, users, signups7, signups30, unverified, reviews, suspended, gens] = await Promise.all([
-      pool.query('SELECT count(*) AS n FROM companies'),
-      pool.query('SELECT count(*) AS n FROM "user"'),
-      pool.query(`SELECT count(*) AS n FROM "user" WHERE "createdAt" >= now() - interval '7 days'`),
-      pool.query(`SELECT count(*) AS n FROM "user" WHERE "createdAt" >= now() - interval '30 days'`),
-      pool.query('SELECT count(*) AS n FROM "user" WHERE NOT "emailVerified"'),
-      pool.query('SELECT count(*) AS n FROM reviews'),
-      pool.query('SELECT count(*) AS n FROM "user" WHERE suspended_at IS NOT NULL'),
-      pool.query(`SELECT count(*) AS n, COALESCE(sum(input_tokens),0) AS inp, COALESCE(sum(output_tokens),0) AS outp,
-                         count(*) FILTER (WHERE created_at >= date_trunc('month', now())) AS month
-                    FROM generations`),
+      pool.query(`SELECT count(*) AS n FROM companies c WHERE ${cW}`, [mk]),
+      pool.query(`SELECT count(*) AS n FROM "user" u WHERE ${uW}`, [mk]),
+      pool.query(`SELECT count(*) AS n FROM "user" u WHERE ${uW} AND u."createdAt" >= now() - interval '7 days'`, [mk]),
+      pool.query(`SELECT count(*) AS n FROM "user" u WHERE ${uW} AND u."createdAt" >= now() - interval '30 days'`, [mk]),
+      pool.query(`SELECT count(*) AS n FROM "user" u WHERE ${uW} AND NOT u."emailVerified"`, [mk]),
+      pool.query(`SELECT count(*) AS n FROM reviews r JOIN companies c ON c.id=r.company_id WHERE ${cW}`, [mk]),
+      pool.query(`SELECT count(*) AS n FROM "user" u WHERE ${uW} AND u.suspended_at IS NOT NULL`, [mk]),
+      pool.query(`SELECT count(*) AS n, COALESCE(sum(g.input_tokens),0) AS inp, COALESCE(sum(g.output_tokens),0) AS outp,
+                         count(*) FILTER (WHERE g.created_at >= date_trunc('month', now())) AS month
+                    FROM generations g JOIN companies c ON c.id=g.company_id WHERE ${cW}`, [mk]),
     ]);
     const one = (r: any) => Number(r.rows[0].n);
 
-    // Abonnés payants (plan actif/trialing/past_due) + MRR normalisé :
-    // montants relus depuis l'API Stripe (cache), annuel ÷ 12.
+    // Abonnés payants (plan actif/trialing/past_due) + MRR normalisé par
+    // devise : montants relus depuis l'API Stripe (cache), annuel ÷ 12.
     const { rows: paying } = await pool.query<{ subscription_price_id: string; status: string }>(
-      `SELECT subscription_price_id, subscription_status AS status FROM companies
-        WHERE plan <> 'free' AND subscription_status IN ('active','trialing','past_due')`);
-    let mrrCents = 0;
+      `SELECT subscription_price_id, subscription_status AS status FROM companies c
+        WHERE c.plan <> 'free' AND c.subscription_status IN ('active','trialing','past_due') AND ${cW}`, [mk]);
+    let mrrCentsEur = 0, mrrCentsZar = 0;
     for (const p of paying) {
       const info = p.subscription_price_id ? await priceInfo(p.subscription_price_id) : null;
       if (!info?.unit_amount) continue;
-      mrrCents += info.interval === 'year' ? Math.round(info.unit_amount / 12) : info.unit_amount;
+      const v = info.interval === 'year' ? Math.round(info.unit_amount / 12) : info.unit_amount;
+      if (info.currency === 'zar') mrrCentsZar += v; else mrrCentsEur += v;
     }
     return {
+      market: mk || 'all',
       companies: one(companies), users: one(users),
       signups7: one(signups7), signups30: one(signups30),
       unverified: one(unverified), reviews: one(reviews), suspended: one(suspended),
       generations: one(gens), generationsMonth: Number(gens.rows[0].month),
       inputTokens: Number(gens.rows[0].inp), outputTokens: Number(gens.rows[0].outp),
-      paying: paying.length, mrrCents,
+      paying: paying.length, mrrCentsEur, mrrCentsZar,
     };
   });
 
@@ -70,6 +79,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   };
   app.get('/api/admin/companies', async (req) => {
     const q = String((req.query as any)?.search ?? '').trim();
+    const mk = isMarket((req.query as any)?.market) ? String((req.query as any).market) : '';
     const order = COMPANY_SORTS[(req.query as any)?.sort] ?? COMPANY_SORTS.created_at;
     const { rows } = await pool.query(
       `SELECT c.id, c.name, COALESCE(p.city,'') AS city, c.created_at::text,
@@ -80,13 +90,15 @@ export default async function adminRoutes(app: FastifyInstance) {
               (SELECT max(g.created_at) FROM generations g WHERE g.company_id=c.id)::text AS last_activity
        FROM companies c LEFT JOIN restaurant_profiles p ON p.company_id=c.id
        WHERE ($1 = '' OR c.name ILIKE '%' || $1 || '%' OR p.city ILIKE '%' || $1 || '%')
-       ORDER BY ${order} LIMIT 300`, [q]);
+         AND ($2 = '' OR c.market=$2)
+       ORDER BY ${order} LIMIT 300`, [q, mk]);
     return { companies: rows };
   });
 
   /* ---------- Utilisateurs ---------- */
   app.get('/api/admin/users', async (req) => {
     const q = String((req.query as any)?.search ?? '').trim();
+    const mk = isMarket((req.query as any)?.market) ? String((req.query as any).market) : '';
     const { rows } = await pool.query(
       `SELECT u.id, u.name, u.email, u."emailVerified" AS email_verified,
               u."createdAt"::text AS created_at, u.suspended_at::text, u.market,
@@ -96,7 +108,8 @@ export default async function adminRoutes(app: FastifyInstance) {
        LEFT JOIN memberships m ON m.user_id=u.id
        LEFT JOIN companies c ON c.id=m.company_id
        WHERE ($1 = '' OR u.email ILIKE '%' || $1 || '%' OR u.name ILIKE '%' || $1 || '%')
-       ORDER BY u."createdAt" DESC LIMIT 300`, [q]);
+         AND ($2 = '' OR u.market=$2)
+       ORDER BY u."createdAt" DESC LIMIT 300`, [q, mk]);
     return { users: rows };
   });
 

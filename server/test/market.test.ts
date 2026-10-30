@@ -290,3 +290,25 @@ test('heures de silence évaluées dans le fuseau du marché', () => {
   // Sans plage configurée : jamais en silence.
   assert.equal(inQuietHours({ ...s, quiet_start: null, quiet_end: null }, 'Africa/Johannesburg', now), false);
 });
+
+/* ---------- Admin : filtre par marché ---------- */
+
+test('admin : stats, comptes et utilisateurs filtrables par marché', async () => {
+  const admin = await signup('admin@lemotduchef.test', 'Admin');
+  const za = await signup('filtre@za.test', 'Filtre ZA', ZA_ORIGIN);
+  const fr = await signup('filtre@fr.test', 'Filtre FR');
+  await app.inject({ method: 'POST', url: '/api/restaurants', headers: { ...H, cookie: za.cookie, origin: ZA_ORIGIN }, payload: { name: 'Resto ZA' } });
+  await app.inject({ method: 'POST', url: '/api/restaurants', headers: { ...H, cookie: fr.cookie }, payload: { name: 'Resto FR' } });
+  const a = { cookie: admin.cookie };
+
+  const all = (await app.inject({ method: 'GET', url: '/api/admin/stats', headers: { ...H, ...a } })).json();
+  const zaS = (await app.inject({ method: 'GET', url: '/api/admin/stats?market=za', headers: { ...H, ...a } })).json();
+  assert.ok(zaS.companies < all.companies, 'companies bornées au marché ZA');
+  assert.ok(zaS.users < all.users, 'users bornés au marché ZA');
+  assert.ok('mrrCentsEur' in all && 'mrrCentsZar' in all, 'CA séparé par devise');
+
+  const cos = (await app.inject({ method: 'GET', url: '/api/admin/companies?market=za', headers: { ...H, ...a } })).json().companies;
+  assert.ok(cos.length >= 1 && cos.every((c: any) => c.market === 'za'), 'restaurants : uniquement ZA');
+  const us = (await app.inject({ method: 'GET', url: '/api/admin/users?market=fr', headers: { ...H, ...a } })).json().users;
+  assert.ok(us.length >= 1 && us.every((u: any) => u.market === 'fr'), 'utilisateurs : uniquement FR');
+});

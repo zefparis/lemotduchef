@@ -1231,3 +1231,4 @@ dialog[open] { animation: dialog-in .22s ease; }
 .qr-preview { display: grid; place-items: center; gap: 10px; padding: 20px; background: var(--card-2); border-radius: var(--radius-sm); margin: 14px 0 18px; text-align: center; }
 .qr-preview img { width: 180px; height: 180px; border-radius: 8px; background: #fff; padding: 8px; }
 .qr-panel .danger-actions { margin-top: 0; }
+.mkt-badge{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--muted,#eee);color:var(--muted-fg,#555)}
